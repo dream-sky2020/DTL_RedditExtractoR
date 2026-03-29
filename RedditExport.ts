@@ -44,7 +44,11 @@ async function exportRedditToJson(postUrl: string, fileName: string = 'reddit_po
         console.log(`导出成功！文件已保存至: ${fileName}`);
 
     } catch (error) {
-        console.error('导出失败:', error.message);
+        if (error instanceof Error) {
+            console.error('导出失败:', error.message);
+        } else {
+            console.error('导出失败:', error);
+        }
     }
 }
 
