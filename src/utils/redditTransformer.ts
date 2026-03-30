@@ -46,7 +46,7 @@ export function transformRedditJson(rawData: any): CleanPost {
         return { imageUrl, cleanText };
     };
 
-    // 展平处理评论 (现在生成带标签的文本块)
+    // 展平处理评论 (生成符合脚本需求的 quote 层级文本)
     const flattenComments = (children: any[], depth = 0, replyChain: { author: string; content: string }[] = []): CleanComment[] => {
         if (!children || !Array.isArray(children)) return [];
 
@@ -56,20 +56,25 @@ export function transformRedditJson(rawData: any): CleanPost {
             if (child.kind === 't1') {
                 const c = child.data;
                 const { imageUrl, cleanText } = processContent(c.body || '');
-                
-                // 将引用链拼接成带 [quote] 标签的文本 (嵌套逻辑)
-                let finalContent = cleanText;
-                
-                // 如果有图片，将图片标签拼接到当前评论内容的末尾 (带备注)
-                if (imageUrl) {
-                    finalContent += `\n[image #u/${c.author} 的附图]${imageUrl}[/image]`;
+                const currentContent = imageUrl
+                    ? `${cleanText}\n[image #u/${c.author} 的附图]${imageUrl}[/image]`
+                    : cleanText;
+
+                // 祖先引用构建规则：
+                // 1) 单层回复：先 quote 父评论，再写当前评论正文
+                // 2) 多层回复：最外层是最近父评论，内部再嵌套更早层级
+                // replyChain 顺序是 [最早, ..., 最近]，例如 [A, B] => 外层 B，内层 A
+                let nestedAncestorQuote = '';
+                for (let i = 0; i < replyChain.length; i++) {
+                    const quote = replyChain[i];
+                    const level = i + 1;
+                    const inner = nestedAncestorQuote ? `\n${nestedAncestorQuote}` : '';
+                    nestedAncestorQuote = `[quote=${quote.author} #第 ${level} 层级 | 来自于 u/${quote.author} 的评论内容]${quote.content}${inner}[/quote]`;
                 }
 
-                // 嵌套包装引用链：最早的引用在最外层 (带备注提示)
-                for (let i = replyChain.length - 1; i >= 0; i--) {
-                    const quote = replyChain[i];
-                    finalContent = `[quote=${quote.author} #来自于 u/${quote.author} 的评论内容]${quote.content}\n${finalContent}[/quote]`;
-                }
+                const finalContent = nestedAncestorQuote
+                    ? `${nestedAncestorQuote}\n${currentContent}`.trim()
+                    : currentContent;
 
                 // 添加当前评论
                 flatList.push({
@@ -84,7 +89,11 @@ export function transformRedditJson(rawData: any): CleanPost {
 
                 // 递归处理子评论
                 if (c.replies && typeof c.replies === 'object') {
-                    const subComments = flattenComments(c.replies.data.children, depth + 1, [...replyChain, { author: c.author, content: cleanText }]);
+                    const subComments = flattenComments(
+                        c.replies.data.children,
+                        depth + 1,
+                        [...replyChain, { author: c.author, content: currentContent }]
+                    );
                     flatList = [...flatList, ...subComments];
                 }
             }
