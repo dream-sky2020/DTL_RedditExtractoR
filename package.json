@@ -16,6 +16,7 @@
   "type": "module",
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
+    "@hello-pangea/dnd": "^18.0.1",
     "@remotion/player": "^4.0.260",
     "antd": "^5.24.3",
     "axios": "^1.13.6",

@@ -44,7 +44,7 @@ export const PreviewPage: React.FC<PreviewPageProps> = ({
   downloadVideoConfig,
 }) => {
   const fps = 30;
-  const totalDurationInSeconds = videoConfig.segments.reduce((acc, seg) => acc + seg.duration, 0);
+  const totalDurationInSeconds = videoConfig.scenes.reduce((acc, scene) => acc + scene.duration, 0);
   const totalFrames = Math.max(1, totalDurationInSeconds * fps);
 
   return (
@@ -62,7 +62,7 @@ export const PreviewPage: React.FC<PreviewPageProps> = ({
           styles={{ body: { background: '#000', padding: 0 } }}
         >
           <Player
-            component={MyVideo}
+            component={MyVideo as React.FC<any>}
             durationInFrames={totalFrames}
             compositionWidth={1280}
             compositionHeight={720}

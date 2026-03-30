@@ -11,11 +11,13 @@ import {
   Statistic,
   Descriptions,
   Typography,
+  Tag,
 } from 'antd';
 import {
   LinkOutlined,
   EditOutlined,
   CopyOutlined,
+  CodeOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -29,6 +31,8 @@ interface ExtractPageProps {
   fetchRedditData: () => void;
   copyToClipboard: () => void;
   goToEditor: () => void;
+  goToFilteredData: () => void;
+  goToScriptData: () => void;
   toolDesc: string;
   toolButton: string;
 }
@@ -42,6 +46,8 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
   fetchRedditData,
   copyToClipboard,
   goToEditor,
+  goToFilteredData,
+  goToScriptData,
   toolDesc,
   toolButton,
 }) => {
@@ -84,13 +90,32 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               {toolButton}
             </Button>
             {result && (
-              <Button 
-                size="large" 
-                icon={<EditOutlined />}
-                onClick={goToEditor}
-              >
-                前往内容调整
-              </Button>
+              <Space>
+                <Button 
+                  size="large" 
+                  icon={<CodeOutlined />}
+                  onClick={goToFilteredData}
+                >
+                  原始数据 JSON
+                </Button>
+                <Button 
+                  size="large" 
+                  icon={<EditOutlined />}
+                  onClick={goToScriptData}
+                  type="primary"
+                  ghost
+                >
+                  生成的视频脚本
+                </Button>
+                <Button 
+                  size="large" 
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={goToEditor}
+                >
+                  进入编辑器
+                </Button>
+              </Space>
             )}
           </Space>
         </Form>

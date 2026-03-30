@@ -10,6 +10,7 @@ import {
 import {
   AppstoreOutlined,
   LinkOutlined,
+  CodeOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   VideoCameraOutlined,
@@ -17,16 +18,19 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { transformRedditJson } from './utils/redditTransformer';
-import { VideoConfig, VideoSegment } from './types';
+import { VideoConfig, VideoScene } from './types';
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage';
 import { EditorPage } from './pages/EditorPage';
 import { PreviewPage } from './pages/PreviewPage';
+import { FilteredJsonPage } from './pages/FilteredJsonPage';
+import { FrameTestPage } from './pages/FrameTestPage';
+import { ScriptJsonPage } from './pages/ScriptJsonPage';
 
 const { Header, Sider, Content } = Layout;
 
-type ToolKey = 'extract' | 'editor' | 'preview';
+type ToolKey = 'extract' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'frame_test';
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -43,14 +47,20 @@ const App: React.FC = () => {
   const [videoConfig, setVideoConfig] = useState<VideoConfig>({
     title: '你的精彩标题',
     subreddit: 'interestingasfuck',
-    segments: [
+    scenes: [
       {
-        id: 'main-post',
+        id: 'scene-main',
         type: 'post',
-        author: 'RedditUser',
-        content: '这里是你的视频正文内容预览。你可以通过抓取 Reddit 链接自动填充，或者在这里手动修改。',
+        title: '贴子正文',
         duration: 5,
-        image: ''
+        items: [
+          {
+            id: 'main-post',
+            author: 'RedditUser',
+            content: '这里是你的视频正文内容预览。你可以通过抓取 Reddit 链接自动填充，或者在这里手动修改。',
+            image: ''
+          }
+        ]
       }
     ]
   });
@@ -61,32 +71,39 @@ const App: React.FC = () => {
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
     if (result) {
-      const newSegments: VideoSegment[] = [
-        {
-          id: 'post-' + Date.now(),
-          type: 'post',
+      // 1. 创建帖子正文画面
+      const postScene: VideoScene = {
+        id: 'scene-post-' + Date.now(),
+        type: 'post',
+        title: '贴子正文',
+        duration: 5,
+        items: [{
+          id: 'post-content',
           author: result.author,
           content: result.content || result.title,
-          duration: 5,
           image: result.image || '',
-          depth: 0
-        },
-        ...result.comments.map((c: any) => ({
+        }]
+      };
+
+      // 2. 将评论按层级或某种规则初步分到不同画面格 (初始每条评论一个画面格)
+      const commentScenes: VideoScene[] = result.comments.map((c: any) => ({
+        id: 'scene-' + c.id,
+        type: 'comments',
+        title: `评论 u/${c.author}`,
+        duration: 3,
+        items: [{
           id: c.id,
-          type: 'comment',
           author: c.author,
           content: c.body,
-          duration: 3,
           image: c.image || '',
-          depth: c.depth,
-          parentAuthor: c.parentAuthor
-        }))
-      ];
+          replyChain: c.replyChain
+        }]
+      }));
       
       const newConfig: VideoConfig = {
         title: result.title,
         subreddit: result.subreddit,
-        segments: newSegments
+        scenes: [postScene, ...commentScenes]
       };
       
       setVideoConfig(newConfig);
@@ -105,7 +122,7 @@ const App: React.FC = () => {
       case 'editor':
         return {
           title: '视频内容调整',
-          desc: '在此微调视频的文字内容、作者信息等。',
+          desc: '在此微调视频的文字内容、作者信息等任务脚本。',
           button: '保存并前往预览',
         };
       case 'preview':
@@ -113,6 +130,24 @@ const App: React.FC = () => {
           title: '视频预览与导出',
           desc: '查看最终视频效果并生成导出任务。',
           button: '生成视频',
+        };
+      case 'filtered_data':
+        return {
+          title: '过滤原生 JSON 数据',
+          desc: '查看抓取并转换后的 Reddit 帖子原始数据结构。',
+          button: '',
+        };
+      case 'script_data':
+        return {
+          title: '视频脚本 JSON 数据',
+          desc: '查看用于视频生成的自动化配置数据。',
+          button: '',
+        };
+      case 'frame_test':
+        return {
+          title: '画面格渲染测试',
+          desc: '独立调试单个画面格的视觉样式与动画效果。',
+          button: '',
         };
     }
   }, [activeTool]);
@@ -240,12 +275,27 @@ const App: React.FC = () => {
               {
                 key: 'editor',
                 icon: <EditOutlined />,
-                label: '视频内容调整',
+                label: '视频脚本编辑',
               },
               {
                 key: 'preview',
                 icon: <VideoCameraOutlined />,
                 label: '视频预览与导出',
+              },
+              {
+                key: 'filtered_data',
+                icon: <CodeOutlined />,
+                label: '过滤原生 JSON',
+              },
+              {
+                key: 'script_data',
+                icon: <CodeOutlined />,
+                label: '视频脚本 JSON',
+              },
+              {
+                key: 'frame_test',
+                icon: <CodeOutlined />,
+                label: '画面格测试',
               },
             ]}
           />
@@ -274,6 +324,8 @@ const App: React.FC = () => {
                 fetchRedditData={fetchRedditData}
                 copyToClipboard={copyToClipboard}
                 goToEditor={() => setActiveTool('editor')}
+                goToFilteredData={() => setActiveTool('filtered_data')}
+                goToScriptData={() => setActiveTool('script_data')}
                 toolDesc={toolMeta.desc}
                 toolButton={toolMeta.button}
               />
@@ -303,6 +355,28 @@ const App: React.FC = () => {
                 autoRenderStatus={autoRenderStatus}
                 startAutoRender={startAutoRender}
                 downloadVideoConfig={downloadVideoConfig}
+              />
+            )}
+
+            {activeTool === 'filtered_data' && (
+              <FilteredJsonPage 
+                data={result}
+                onBack={() => setActiveTool('extract')}
+                toolDesc={toolMeta.desc}
+              />
+            )}
+
+            {activeTool === 'script_data' && (
+              <ScriptJsonPage 
+                config={videoConfig}
+                onBack={() => setActiveTool('extract')}
+                toolDesc={toolMeta.desc}
+              />
+            )}
+
+            {activeTool === 'frame_test' && (
+              <FrameTestPage 
+                onBack={() => setActiveTool('editor')}
               />
             )}
           </Content>
