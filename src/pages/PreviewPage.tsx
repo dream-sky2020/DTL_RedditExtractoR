@@ -59,7 +59,7 @@ export const PreviewPage: React.FC<PreviewPageProps> = ({
               返回修改内容
             </Button>
           }
-          styles={{ body: { background: '#000', padding: 0 } }}
+          styles={{ body: { background: '#000', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' } }}
         >
           <Player
             component={MyVideo as React.FC<any>}
@@ -69,7 +69,10 @@ export const PreviewPage: React.FC<PreviewPageProps> = ({
             fps={fps}
             style={{
               width: '100%',
+              maxWidth: '100%',
+              maxHeight: 'calc(100vh - 300px)',
               aspectRatio: '16 / 9',
+              margin: '0 auto',
             }}
             inputProps={videoConfig}
             controls

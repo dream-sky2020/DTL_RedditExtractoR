@@ -91,22 +91,23 @@ export const MyVideo: React.FC<MyVideoProps> = ({ title, subreddit, scenes = [],
                 {parseQuotes(item.content, true)}
               </div>
 
-              {item.image && (
-                <div style={{ 
-                  marginTop: 20, 
-                  width: '100%', 
-                  height: 300, 
-                  borderRadius: 12, 
-                  overflow: 'hidden',
-                  backgroundColor: '#e5e7eb'
-                }}>
-                  <img 
-                    src={item.image} 
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                    alt="Content Image"
-                  />
-                </div>
-              )}
+                {item.image && (
+                  <div style={{ 
+                    marginTop: 20, 
+                    width: '100%', 
+                    height: 300, 
+                    borderRadius: 12, 
+                    overflow: 'hidden',
+                    backgroundColor: '#e5e7eb'
+                  }}>
+                    <img 
+                      src={item.image} 
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                      alt="Content Image"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
             </div>
           ))}
         </div>

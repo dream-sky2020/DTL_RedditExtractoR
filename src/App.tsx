@@ -25,12 +25,13 @@ import { ExtractPage } from './pages/ExtractPage';
 import { EditorPage } from './pages/EditorPage';
 import { PreviewPage } from './pages/PreviewPage';
 import { FilteredJsonPage } from './pages/FilteredJsonPage';
+import { RawJsonPage } from './pages/RawJsonPage';
 import { FrameTestPage } from './pages/FrameTestPage';
 import { ScriptJsonPage } from './pages/ScriptJsonPage';
 
 const { Header, Sider, Content } = Layout;
 
-type ToolKey = 'extract' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'frame_test';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'frame_test';
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   const [redditUrl, setRedditUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [rawResult, setRawResult] = useState<any>(null);
   const [error, setError] = useState('');
   const [isExportModalVisible, setIsExportModalVisible] = useState(false);
   const [isAutoRendering, setIsAutoRendering] = useState(false);
@@ -133,8 +135,14 @@ const App: React.FC = () => {
         };
       case 'filtered_data':
         return {
-          title: '过滤原生 JSON 数据',
-          desc: '查看抓取并转换后的 Reddit 帖子原始数据结构。',
+          title: '过滤后 Reddit JSON 数据',
+          desc: '查看抓取并转换后的 Reddit 帖子精简数据结构。',
+          button: '',
+        };
+      case 'raw_data':
+        return {
+          title: '未处理 Reddit JSON 数据',
+          desc: '查看抓取到的 Reddit 帖子原始 JSON 结构（未经过滤）。',
           button: '',
         };
       case 'script_data':
@@ -155,6 +163,7 @@ const App: React.FC = () => {
   const resetResultState = () => {
     setError('');
     setResult(null);
+    setRawResult(null);
   };
 
   const fetchRedditData = async () => {
@@ -171,6 +180,7 @@ const App: React.FC = () => {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         },
       });
+      setRawResult(response.data);
       setResult(transformRedditJson(response.data));
       message.success('数据提取成功，已同步至视频配置');
     } catch (err) {
@@ -285,7 +295,12 @@ const App: React.FC = () => {
               {
                 key: 'filtered_data',
                 icon: <CodeOutlined />,
-                label: '过滤原生 JSON',
+                label: '过滤后 Reddit JSON',
+              },
+              {
+                key: 'raw_data',
+                icon: <CodeOutlined />,
+                label: '未处理 Reddit JSON',
               },
               {
                 key: 'script_data',
@@ -325,6 +340,7 @@ const App: React.FC = () => {
                 copyToClipboard={copyToClipboard}
                 goToEditor={() => setActiveTool('editor')}
                 goToFilteredData={() => setActiveTool('filtered_data')}
+                goToRawData={() => setActiveTool('raw_data')}
                 goToScriptData={() => setActiveTool('script_data')}
                 toolDesc={toolMeta.desc}
                 toolButton={toolMeta.button}
@@ -361,6 +377,14 @@ const App: React.FC = () => {
             {activeTool === 'filtered_data' && (
               <FilteredJsonPage 
                 data={result}
+                onBack={() => setActiveTool('extract')}
+                toolDesc={toolMeta.desc}
+              />
+            )}
+
+            {activeTool === 'raw_data' && (
+              <RawJsonPage 
+                data={rawResult}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}
               />

@@ -37,13 +37,40 @@ export function transformRedditJson(rawData: any): CleanPost {
     const [postWrapper, commentWrapper] = rawData;
     const postDetail = postWrapper.data.children[0].data;
 
-    // 辅助函数：提取并清理图片
+    // 辅助函数：提取并清理图片，支持多域名和 Reddit Giphy 标签
     const processContent = (text: string) => {
-        const imgRegex = /https:\/\/(?:preview|i)\.redd\.it\/[^\s)"]+/;
-        const match = text.match(imgRegex);
-        const imageUrl = match ? match[0].replace(/&amp;/g, '&') : '';
-        const cleanText = text.replace(imgRegex, '').trim();
-        return { imageUrl, cleanText };
+        let cleanText = text;
+        let firstImageUrl = '';
+
+        // 核心修复：先处理标准图片链接，再处理 Giphy 标签，防止嵌套
+        // 1. 处理标准图片链接 (包括 i.redd.it, imgur, giphy.com 等)
+        const imgRegex = /https:\/\/(?:preview|i|external-preview)\.redd\.it\/[^\s)"]+|https:\/\/i\.imgur\.com\/[^\s)"]+\.(?:jpe?g|png|gif|webp)|https:\/\/(?:media|i)\.giphy\.com\/[^\s)"]+\.gif/gi;
+        
+        const matches = text.match(imgRegex);
+        if (matches && matches.length > 0) {
+            firstImageUrl = matches[0].replace(/&amp;/g, '&');
+        }
+
+        // 将所有图片链接转换为 [image] 标签
+        cleanText = cleanText.replace(imgRegex, (match) => {
+            const url = match.replace(/&amp;/g, '&');
+            return `\n[image]${url}[/image]\n`;
+        });
+
+        // 2. 处理 Reddit Giphy 标签: ![gif](giphy|IAcQ0KshiLKrS) -> [image]...[/image]
+        // 只有当它还没被转换成标准链接时才处理（Reddit 有时会同时返回两者）
+        const giphyRegex = /!\[gif\]\(giphy\|([^)]+)\)/gi;
+        cleanText = cleanText.replace(giphyRegex, (match, giphyId) => {
+            const url = `https://media.giphy.com/media/${giphyId}/giphy.gif`;
+            if (!firstImageUrl) firstImageUrl = url;
+            // 检查这个 URL 是否已经因为上面的正则被包裹过了
+            if (cleanText.includes(`[image]${url}[/image]`)) {
+                return ''; // 如果已经有了，就直接删掉原始标签
+            }
+            return `\n[image]${url}[/image]\n`;
+        });
+
+        return { imageUrl: firstImageUrl, cleanText: cleanText.trim() };
     };
 
     // 展平处理评论 (生成符合脚本需求的 quote 层级文本)
@@ -56,14 +83,11 @@ export function transformRedditJson(rawData: any): CleanPost {
             if (child.kind === 't1') {
                 const c = child.data;
                 const { imageUrl, cleanText } = processContent(c.body || '');
-                const currentContent = imageUrl
-                    ? `${cleanText}\n[image #u/${c.author} 的附图]${imageUrl}[/image]`
-                    : cleanText;
+                // 因为 processContent 已经把图片转换成 [image] 标签放入 cleanText 了
+                // 所以我们不需要在这里额外添加一次，否则会重复
+                const currentContent = cleanText;
 
-                // 祖先引用构建规则：
-                // 1) 单层回复：先 quote 父评论，再写当前评论正文
-                // 2) 多层回复：最外层是最近父评论，内部再嵌套更早层级
-                // replyChain 顺序是 [最早, ..., 最近]，例如 [A, B] => 外层 B，内层 A
+                // 祖先引用构建规则...
                 let nestedAncestorQuote = '';
                 for (let i = 0; i < replyChain.length; i++) {
                     const quote = replyChain[i];
@@ -88,7 +112,7 @@ export function transformRedditJson(rawData: any): CleanPost {
                 });
 
                 // 递归处理子评论
-                if (c.replies && typeof c.replies === 'object') {
+                if (c.replies && typeof c.replies === 'object' && c.replies.data) {
                     const subComments = flattenComments(
                         c.replies.data.children,
                         depth + 1,
@@ -102,15 +126,48 @@ export function transformRedditJson(rawData: any): CleanPost {
         return flatList;
     };
 
-    const { imageUrl: postImg, cleanText: postText } = processContent(postDetail.selftext || '');
+    // 核心改进：多途径提取贴子主图
+    let postImg = '';
+    
+    // 1. 如果是图集 (Gallery)
+    if (postDetail.is_gallery && postDetail.media_metadata) {
+        const firstKey = Object.keys(postDetail.media_metadata)[0];
+        const media = postDetail.media_metadata[firstKey];
+        if (media && media.s) {
+            postImg = media.s.u ? media.s.u.replace(/&amp;/g, '&') : media.s.gif;
+        }
+    } 
+    // 2. 如果 post_hint 为 image 或者 URL 直接指向图片
+    else if (
+        postDetail.post_hint === 'image' || 
+        /\.(jpe?g|png|gif|webp)$/i.test(postDetail.url) ||
+        /i\.redd\.it|preview\.redd\.it|i\.imgur\.com/.test(postDetail.url)
+    ) {
+        postImg = postDetail.url.replace(/&amp;/g, '&');
+    }
+    // 3. 从预览图中寻找高质量版本
+    else if (postDetail.preview && postDetail.preview.images && postDetail.preview.images[0]) {
+        const source = postDetail.preview.images[0].source;
+        if (source) {
+            postImg = source.url.replace(/&amp;/g, '&');
+        }
+    }
 
-    // 构建贴子正文文本，包含图片标签
-    const finalPostContent = postImg ? `${postText}\n[image]${postImg}[/image]` : postText;
+    // 4. 最后兜底：从正文文本中提取
+    let { imageUrl: bodyImg, cleanText: postText } = processContent(postDetail.selftext || '');
+    if (!postImg && bodyImg) {
+        postImg = bodyImg;
+        // 如果是从正文中提取的图片，那么 postText 中已经包含了 [image] 标签
+        // 所以最终内容直接使用 postText 即可
+    } else if (postImg && !postText.includes(postImg)) {
+        // 如果图片是来自于图集或 preview，则需要追加到正文末尾
+        postText = `${postText}\n[image]${postImg}[/image]`;
+    }
 
     // 构建最终对象
     return {
         title: postDetail.title,
-        content: finalPostContent,
+        content: postText.trim(),
         image: postImg,
         author: postDetail.author,
         subreddit: postDetail.subreddit,

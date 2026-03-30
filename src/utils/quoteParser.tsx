@@ -165,11 +165,21 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
         const url = text.substring(startTagEnd, endTagIdx);
         nodes.push(isVideo ? (
           <div key={foundIdx} style={{ marginTop: 20, width: '100%', height: 300, borderRadius: 12, overflow: 'hidden', backgroundColor: '#e5e7eb' }}>
-            <img src={url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Content" />
+            <img 
+              src={url} 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+              alt="Content" 
+              referrerPolicy="no-referrer"
+            />
           </div>
         ) : (
           <div key={foundIdx} style={{ margin: '8px 0', textAlign: 'center' }}>
-            <img src={url} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #eee' }} alt="Content" />
+            <img 
+              src={url} 
+              style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #eee' }} 
+              alt="Content" 
+              referrerPolicy="no-referrer"
+            />
           </div>
         ));
         currentPos = endTagIdx + 8;

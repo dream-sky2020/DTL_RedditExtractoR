@@ -32,6 +32,7 @@ interface ExtractPageProps {
   copyToClipboard: () => void;
   goToEditor: () => void;
   goToFilteredData: () => void;
+  goToRawData: () => void;
   goToScriptData: () => void;
   toolDesc: string;
   toolButton: string;
@@ -47,6 +48,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
   copyToClipboard,
   goToEditor,
   goToFilteredData,
+  goToRawData,
   goToScriptData,
   toolDesc,
   toolButton,
@@ -96,7 +98,14 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
                   icon={<CodeOutlined />}
                   onClick={goToFilteredData}
                 >
-                  原始数据 JSON
+                  过滤后 Reddit JSON
+                </Button>
+                <Button 
+                  size="large" 
+                  icon={<CodeOutlined />}
+                  onClick={goToRawData}
+                >
+                  未处理 Reddit JSON
                 </Button>
                 <Button 
                   size="large" 
@@ -154,8 +163,8 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
             <Descriptions.Item label="正文">
               <div className="content-preview">
                 {result.content || '无正文'}
-                {result.content && result.content.includes('https://preview.redd.it/') && (
-                  <Tag color="green" style={{ marginLeft: 8 }}>检测到图片</Tag>
+                {result.image && (
+                  <Tag color="green" style={{ marginLeft: 8 }}>检测到媒体内容</Tag>
                 )}
               </div>
             </Descriptions.Item>

@@ -28,7 +28,7 @@ export const FilteredJsonPage: React.FC<FilteredJsonPageProps> = ({
 
   return (
     <Card
-      title="过滤原生 JSON 数据"
+      title="过滤后 Reddit JSON 数据"
       className="panel-card"
       bordered={false}
       extra={
@@ -43,7 +43,7 @@ export const FilteredJsonPage: React.FC<FilteredJsonPageProps> = ({
             onClick={copyToClipboard}
             disabled={!data}
           >
-            复制 JSON数据
+            复制过滤后 JSON
           </Button>
         </Space>
       }
@@ -72,7 +72,7 @@ export const FilteredJsonPage: React.FC<FilteredJsonPageProps> = ({
           </pre>
         </div>
       ) : (
-        <Empty description="暂无过滤数据" />
+        <Empty description="暂无过滤后数据" />
       )}
     </Card>
   );
