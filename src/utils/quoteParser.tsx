@@ -8,8 +8,13 @@ const { Text } = Typography;
 /**
  * 内部组件：图集轮播
  */
-const Gallery: React.FC<{ urls: string[]; isVideo: boolean }> = ({ urls, isVideo }) => {
+const Gallery: React.FC<{ 
+  urls: string[]; 
+  isVideo: boolean;
+  durations?: number[]; // 每张图的持续时间（秒），如果不提供则使用默认值
+}> = ({ urls, isVideo, durations = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const DEFAULT_SECONDS_PER_IMAGE = 2.5;
 
   if (!isVideo) {
     const next = (e: React.MouseEvent) => {
@@ -22,20 +27,22 @@ const Gallery: React.FC<{ urls: string[]; isVideo: boolean }> = ({ urls, isVideo
     };
 
     return (
-      <div style={{ 
-        position: 'relative', 
-        marginTop: 10, 
-        width: '100%', 
-        height: 240, 
-        borderRadius: 8, 
-        overflow: 'hidden', 
-        backgroundColor: '#1a1a1a', 
-        border: '1px solid #ddd',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        group: 'gallery' // 用于 CSS 选择器（虽然这里是 inline style）
-      }}>
+      <div 
+        className="gallery-group"
+        style={{ 
+          position: 'relative', 
+          marginTop: 10, 
+          width: '100%', 
+          height: 240, 
+          borderRadius: 8, 
+          overflow: 'hidden', 
+          backgroundColor: '#1a1a1a', 
+          border: '1px solid #ddd',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
         <img 
           src={urls[currentIndex]} 
           style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
@@ -137,15 +144,33 @@ const Gallery: React.FC<{ urls: string[]; isVideo: boolean }> = ({ urls, isVideo
   try {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
-    const secondsPerImage = 2.5; // 每张图显示 2.5 秒
-    const framesPerImage = Math.floor(fps * secondsPerImage);
-    const currentIndex = Math.floor(frame / framesPerImage) % urls.length;
+    
+    // 计算每张图片持续的帧数
+    const imageFrameDurations = urls.map((_, i) => {
+      const sec = durations[i] || DEFAULT_SECONDS_PER_IMAGE;
+      return Math.floor(fps * sec);
+    });
+
+    // 计算总持续帧数
+    const totalFrames = imageFrameDurations.reduce((a, b) => a + b, 0);
+    const relativeFrame = frame % totalFrames;
+
+    // 确定当前应该显示哪张图
+    let accumulated = 0;
+    let currentIdx = 0;
+    for (let i = 0; i < imageFrameDurations.length; i++) {
+      accumulated += imageFrameDurations[i];
+      if (relativeFrame < accumulated) {
+        currentIdx = i;
+        break;
+      }
+    }
 
     return (
       <div style={{ marginTop: 20, width: '100%', height: 400, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000', border: '2px solid #eee' }}>
         <img 
-          src={urls[currentIndex]} 
-          key={urls[currentIndex]}
+          src={urls[currentIdx]} 
+          key={urls[currentIdx]}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
           alt="Gallery Video"
           referrerPolicy="no-referrer"
@@ -183,7 +208,8 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
     const nextImageMatch = text.substring(currentPos).match(/\[image[^\]]*\]/);
     const nextImage = nextImageMatch ? text.indexOf(nextImageMatch[0], currentPos) : -1;
     const nextStyle = text.indexOf('[style', currentPos);
-    const nextGallery = text.indexOf('[gallery]', currentPos);
+    const nextGalleryMatch = text.substring(currentPos).match(/\[gallery[^\]]*\]/);
+    const nextGallery = nextGalleryMatch ? text.indexOf(nextGalleryMatch[0], currentPos) : -1;
 
     // 确定哪个标签更近
     let foundIdx = -1;
@@ -397,23 +423,53 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
         currentPos = startTagEnd;
       }
     } else if (type === 'gallery') {
-      // 6. 处理 [gallery]URL1,URL2[/gallery]
-      const startTagEnd = foundIdx + 9; // "[gallery]".length
-      const endTagIdx = text.indexOf('[/gallery]', startTagEnd);
-      
-      if (endTagIdx !== -1) {
-        const urlsStr = text.substring(startTagEnd, endTagIdx);
-        const urls = urlsStr.split(',').map(u => u.trim()).filter(u => u !== '');
-        
-        if (urls.length > 0) {
-          nodes.push(
-            <Gallery key={foundIdx} urls={urls} isVideo={isVideo} />
-          );
+      // 6. 处理 [gallery]URL1,URL2[/gallery] 或 [gallery duration=3]URL1|2,URL2[/gallery]
+      const galleryStartTagMatch = text.substring(foundIdx).match(/\[gallery([^\]]*)\]/);
+      if (galleryStartTagMatch) {
+        const startTagFull = galleryStartTagMatch[0];
+        const attrStr = galleryStartTagMatch[1];
+        const startTagEnd = foundIdx + startTagFull.length;
+        const endTagIdx = text.indexOf('[/gallery]', startTagEnd);
+
+        if (endTagIdx !== -1) {
+          const contentStr = text.substring(startTagEnd, endTagIdx);
+          
+          // 解析全局时长属性
+          let defaultDuration = 2.5;
+          const durationMatch = attrStr.match(/duration=([\d.]+)/);
+          if (durationMatch) {
+            defaultDuration = parseFloat(durationMatch[1]);
+          }
+
+          const rawItems = contentStr.split(',').map(u => u.trim()).filter(u => u !== '');
+          const urls: string[] = [];
+          const durations: number[] = [];
+
+          rawItems.forEach(item => {
+            if (item.includes('|')) {
+              const [url, dur] = item.split('|');
+              urls.push(url.trim());
+              durations.push(parseFloat(dur) || defaultDuration);
+            } else {
+              urls.push(item);
+              durations.push(defaultDuration);
+            }
+          });
+
+          if (urls.length > 0) {
+            nodes.push(
+              <Gallery key={foundIdx} urls={urls} durations={durations} isVideo={isVideo} />
+            );
+          }
+          currentPos = endTagIdx + 10;
+        } else {
+          nodes.push(startTagFull);
+          currentPos = startTagEnd;
         }
-        currentPos = endTagIdx + 10;
       } else {
+        // 理论上不会走到这里，因为 Grep 已经匹配到了 [gallery]
         nodes.push('[gallery]');
-        currentPos = startTagEnd;
+        currentPos = foundIdx + 9;
       }
     }
   }

@@ -64,8 +64,8 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
           <Player
             component={MyVideo as React.FC<any>}
             durationInFrames={totalFrames}
-            compositionWidth={1280}
-            compositionHeight={720}
+            compositionWidth={1920}
+            compositionHeight={1080}
             fps={fps}
             style={{
               width: '100%',

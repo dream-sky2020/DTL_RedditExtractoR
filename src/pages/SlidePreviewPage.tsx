@@ -72,7 +72,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   };
 
   // 渲染单张画面的播放器组件（复用）
-  const FramePlayer = ({ idx, width, height, isThumbnail = false }: { idx: number, width: number, height: number, isThumbnail?: boolean }) => (
+  const FramePlayer = ({ idx, isThumbnail = false }: { idx: number, isThumbnail?: boolean }) => (
     <div style={{ 
       background: '#000', 
       borderRadius: isThumbnail ? 8 : 12, 
@@ -93,11 +93,11 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
       <Player
         component={MyVideo as React.FC<any>}
         durationInFrames={totalFrames}
-        compositionWidth={width}
-        compositionHeight={height}
+        compositionWidth={1920}
+        compositionHeight={1080}
         fps={fps}
         initialFrame={getSeekFrame(idx)}
-        key={`scene-frame-${idx}-${frameOffset}-${width}`}
+        key={`scene-frame-${idx}-${frameOffset}`}
         style={{
           width: '100%',
           aspectRatio: '16 / 9',
@@ -153,7 +153,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                   {scenes.map((scene, idx) => (
                     <Col xs={24} sm={12} md={8} lg={6} xl={4} key={scene.id}>
                       <div className="gallery-item-wrap">
-                        <FramePlayer idx={idx} width={480} height={270} isThumbnail />
+                        <FramePlayer idx={idx} isThumbnail />
                         <div style={{ marginTop: 8, textAlign: 'center' }}>
                           <Text strong ellipsis style={{ width: '100%', display: 'block', fontSize: '12px' }}>
                             {idx + 1}. {scene.title || '未命名画面'}
@@ -202,7 +202,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                 </div>
 
                 {hasScenes ? (
-                  <FramePlayer idx={currentSceneIdx} width={1920} height={1080} />
+                  <FramePlayer idx={currentSceneIdx} />
                 ) : (
                   <Empty description="无可预览的画面格" />
                 )}
@@ -229,7 +229,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                         transition: 'all 0.3s'
                       }}
                     >
-                      <FramePlayer idx={idx} width={320} height={180} isThumbnail />
+                      <FramePlayer idx={idx} isThumbnail />
                     </div>
                   ))}
                 </div>
