@@ -15,6 +15,7 @@ import {
   MenuUnfoldOutlined,
   VideoCameraOutlined,
   EditOutlined,
+  FileImageOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import { transformRedditJson } from './utils/redditTransformer';
@@ -23,15 +24,16 @@ import { VideoConfig, VideoScene } from './types';
 // Pages
 import { ExtractPage } from './pages/ExtractPage';
 import { EditorPage } from './pages/EditorPage';
-import { PreviewPage } from './pages/PreviewPage';
+import { VideoPreviewPage } from './pages/VideoPreviewPage';
 import { FilteredJsonPage } from './pages/FilteredJsonPage';
 import { RawJsonPage } from './pages/RawJsonPage';
 import { FrameTestPage } from './pages/FrameTestPage';
 import { ScriptJsonPage } from './pages/ScriptJsonPage';
+import { SlidePreviewPage } from './pages/SlidePreviewPage';
 
 const { Header, Sider, Content } = Layout;
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'frame_test';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test';
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -129,9 +131,15 @@ const App: React.FC = () => {
         };
       case 'preview':
         return {
-          title: '视频预览与导出',
-          desc: '查看最终视频效果并生成导出任务。',
+          title: '动画预览与导出 (Video)',
+          desc: '查看动态视频效果并生成导出任务。',
           button: '生成视频',
+        };
+      case 'static_preview':
+        return {
+          title: '画面预览 (PPT Mode)',
+          desc: '像幻灯片一样逐帧确认画面内容。',
+          button: '',
         };
       case 'filtered_data':
         return {
@@ -293,6 +301,11 @@ const App: React.FC = () => {
                 label: '视频预览与导出',
               },
               {
+                key: 'static_preview',
+                icon: <FileImageOutlined />,
+                label: '画面预览 (PPT)',
+              },
+              {
                 key: 'filtered_data',
                 icon: <CodeOutlined />,
                 label: '过滤后 Reddit JSON',
@@ -362,7 +375,7 @@ const App: React.FC = () => {
             )}
 
             {activeTool === 'preview' && (
-              <PreviewPage 
+              <VideoPreviewPage 
                 videoConfig={videoConfig}
                 onBackToEditor={() => setActiveTool('editor')}
                 isExportModalVisible={isExportModalVisible}
@@ -371,6 +384,13 @@ const App: React.FC = () => {
                 autoRenderStatus={autoRenderStatus}
                 startAutoRender={startAutoRender}
                 downloadVideoConfig={downloadVideoConfig}
+              />
+            )}
+
+            {activeTool === 'static_preview' && (
+              <SlidePreviewPage 
+                videoConfig={videoConfig}
+                onBackToEditor={() => setActiveTool('editor')}
               />
             )}
 

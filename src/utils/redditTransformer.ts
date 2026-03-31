@@ -14,6 +14,7 @@ export interface CleanPost {
     title: string;
     content: string;
     image?: string;
+    images?: string[]; // 支持多图/图集
     author: string;
     subreddit: string;
     stats: {
@@ -87,13 +88,22 @@ export function transformRedditJson(rawData: any): CleanPost {
                 // 所以我们不需要在这里额外添加一次，否则会重复
                 const currentContent = cleanText;
 
-                // 祖先引用构建规则...
+                // 祖先引用构建规则：
+                // 1) 最外层是最近的父评论，最内层是最早的评论
+                // 2) 结构：[quote=父级] [quote=更早父级]...[/quote] \n 父级内容 [/quote]
                 let nestedAncestorQuote = '';
                 for (let i = 0; i < replyChain.length; i++) {
                     const quote = replyChain[i];
                     const level = i + 1;
-                    const inner = nestedAncestorQuote ? `\n${nestedAncestorQuote}` : '';
-                    nestedAncestorQuote = `[quote=${quote.author} #第 ${level} 层级 | 来自于 u/${quote.author} 的评论内容]${quote.content}${inner}[/quote]`;
+                    
+                    // 核心修改：先放内部嵌套(inner)，再放当前引用层级的内容(quote.content)
+                    // 同时在这里手动加入作者抬头，并应用 [style] 标签以便用户控制
+                    const authorHeader = `[style color=#1890ff b]u/${quote.author}:[/style] `;
+                    const contentPart = nestedAncestorQuote 
+                        ? `\n${nestedAncestorQuote}\n${authorHeader}${quote.content}` 
+                        : `${authorHeader}${quote.content}`;
+
+                    nestedAncestorQuote = `[quote=${quote.author} #第 ${level} 层级 | 来自于 u/${quote.author} 的评论内容]${contentPart}[/quote]`;
                 }
 
                 const finalContent = nestedAncestorQuote
@@ -126,16 +136,20 @@ export function transformRedditJson(rawData: any): CleanPost {
         return flatList;
     };
 
-    // 核心改进：多途径提取贴子主图
+    // 核心改进：多途径提取贴子主图及图集 (使用 [gallery] 标签)
     let postImg = '';
+    let postImages: string[] = [];
     
     // 1. 如果是图集 (Gallery)
     if (postDetail.is_gallery && postDetail.media_metadata) {
-        const firstKey = Object.keys(postDetail.media_metadata)[0];
-        const media = postDetail.media_metadata[firstKey];
-        if (media && media.s) {
-            postImg = media.s.u ? media.s.u.replace(/&amp;/g, '&') : media.s.gif;
-        }
+        Object.keys(postDetail.media_metadata).forEach(key => {
+            const media = postDetail.media_metadata[key];
+            if (media && media.s) {
+                const url = media.s.u ? media.s.u.replace(/&amp;/g, '&') : media.s.gif;
+                if (url) postImages.push(url);
+            }
+        });
+        if (postImages.length > 0) postImg = postImages[0];
     } 
     // 2. 如果 post_hint 为 image 或者 URL 直接指向图片
     else if (
@@ -144,24 +158,38 @@ export function transformRedditJson(rawData: any): CleanPost {
         /i\.redd\.it|preview\.redd\.it|i\.imgur\.com/.test(postDetail.url)
     ) {
         postImg = postDetail.url.replace(/&amp;/g, '&');
+        postImages = [postImg];
     }
     // 3. 从预览图中寻找高质量版本
     else if (postDetail.preview && postDetail.preview.images && postDetail.preview.images[0]) {
         const source = postDetail.preview.images[0].source;
         if (source) {
             postImg = source.url.replace(/&amp;/g, '&');
+            postImages = [postImg];
         }
     }
 
-    // 4. 最后兜底：从正文文本中提取
+    // 4. 处理正文文本
     let { imageUrl: bodyImg, cleanText: postText } = processContent(postDetail.selftext || '');
-    if (!postImg && bodyImg) {
+    
+    // 如果没有主贴图集，但正文中有图片，使用正文图片
+    if (postImages.length === 0 && bodyImg) {
         postImg = bodyImg;
-        // 如果是从正文中提取的图片，那么 postText 中已经包含了 [image] 标签
-        // 所以最终内容直接使用 postText 即可
-    } else if (postImg && !postText.includes(postImg)) {
-        // 如果图片是来自于图集或 preview，则需要追加到正文末尾
-        postText = `${postText}\n[image]${postImg}[/image]`;
+        postImages = [bodyImg];
+    }
+
+    // 组装最终正文：将图集包装为 [gallery] 标签追加到末尾
+    if (postImages.length > 1) {
+        // 如果是多图，使用 [gallery]
+        const galleryTag = `\n[gallery]${postImages.join(',')}[/gallery]`;
+        if (!postText.includes('[gallery]')) {
+            postText = `${postText}${galleryTag}`;
+        }
+    } else if (postImages.length === 1) {
+        // 如果是单图，使用 [image]
+        if (!postText.includes(postImages[0])) {
+            postText = `${postText}\n[image]${postImages[0]}[/image]`;
+        }
     }
 
     // 构建最终对象
@@ -169,6 +197,7 @@ export function transformRedditJson(rawData: any): CleanPost {
         title: postDetail.title,
         content: postText.trim(),
         image: postImg,
+        images: postImages,
         author: postDetail.author,
         subreddit: postDetail.subreddit,
         stats: {

@@ -11,6 +11,7 @@ import {
   Divider,
   Modal,
   message,
+  Pagination,
 } from 'antd';
 import {
   EditOutlined,
@@ -42,6 +43,11 @@ export const EditorPage: React.FC<EditorPageProps> = ({
 }) => {
   const [expandedSceneIds, setExpandedSceneIds] = useState<Record<string, boolean>>({});
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // 计算当前分页的数据
+  const pagedScenes = draftConfig.scenes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const toggleSceneExpand = (id: string) => {
     setExpandedSceneIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -221,33 +227,52 @@ export const EditorPage: React.FC<EditorPageProps> = ({
           <Droppable droppableId="scene-list" type="scene" isCombineEnabled>
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-                {draftConfig.scenes.map((scene, sceneIdx) => (
-                  <Draggable key={scene.id} draggableId={scene.id} index={sceneIdx}>
-                    {(draggableProvided, snapshot) => (
-                      <SceneCard
-                        scene={scene}
-                        index={sceneIdx}
-                        isExpanded={expandedSceneIds[scene.id]}
-                        onToggleExpand={() => toggleSceneExpand(scene.id)}
-                        onUpdateScene={(updates) => updateScene(scene.id, updates)}
-                        onRemoveScene={() => removeScene(scene.id)}
-                        onPreviewScene={() => setPreviewSceneId(scene.id)}
-                        onUpdateItem={(itemId, updates) => updateItem(scene.id, itemId, updates)}
-                        onRemoveItem={(itemId) => removeItem(scene.id, itemId)}
-                        onAddItem={() => addItemToScene(scene.id)}
-                        innerRef={draggableProvided.innerRef}
-                        draggableProps={draggableProvided.draggableProps}
-                        dragHandleProps={draggableProvided.dragHandleProps}
-                        isDragging={snapshot.isDragging}
-                      />
-                    )}
-                  </Draggable>
-                ))}
+                {pagedScenes.map((scene, localIdx) => {
+                  const globalIdx = (currentPage - 1) * pageSize + localIdx;
+                  return (
+                    <Draggable key={scene.id} draggableId={scene.id} index={globalIdx}>
+                      {(draggableProvided, snapshot) => (
+                        <SceneCard
+                          scene={scene}
+                          index={globalIdx}
+                          isExpanded={expandedSceneIds[scene.id]}
+                          onToggleExpand={() => toggleSceneExpand(scene.id)}
+                          onUpdateScene={(updates) => updateScene(scene.id, updates)}
+                          onRemoveScene={() => removeScene(scene.id)}
+                          onPreviewScene={() => setPreviewSceneId(scene.id)}
+                          onUpdateItem={(itemId, updates) => updateItem(scene.id, itemId, updates)}
+                          onRemoveItem={(itemId) => removeItem(scene.id, itemId)}
+                          onAddItem={() => addItemToScene(scene.id)}
+                          innerRef={draggableProvided.innerRef}
+                          draggableProps={draggableProvided.draggableProps}
+                          dragHandleProps={draggableProvided.dragHandleProps}
+                          isDragging={snapshot.isDragging}
+                        />
+                      )}
+                    </Draggable>
+                  );
+                })}
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
         </DragDropContext>
+
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={draftConfig.scenes.length}
+            onChange={(page, size) => {
+              setCurrentPage(page);
+              setPageSize(size || 10);
+              // 切页后回到顶部，避免视觉断层
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            showSizeChanger
+            pageSizeOptions={['10', '20', '50', '100']}
+          />
+        </div>
       </div>
 
       <Divider />

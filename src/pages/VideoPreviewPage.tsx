@@ -22,7 +22,7 @@ const { Text } = Typography;
 
 import { VideoConfig } from '../types';
 
-interface PreviewPageProps {
+interface VideoPreviewPageProps {
   videoConfig: VideoConfig;
   onBackToEditor: () => void;
   isExportModalVisible: boolean;
@@ -33,7 +33,7 @@ interface PreviewPageProps {
   downloadVideoConfig: () => void;
 }
 
-export const PreviewPage: React.FC<PreviewPageProps> = ({
+export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
   videoConfig,
   onBackToEditor,
   isExportModalVisible,
@@ -51,7 +51,7 @@ export const PreviewPage: React.FC<PreviewPageProps> = ({
     <Row gutter={24}>
       <Col span={24}>
         <Card
-          title="最终预览"
+          title="视频动画预览 (Dynamic Video)"
           className="panel-card"
           bordered={false}
           extra={

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty } from 'antd';
+import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, Modal } from 'antd';
 import { ArrowLeftOutlined, ToolOutlined, BugOutlined } from '@ant-design/icons';
 import { VideoScene, VideoContentItem } from '../types';
 import { SceneCard } from '../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
+import { Player } from '@remotion/player';
+import { MyVideo } from '../remotion/MyVideo';
 
 const { Title, Text } = Typography;
 
@@ -37,6 +39,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
   });
 
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
   const updateScene = (updates: Partial<VideoScene>) => {
     setScene(prev => ({ ...prev, ...updates }));
@@ -96,7 +99,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                       onToggleExpand={() => setIsExpanded(!isExpanded)}
                       onUpdateScene={updateScene}
                       onRemoveScene={() => alert('触发删除画面格回调')}
-                      onPreviewScene={() => alert('触发预览画面格回调')}
+                      onPreviewScene={() => setIsPreviewVisible(true)}
                       onUpdateItem={updateItem}
                       onRemoveItem={removeItem}
                       onAddItem={addItem}
@@ -132,6 +135,9 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                 <Button onClick={() => setIsExpanded(!isExpanded)}>
                   {isExpanded ? '强制收起卡片' : '强制展开卡片'}
                 </Button>
+                <Button type="primary" onClick={() => setIsPreviewVisible(true)}>
+                  直接打开预览
+                </Button>
               </Space>
             </Card>
 
@@ -145,6 +151,35 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
           </Space>
         </Col>
       </Row>
+
+      <Modal
+        title="测试画面实时预览"
+        open={isPreviewVisible}
+        onCancel={() => setIsPreviewVisible(false)}
+        footer={null}
+        width={800}
+        styles={{ body: { padding: 0, background: '#000' } }}
+        destroyOnClose
+      >
+        {isPreviewVisible && (
+          <Player
+            component={MyVideo as React.FC<any>}
+            durationInFrames={scene.duration * 30}
+            compositionWidth={1280}
+            compositionHeight={720}
+            fps={30}
+            style={{ width: '100%', aspectRatio: '16/9' }}
+            inputProps={{ 
+              title: '测试预览',
+              subreddit: 'test',
+              scenes: [scene],
+              focusedSceneId: scene.id 
+            }}
+            controls
+            autoPlay
+          />
+        )}
+      </Modal>
     </div>
   );
 };

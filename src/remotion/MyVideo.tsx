@@ -72,8 +72,6 @@ export const MyVideo: React.FC<MyVideoProps> = ({ title, subreddit, scenes = [],
                 padding: 30,
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 borderLeft: `8px solid ${activeScene.type === 'post' ? '#ff4500' : '#1890ff'}`,
-                transform: `scale(${interpolate(relativeFrame - idx * 5, [0, 10], [0.95, 1], { extrapolateLeft: 'clamp' })})`,
-                opacity: interpolate(relativeFrame - idx * 5, [0, 10], [0, 1], { extrapolateLeft: 'clamp' }),
               }}
             >
               {/* Author */}
@@ -90,24 +88,6 @@ export const MyVideo: React.FC<MyVideoProps> = ({ title, subreddit, scenes = [],
               }}>
                 {parseQuotes(item.content, true)}
               </div>
-
-                {item.image && (
-                  <div style={{ 
-                    marginTop: 20, 
-                    width: '100%', 
-                    height: 300, 
-                    borderRadius: 12, 
-                    overflow: 'hidden',
-                    backgroundColor: '#e5e7eb'
-                  }}>
-                    <img 
-                      src={item.image} 
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                      alt="Content Image"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                )}
             </div>
           ))}
         </div>
