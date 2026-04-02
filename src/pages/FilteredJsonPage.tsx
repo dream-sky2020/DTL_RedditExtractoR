@@ -54,8 +54,7 @@ export const FilteredJsonPage: React.FC<FilteredJsonPageProps> = ({
             background: '#1e1e1e',
             padding: '16px',
             borderRadius: '8px',
-            maxHeight: '70vh',
-            overflowY: 'auto',
+            overflowX: 'auto',
           }}
         >
           <pre

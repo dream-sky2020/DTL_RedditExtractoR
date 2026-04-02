@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, Modal } from 'antd';
 import { ArrowLeftOutlined, ToolOutlined, BugOutlined } from '@ant-design/icons';
-import { VideoScene, VideoContentItem } from '../types';
+import { VideoScene, VideoContentItem, VideoConfig } from '../types';
 import { SceneCard } from '../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { Player } from '@remotion/player';
-import { MyVideo } from '../remotion/MyVideo';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../components/VideoPreviewPlayer';
 
 const { Title, Text } = Typography;
 
@@ -40,6 +39,11 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const previewConfig: VideoConfig = {
+    title: '测试预览',
+    subreddit: 'test',
+    scenes: [scene],
+  };
 
   const updateScene = (updates: Partial<VideoScene>) => {
     setScene(prev => ({ ...prev, ...updates }));
@@ -162,19 +166,14 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
         destroyOnClose
       >
         {isPreviewVisible && (
-          <Player
-            component={MyVideo as React.FC<any>}
-            durationInFrames={scene.duration * 30}
+          <VideoPreviewPlayer
+            videoConfig={previewConfig}
+            durationInFrames={scene.duration * DEFAULT_PREVIEW_FPS}
             compositionWidth={1280}
             compositionHeight={720}
-            fps={30}
+            fps={DEFAULT_PREVIEW_FPS}
             style={{ width: '100%', aspectRatio: '16/9' }}
-            inputProps={{ 
-              title: '测试预览',
-              subreddit: 'test',
-              scenes: [scene],
-              focusedSceneId: scene.id 
-            }}
+            focusedSceneId={scene.id}
             controls
             autoPlay
           />

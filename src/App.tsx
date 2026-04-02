@@ -16,9 +16,18 @@ import {
   VideoCameraOutlined,
   EditOutlined,
   FileImageOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
-import { transformRedditJson } from './utils/redditTransformer';
+import {
+  transformRedditJson,
+  CommentSortMode,
+  ReplyOrderMode,
+  AuthorProfile,
+  extractAuthorsFromRawData,
+} from './utils/redditTransformer';
+import { generateRandomAliasProfiles } from './utils/aliasGenerator';
 import { VideoConfig, VideoScene } from './types';
 
 // Pages
@@ -32,20 +41,166 @@ import { ScriptJsonPage } from './pages/ScriptJsonPage';
 import { SlidePreviewPage } from './pages/SlidePreviewPage';
 
 const { Header, Sider, Content } = Layout;
+const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 
 type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test';
+type ColorArrangementMode = 'uniform' | 'randomized';
+interface ColorArrangementSettings {
+  mode: ColorArrangementMode;
+  hueOffset: number;
+  hueStep: number;
+  saturation: number;
+  lightness: number;
+  seed: number;
+}
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey>('extract');
   const [redditUrl, setRedditUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [rawResult, setRawResult] = useState<any>(null);
   const [error, setError] = useState('');
+  const [errorDebug, setErrorDebug] = useState('');
+  const [commentSortMode, setCommentSortMode] = useState<CommentSortMode>('best');
+  const [replyOrderMode, setReplyOrderMode] = useState<ReplyOrderMode>('preserve');
+  const [allAuthors, setAllAuthors] = useState<string[]>([]);
+  const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
+  const [colorArrangement, setColorArrangement] = useState<ColorArrangementSettings>({
+    mode: 'uniform',
+    hueOffset: 0,
+    hueStep: 137.508,
+    saturation: 68,
+    lightness: 52,
+    seed: 20260402,
+  });
   const [isExportModalVisible, setIsExportModalVisible] = useState(false);
   const [isAutoRendering, setIsAutoRendering] = useState(false);
   const [autoRenderStatus, setAutoRenderStatus] = useState<any>(null);
+  const [hasStoredRawData, setHasStoredRawData] = useState(false);
+
+  const hslToHex = (h: number, s: number, l: number) => {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const hp = h / 60;
+    const x = c * (1 - Math.abs((hp % 2) - 1));
+    let r1 = 0;
+    let g1 = 0;
+    let b1 = 0;
+    if (hp >= 0 && hp < 1) [r1, g1, b1] = [c, x, 0];
+    else if (hp < 2) [r1, g1, b1] = [x, c, 0];
+    else if (hp < 3) [r1, g1, b1] = [0, c, x];
+    else if (hp < 4) [r1, g1, b1] = [0, x, c];
+    else if (hp < 5) [r1, g1, b1] = [x, 0, c];
+    else [r1, g1, b1] = [c, 0, x];
+    const m = l - c / 2;
+    const r = Math.round((r1 + m) * 255).toString(16).padStart(2, '0');
+    const g = Math.round((g1 + m) * 255).toString(16).padStart(2, '0');
+    const b = Math.round((b1 + m) * 255).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  };
+
+  const pseudoRandom01 = (seed: number, index: number) => {
+    const x = Math.sin(seed * 12.9898 + index * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+
+  const buildColorWithSettings = (index: number, settings: ColorArrangementSettings) => {
+    const s = Math.max(20, Math.min(90, settings.saturation)) / 100;
+    const l = Math.max(20, Math.min(80, settings.lightness)) / 100;
+    const offset = ((settings.hueOffset % 360) + 360) % 360;
+    const step = Math.max(1, Math.min(359, settings.hueStep));
+    const hue = settings.mode === 'uniform'
+      ? (offset + index * step) % 360
+      : (offset + pseudoRandom01(settings.seed, index) * 360) % 360;
+    return hslToHex(hue, s, l);
+  };
+
+  const buildProfilesForAuthors = (
+    authors: string[],
+    previousProfiles: Record<string, AuthorProfile>,
+    settings: ColorArrangementSettings,
+    overwriteColors = false,
+  ) => {
+    const nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
+
+    authors.forEach((author, index) => {
+      const existing = nextProfiles[author] || {};
+      if (overwriteColors || !existing.color) {
+        nextProfiles[author] = {
+          ...existing,
+          color: buildColorWithSettings(index, settings),
+        };
+      }
+    });
+
+    return nextProfiles;
+  };
+
+  const buildVideoConfigFromResult = (nextResult: any): VideoConfig => {
+    const postScene: VideoScene = {
+      id: 'scene-post-' + Date.now(),
+      type: 'post',
+      title: '贴子正文',
+      duration: 5,
+      items: [{
+        id: 'post-content',
+        author: nextResult.author,
+        content: nextResult.content || nextResult.title,
+      }]
+    };
+
+    const commentScenes: VideoScene[] = nextResult.comments.map((c: any) => ({
+      id: 'scene-' + c.id,
+      type: 'comments',
+      title: `评论 u/${c.author}`,
+      duration: 3,
+      items: [{
+        id: c.id,
+        author: c.author,
+        content: c.body,
+        replyChain: c.replyChain
+      }]
+    }));
+
+    return {
+      title: nextResult.title,
+      subreddit: nextResult.subreddit,
+      scenes: [postScene, ...commentScenes]
+    };
+  };
+
+  const persistRawRedditData = (raw: any) => {
+    try {
+      localStorage.setItem(RAW_REDDIT_DATA_STORAGE_KEY, JSON.stringify(raw));
+      setHasStoredRawData(true);
+    } catch (err) {
+      console.warn('保存原始 Reddit 数据到 localStorage 失败:', err);
+    }
+  };
+
+  const restoreRawRedditData = () => {
+    try {
+      const cached = localStorage.getItem(RAW_REDDIT_DATA_STORAGE_KEY);
+      if (!cached) return null;
+      return JSON.parse(cached);
+    } catch (err) {
+      console.warn('读取 localStorage 中的原始 Reddit 数据失败:', err);
+      return null;
+    }
+  };
+
+  const clearPersistedRawRedditData = () => {
+    try {
+      localStorage.removeItem(RAW_REDDIT_DATA_STORAGE_KEY);
+      setHasStoredRawData(false);
+      message.success('已清除本地缓存的 Reddit 原始数据');
+    } catch (err) {
+      console.warn('清除 localStorage 中的原始 Reddit 数据失败:', err);
+      message.error('清除缓存失败，请重试');
+    }
+  };
 
   // 视频配置状态，初始使用默认值
   const [videoConfig, setVideoConfig] = useState<VideoConfig>({
@@ -61,8 +216,7 @@ const App: React.FC = () => {
           {
             id: 'main-post',
             author: 'RedditUser',
-            content: '这里是你的视频正文内容预览。你可以通过抓取 Reddit 链接自动填充，或者在这里手动修改。',
-            image: ''
+            content: '这里是你的视频正文内容预览。你可以通过抓取 Reddit 链接自动填充，或者在这里手动修改。'
           }
         ]
       }
@@ -72,43 +226,31 @@ const App: React.FC = () => {
   // 编辑中的临时配置
   const [draftConfig, setDraftConfig] = useState<VideoConfig>(videoConfig);
 
+  // 页面刷新后恢复最近一次提取的原始 Reddit 数据
+  useEffect(() => {
+    const cachedRawResult = restoreRawRedditData();
+    if (!cachedRawResult) return;
+
+    const nextAuthors = extractAuthorsFromRawData(cachedRawResult);
+    const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
+    const nextResult = transformRedditJson(cachedRawResult, {
+      sortMode: commentSortMode,
+      replyOrder: replyOrderMode,
+      authorProfiles: nextProfiles,
+    });
+
+    setRawResult(cachedRawResult);
+    setAllAuthors(nextAuthors);
+    setAuthorProfiles(nextProfiles);
+    setResult(nextResult);
+    setHasStoredRawData(true);
+    message.success('已从本地缓存恢复最近一次 Reddit 提取数据');
+  }, []);
+
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
     if (result) {
-      // 1. 创建帖子正文画面
-      const postScene: VideoScene = {
-        id: 'scene-post-' + Date.now(),
-        type: 'post',
-        title: '贴子正文',
-        duration: 5,
-        items: [{
-          id: 'post-content',
-          author: result.author,
-          content: result.content || result.title,
-          image: result.image || '',
-        }]
-      };
-
-      // 2. 将评论按层级或某种规则初步分到不同画面格 (初始每条评论一个画面格)
-      const commentScenes: VideoScene[] = result.comments.map((c: any) => ({
-        id: 'scene-' + c.id,
-        type: 'comments',
-        title: `评论 u/${c.author}`,
-        duration: 3,
-        items: [{
-          id: c.id,
-          author: c.author,
-          content: c.body,
-          image: c.image || '',
-          replyChain: c.replyChain
-        }]
-      }));
-      
-      const newConfig: VideoConfig = {
-        title: result.title,
-        subreddit: result.subreddit,
-        scenes: [postScene, ...commentScenes]
-      };
+      const newConfig: VideoConfig = buildVideoConfigFromResult(result);
       
       setVideoConfig(newConfig);
       setDraftConfig(newConfig);
@@ -170,6 +312,7 @@ const App: React.FC = () => {
 
   const resetResultState = () => {
     setError('');
+    setErrorDebug('');
     setResult(null);
     setRawResult(null);
   };
@@ -188,15 +331,125 @@ const App: React.FC = () => {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         },
       });
+      const nextAuthors = extractAuthorsFromRawData(response.data);
+      const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
+      setAllAuthors(nextAuthors);
+      setAuthorProfiles(nextProfiles);
+      persistRawRedditData(response.data);
       setRawResult(response.data);
-      setResult(transformRedditJson(response.data));
+      setResult(transformRedditJson(response.data, {
+        sortMode: commentSortMode,
+        replyOrder: replyOrderMode,
+        authorProfiles: nextProfiles,
+      }));
       message.success('数据提取成功，已同步至视频配置');
     } catch (err) {
       console.error(err);
       setError('抓取失败，请检查 URL 是否正确或存在跨域限制。');
+      if (axios.isAxiosError(err)) {
+        const debugInfo = {
+          url: err.config?.url ?? 'unknown',
+          method: err.config?.method ?? 'get',
+          code: err.code ?? 'unknown',
+          status: err.response?.status ?? 'no_response',
+          statusText: err.response?.statusText ?? 'unknown',
+          message: err.message,
+          responseData:
+            typeof err.response?.data === 'string'
+              ? err.response.data.slice(0, 600)
+              : JSON.stringify(err.response?.data ?? null, null, 2)?.slice(0, 600),
+        };
+        setErrorDebug(JSON.stringify(debugInfo, null, 2));
+      } else {
+        setErrorDebug(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const rebuildFromRaw = (
+    sortMode: CommentSortMode,
+    replyOrder: ReplyOrderMode,
+    profiles: Record<string, AuthorProfile>,
+    successMessage: string,
+  ) => {
+    if (!rawResult) {
+      message.warning('请先提取 Reddit 数据，再进行排序重排');
+      return;
+    }
+
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+
+    const nextResult = transformRedditJson(rawResult, {
+      sortMode,
+      replyOrder,
+      authorProfiles: profiles,
+    });
+    const nextConfig = buildVideoConfigFromResult(nextResult);
+
+    setResult(nextResult);
+    setVideoConfig(nextConfig);
+    setDraftConfig(nextConfig);
+    message.success(successMessage);
+  };
+
+  const applyCommentSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    rebuildFromRaw(sortMode, replyOrder, authorProfiles, '评论排序已应用并重排脚本');
+  };
+
+  const updateAuthorProfile = (
+    author: string,
+    updates: Partial<AuthorProfile>,
+  ) => {
+    setAuthorProfiles((prev) => ({
+      ...prev,
+      [author]: {
+        ...(prev[author] || {}),
+        ...updates,
+      },
+    }));
+  };
+
+  const applyIdentityAndSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    applyCommentSortInEditor(sortMode, replyOrder);
+  };
+
+  const randomizeAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles);
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已随机生成代号并重建脚本');
+  };
+
+  const clearAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    const nextProfiles: Record<string, AuthorProfile> = { ...authorProfiles };
+    allAuthors.forEach((author) => {
+      const existing = nextProfiles[author] || {};
+      nextProfiles[author] = {
+        ...existing,
+        alias: '',
+      };
+    });
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已清空所有代号并重建脚本');
+  };
+
+  const rearrangeColorsAndApplyInEditor = (
+    sortMode: CommentSortMode,
+    replyOrder: ReplyOrderMode,
+    nextSettings: ColorArrangementSettings,
+  ) => {
+    const normalizedSettings = {
+      ...nextSettings,
+      saturation: Math.max(20, Math.min(90, nextSettings.saturation)),
+      lightness: Math.max(20, Math.min(80, nextSettings.lightness)),
+      hueStep: Math.max(1, Math.min(359, nextSettings.hueStep)),
+    };
+    setColorArrangement(normalizedSettings);
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, normalizedSettings, true);
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已按新规则重排颜色并重建脚本');
   };
 
   const copyToClipboard = async () => {
@@ -248,7 +501,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout className="admin-layout">
+    <Layout className={`admin-layout ${headerHidden ? 'admin-layout--header-hidden' : ''}`}>
+      {!headerHidden && (
       <Header className="admin-header">
         <div className="header-left">
           <div className="header-title-group">
@@ -260,6 +514,7 @@ const App: React.FC = () => {
           v1.0.0
         </Tag>
       </Header>
+      )}
 
       <Layout className="workspace-layout">
         <Sider
@@ -337,6 +592,14 @@ const App: React.FC = () => {
               {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               {!collapsed && <span className="sider-trigger-text">收起导航</span>}
             </Button>
+            <Button
+              type="text"
+              className="sider-trigger-btn"
+              onClick={() => setHeaderHidden((prev) => !prev)}
+            >
+              {headerHidden ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+              {!collapsed && <span className="sider-trigger-text">{headerHidden ? '显示顶栏' : '隐藏顶栏'}</span>}
+            </Button>
           </div>
         </Sider>
 
@@ -348,8 +611,11 @@ const App: React.FC = () => {
                 setRedditUrl={setRedditUrl}
                 loading={loading}
                 error={error}
+                errorDebug={errorDebug}
                 result={result}
                 fetchRedditData={fetchRedditData}
+                clearStoredRawData={clearPersistedRawRedditData}
+                hasStoredRawData={hasStoredRawData}
                 copyToClipboard={copyToClipboard}
                 goToEditor={() => setActiveTool('editor')}
                 goToFilteredData={() => setActiveTool('filtered_data')}
@@ -364,6 +630,17 @@ const App: React.FC = () => {
               <EditorPage 
                 draftConfig={draftConfig}
                 setDraftConfig={setDraftConfig}
+                commentSortMode={commentSortMode}
+                replyOrderMode={replyOrderMode}
+                onApplyCommentSort={applyIdentityAndSortInEditor}
+                onRandomizeAliasesAndApply={randomizeAliasesAndApplyInEditor}
+                onClearAliasesAndApply={clearAliasesAndApplyInEditor}
+                colorArrangement={colorArrangement}
+                onRearrangeColorsAndApply={rearrangeColorsAndApplyInEditor}
+                canApplyCommentSort={!!rawResult}
+                allAuthors={allAuthors}
+                authorProfiles={authorProfiles}
+                onUpdateAuthorProfile={updateAuthorProfile}
                 onApply={() => {
                   setVideoConfig(draftConfig);
                   setActiveTool('preview');

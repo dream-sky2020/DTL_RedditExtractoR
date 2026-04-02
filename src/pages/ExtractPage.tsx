@@ -6,18 +6,19 @@ import {
   Alert,
   Space,
   Button,
-  Row,
-  Col,
   Statistic,
   Descriptions,
   Typography,
   Tag,
+  Row,
+  Col,
 } from 'antd';
 import {
   LinkOutlined,
   EditOutlined,
   CopyOutlined,
   CodeOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -27,8 +28,11 @@ interface ExtractPageProps {
   setRedditUrl: (url: string) => void;
   loading: boolean;
   error: string;
+  errorDebug: string;
   result: any;
   fetchRedditData: () => void;
+  clearStoredRawData: () => void;
+  hasStoredRawData: boolean;
   copyToClipboard: () => void;
   goToEditor: () => void;
   goToFilteredData: () => void;
@@ -43,8 +47,11 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
   setRedditUrl,
   loading,
   error,
+  errorDebug,
   result,
   fetchRedditData,
+  clearStoredRawData,
+  hasStoredRawData,
   copyToClipboard,
   goToEditor,
   goToFilteredData,
@@ -64,9 +71,24 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
         {error && (
           <Alert
             message={error}
+            description={
+              errorDebug ? (
+                <pre
+                  style={{
+                    margin: 0,
+                    marginTop: 8,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 220,
+                    overflow: 'auto',
+                  }}
+                >
+                  {errorDebug}
+                </pre>
+              ) : null
+            }
             type="error"
             showIcon
-            banner
             style={{ marginBottom: 16 }}
           />
         )}
@@ -90,6 +112,15 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               onClick={fetchRedditData}
             >
               {toolButton}
+            </Button>
+            <Button
+              danger
+              size="large"
+              icon={<DeleteOutlined />}
+              onClick={clearStoredRawData}
+              disabled={!hasStoredRawData}
+            >
+              清除本地原始数据缓存
             </Button>
             {result && (
               <Space>

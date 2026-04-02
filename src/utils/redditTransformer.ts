@@ -6,6 +6,8 @@ export interface CleanComment {
     image?: string;
     ups: number;
     depth: number;
+    createdUtc?: number;
+    controversiality?: number;
     parentAuthor?: string;
     replyChain?: { author: string; content: string }[];
 }
@@ -24,10 +26,192 @@ export interface CleanPost {
     comments: CleanComment[];
 }
 
-export function transformRedditJson(rawData: any): CleanPost {
+export type CommentSortMode = 'best' | 'top' | 'new' | 'old' | 'controversial';
+export type ReplyOrderMode = 'preserve' | 'global';
+export interface AuthorProfile {
+    alias?: string;
+    color?: string;
+}
+
+export interface TransformOptions {
+    sortMode?: CommentSortMode;
+    replyOrder?: ReplyOrderMode;
+    authorProfiles?: Record<string, AuthorProfile>;
+}
+
+const AUTHOR_TAG_COLOR = '#1890ff';
+const normalizeAuthor = (author?: string) => (author && author.trim() ? author.trim() : '[deleted]');
+const normalizeAuthorToken = (author?: string) =>
+    normalizeAuthor(author).replace(/[#[\]\s]/g, '_') || 'user';
+
+const getAuthorProfile = (author: string, profiles: Record<string, AuthorProfile>) =>
+    profiles[normalizeAuthor(author)] || {};
+const getAuthorDisplayName = (author: string, profiles: Record<string, AuthorProfile>) => {
+    const profile = getAuthorProfile(author, profiles);
+    const alias = profile.alias?.trim();
+    return alias || normalizeAuthor(author);
+};
+const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>) => {
+    const profile = getAuthorProfile(author, profiles);
+    const color = profile.color?.trim();
+    return color || AUTHOR_TAG_COLOR;
+};
+const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>) => {
+    const displayName = getAuthorDisplayName(author, profiles);
+    const color = getAuthorColor(author, profiles);
+    return `[style color=${color} b]u/${displayName}:[/style]`;
+};
+
+const stripLeadingAuthorHeader = (content: string) =>
+    content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
+
+const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>) => {
+    const header = buildAuthorHeader(author, profiles);
+    const normalized = (content || '').trim();
+    if (!normalized) return header;
+    if (normalized.startsWith(header)) return normalized;
+    const withoutOldHeader = stripLeadingAuthorHeader(normalized);
+    return `${header} ${withoutOldHeader}`;
+};
+
+const normalizeCreatedUtc = (value: unknown) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+};
+const normalizeNumber = (value: unknown) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+};
+const getCommentScore = (comment: Partial<CleanComment>) => normalizeNumber(comment.ups);
+const getCommentTime = (comment: Partial<CleanComment>) => normalizeCreatedUtc(comment.createdUtc);
+const getCommentControversiality = (comment: Partial<CleanComment>) =>
+    normalizeNumber(comment.controversiality);
+
+const compareCleanComments = (a: Partial<CleanComment>, b: Partial<CleanComment>, sortMode: CommentSortMode) => {
+    const aScore = getCommentScore(a);
+    const bScore = getCommentScore(b);
+    const aTime = getCommentTime(a);
+    const bTime = getCommentTime(b);
+    const aControversiality = getCommentControversiality(a);
+    const bControversiality = getCommentControversiality(b);
+
+    switch (sortMode) {
+        case 'top':
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+        case 'new':
+            if (bTime !== aTime) return bTime - aTime;
+            if (bScore !== aScore) return bScore - aScore;
+            return 0;
+        case 'old':
+            if (aTime !== bTime) return aTime - bTime;
+            if (bScore !== aScore) return bScore - aScore;
+            return 0;
+        case 'controversial':
+            if (bControversiality !== aControversiality) return bControversiality - aControversiality;
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+        case 'best':
+        default:
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+    }
+};
+
+const getRawCommentScore = (comment: any) => normalizeNumber(comment?.ups ?? comment?.score);
+const getRawCommentTime = (comment: any) => normalizeCreatedUtc(comment?.created_utc ?? comment?.created);
+const getRawCommentControversiality = (comment: any) => normalizeNumber(comment?.controversiality);
+
+const compareRawComments = (a: any, b: any, sortMode: CommentSortMode) => {
+    const aScore = getRawCommentScore(a);
+    const bScore = getRawCommentScore(b);
+    const aTime = getRawCommentTime(a);
+    const bTime = getRawCommentTime(b);
+    const aControversiality = getRawCommentControversiality(a);
+    const bControversiality = getRawCommentControversiality(b);
+
+    switch (sortMode) {
+        case 'top':
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+        case 'new':
+            if (bTime !== aTime) return bTime - aTime;
+            if (bScore !== aScore) return bScore - aScore;
+            return 0;
+        case 'old':
+            if (aTime !== bTime) return aTime - bTime;
+            if (bScore !== aScore) return bScore - aScore;
+            return 0;
+        case 'controversial':
+            if (bControversiality !== aControversiality) return bControversiality - aControversiality;
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+        case 'best':
+        default:
+            if (bScore !== aScore) return bScore - aScore;
+            if (bTime !== aTime) return bTime - aTime;
+            return 0;
+    }
+};
+
+const sortFlatComments = (comments: CleanComment[], sortMode: CommentSortMode) =>
+    [...comments].sort((a, b) => compareCleanComments(a, b, sortMode));
+
+const DEFAULT_OPTIONS: Required<TransformOptions> = {
+    sortMode: 'best',
+    replyOrder: 'preserve',
+    authorProfiles: {},
+};
+
+const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>): CleanPost => {
+    const postAuthor = normalizeAuthor(data.author);
+    const normalizedComments = Array.isArray(data.comments)
+        ? data.comments.map((comment) => {
+            const commentAuthor = normalizeAuthor(comment.author);
+            const displayAuthor = getAuthorDisplayName(commentAuthor, options.authorProfiles);
+            return {
+                ...comment,
+                author: displayAuthor,
+                body: prependAuthorHeader(commentAuthor, comment.body || '', options.authorProfiles),
+                parentAuthor: comment.parentAuthor
+                    ? getAuthorDisplayName(normalizeAuthor(comment.parentAuthor), options.authorProfiles)
+                    : comment.parentAuthor,
+                createdUtc: normalizeCreatedUtc(comment.createdUtc),
+                controversiality: normalizeNumber(comment.controversiality),
+                replyChain: Array.isArray(comment.replyChain)
+                    ? comment.replyChain.map((item) => ({
+                        ...item,
+                        author: getAuthorDisplayName(normalizeAuthor(item.author), options.authorProfiles),
+                    }))
+                    : comment.replyChain,
+            };
+        })
+        : [];
+
+    return {
+        ...data,
+        author: getAuthorDisplayName(postAuthor, options.authorProfiles),
+        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles),
+        comments: options.replyOrder === 'global'
+            ? sortFlatComments(normalizedComments, options.sortMode)
+            : normalizedComments,
+    };
+};
+
+export function transformRedditJson(rawData: any, options: TransformOptions = {}): CleanPost {
+    const mergedOptions: Required<TransformOptions> = {
+        ...DEFAULT_OPTIONS,
+        ...options,
+    };
+
     // 如果已经是清洗过的格式，直接返回
     if (rawData && rawData.title && Array.isArray(rawData.comments) && !Array.isArray(rawData)) {
-        return rawData as CleanPost;
+        return normalizeCleanPost(rawData as CleanPost, mergedOptions);
     }
 
     // 原生的 Reddit 结构：[帖子信息, 评论树]
@@ -79,14 +263,23 @@ export function transformRedditJson(rawData: any): CleanPost {
         if (!children || !Array.isArray(children)) return [];
 
         let flatList: CleanComment[] = [];
+        const orderedChildren = [...children].sort((left, right) => {
+            const leftIsComment = left?.kind === 't1';
+            const rightIsComment = right?.kind === 't1';
+            if (!leftIsComment || !rightIsComment) return 0;
+            return compareRawComments(left.data, right.data, mergedOptions.sortMode);
+        });
 
-        children.forEach(child => {
+        orderedChildren.forEach(child => {
             if (child.kind === 't1') {
                 const c = child.data;
                 const { imageUrl, cleanText } = processContent(c.body || '');
                 // 因为 processContent 已经把图片转换成 [image] 标签放入 cleanText 了
                 // 所以我们不需要在这里额外添加一次，否则会重复
-                const currentContent = cleanText;
+                const commentAuthor = normalizeAuthor(c.author);
+                const displayAuthor = getAuthorDisplayName(commentAuthor, mergedOptions.authorProfiles);
+                const currentRawContent = cleanText;
+                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles);
 
                 // 祖先引用构建规则：
                 // 1) 最外层是最近的父评论，最内层是最早的评论
@@ -98,12 +291,15 @@ export function transformRedditJson(rawData: any): CleanPost {
                     
                     // 核心修改：先放内部嵌套(inner)，再放当前引用层级的内容(quote.content)
                     // 同时在这里手动加入作者抬头，并应用 [style] 标签以便用户控制
-                    const authorHeader = `[style color=#1890ff b]u/${quote.author}:[/style] `;
+                    const quoteAuthor = normalizeAuthor(quote.author);
+                    const quoteAuthorName = getAuthorDisplayName(quoteAuthor, mergedOptions.authorProfiles);
+                    const quoteAuthorToken = normalizeAuthorToken(quoteAuthorName);
+                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles)} `;
                     const contentPart = nestedAncestorQuote 
-                        ? `\n${nestedAncestorQuote}\n${authorHeader}${quote.content}` 
-                        : `${authorHeader}${quote.content}`;
+                        ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}` 
+                        : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
 
-                    nestedAncestorQuote = `[quote=${quote.author} #第 ${level} 层级 | 来自于 u/${quote.author} 的评论内容]${contentPart}[/quote]`;
+                    nestedAncestorQuote = `[quote=${quoteAuthorToken} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
                 }
 
                 const finalContent = nestedAncestorQuote
@@ -113,12 +309,16 @@ export function transformRedditJson(rawData: any): CleanPost {
                 // 添加当前评论
                 flatList.push({
                     id: c.id,
-                    author: c.author,
+                    author: displayAuthor,
                     body: finalContent, // 这里的 body 现在包含了所有的引用关系
                     image: imageUrl,
                     ups: c.ups,
                     depth: depth,
-                    parentAuthor: replyChain[replyChain.length - 1]?.author,
+                    createdUtc: normalizeCreatedUtc(c.created_utc ?? c.created),
+                    controversiality: normalizeNumber(c.controversiality),
+                    parentAuthor: replyChain[replyChain.length - 1]?.author
+                        ? getAuthorDisplayName(replyChain[replyChain.length - 1]?.author, mergedOptions.authorProfiles)
+                        : undefined,
                 });
 
                 // 递归处理子评论
@@ -126,7 +326,7 @@ export function transformRedditJson(rawData: any): CleanPost {
                     const subComments = flattenComments(
                         c.replies.data.children,
                         depth + 1,
-                        [...replyChain, { author: c.author, content: currentContent }]
+                        [...replyChain, { author: commentAuthor, content: currentRawContent }]
                     );
                     flatList = [...flatList, ...subComments];
                 }
@@ -195,15 +395,56 @@ export function transformRedditJson(rawData: any): CleanPost {
     // 构建最终对象
     return {
         title: postDetail.title,
-        content: postText.trim(),
+        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles),
         image: postImg,
         images: postImages,
-        author: postDetail.author,
+        author: getAuthorDisplayName(normalizeAuthor(postDetail.author), mergedOptions.authorProfiles),
         subreddit: postDetail.subreddit,
         stats: {
             upvotes: postDetail.ups,
             commentCount: postDetail.num_comments
         },
-        comments: flattenComments(commentWrapper.data.children)
+        comments: (() => {
+            const flattened = flattenComments(commentWrapper.data.children);
+            if (mergedOptions.replyOrder === 'global') {
+                return sortFlatComments(flattened, mergedOptions.sortMode);
+            }
+            return flattened;
+        })()
     };
+}
+
+export function extractAuthorsFromRawData(rawData: any): string[] {
+    const users = new Set<string>();
+    const addUser = (author: unknown) => users.add(normalizeAuthor(typeof author === 'string' ? author : ''));
+
+    const walkRawComments = (children: any[]) => {
+        if (!Array.isArray(children)) return;
+        children.forEach((child) => {
+            if (child?.kind !== 't1') return;
+            const data = child.data || {};
+            addUser(data.author);
+            if (data.replies && typeof data.replies === 'object' && data.replies.data) {
+                walkRawComments(data.replies.data.children);
+            }
+        });
+    };
+
+    if (Array.isArray(rawData) && rawData.length >= 2) {
+        const postAuthor = rawData?.[0]?.data?.children?.[0]?.data?.author;
+        addUser(postAuthor);
+        walkRawComments(rawData?.[1]?.data?.children || []);
+    } else if (rawData && !Array.isArray(rawData)) {
+        addUser(rawData.author);
+        if (Array.isArray(rawData.comments)) {
+            rawData.comments.forEach((comment: any) => {
+                addUser(comment?.author);
+                if (Array.isArray(comment?.replyChain)) {
+                    comment.replyChain.forEach((item: any) => addUser(item?.author));
+                }
+            });
+        }
+    }
+
+    return Array.from(users).sort((a, b) => a.localeCompare(b));
 }

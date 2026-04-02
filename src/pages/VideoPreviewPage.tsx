@@ -15,8 +15,7 @@ import {
   VideoCameraOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
-import { Player } from '@remotion/player';
-import { MyVideo } from '../remotion/MyVideo';
+import { VideoPreviewPlayer, getTotalFrames } from '../components/VideoPreviewPlayer';
 
 const { Text } = Typography;
 
@@ -43,9 +42,7 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
   startAutoRender,
   downloadVideoConfig,
 }) => {
-  const fps = 30;
-  const totalDurationInSeconds = videoConfig.scenes.reduce((acc, scene) => acc + scene.duration, 0);
-  const totalFrames = Math.max(1, totalDurationInSeconds * fps);
+  const totalFrames = getTotalFrames(videoConfig);
 
   return (
     <Row gutter={24}>
@@ -61,12 +58,9 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
           }
           styles={{ body: { background: '#000', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' } }}
         >
-          <Player
-            component={MyVideo as React.FC<any>}
+          <VideoPreviewPlayer
+            videoConfig={videoConfig}
             durationInFrames={totalFrames}
-            compositionWidth={1920}
-            compositionHeight={1080}
-            fps={fps}
             style={{
               width: '100%',
               maxWidth: '100%',
@@ -74,8 +68,6 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
               aspectRatio: '16 / 9',
               margin: '0 auto',
             }}
-            inputProps={videoConfig}
-            controls
             loop
           />
         </Card>

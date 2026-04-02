@@ -20,8 +20,12 @@ import {
   RightOutlined,
   FileImageOutlined,
 } from '@ant-design/icons';
-import { Player } from '@remotion/player';
-import { MyVideo } from '../remotion/MyVideo';
+import {
+  VideoPreviewPlayer,
+  DEFAULT_PREVIEW_FPS,
+  getTotalFrames,
+  getSceneStartFrame,
+} from '../components/VideoPreviewPlayer';
 import { VideoConfig } from '../types';
 
 const { Text, Title } = Typography;
@@ -38,7 +42,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
   const [frameOffset, setFrameOffset] = useState(15);
   const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
-  const fps = 30;
+  const fps = DEFAULT_PREVIEW_FPS;
 
   const scenes = videoConfig.scenes;
   const hasScenes = scenes && scenes.length > 0;
@@ -47,17 +51,12 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   // 计算特定场景在总视频中的起始帧位置
   const getSeekFrame = (idx: number) => {
     if (!hasScenes) return 0;
-    let startFrame = 0;
-    for (let i = 0; i < idx; i++) {
-      startFrame += scenes[i].duration * fps;
-    }
-    return startFrame + frameOffset;
+    return getSceneStartFrame(videoConfig, idx, fps) + frameOffset;
   };
 
   const seekFrame = useMemo(() => getSeekFrame(currentSceneIdx), [currentSceneIdx, scenes, hasScenes, frameOffset]);
 
-  const totalDurationInSeconds = videoConfig.scenes.reduce((acc, scene) => acc + scene.duration, 0);
-  const totalFrames = Math.max(1, totalDurationInSeconds * fps);
+  const totalFrames = getTotalFrames(videoConfig, fps);
 
   const nextScene = () => {
     if (currentSceneIdx < scenes.length - 1) {
@@ -90,11 +89,9 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
         setViewMode('detail');
       }
     }}>
-      <Player
-        component={MyVideo as React.FC<any>}
+      <VideoPreviewPlayer
+        videoConfig={videoConfig}
         durationInFrames={totalFrames}
-        compositionWidth={1920}
-        compositionHeight={1080}
         fps={fps}
         initialFrame={getSeekFrame(idx)}
         key={`scene-frame-${idx}-${frameOffset}`}
@@ -102,7 +99,6 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
           width: '100%',
           aspectRatio: '16 / 9',
         }}
-        inputProps={videoConfig}
         controls={false}
         autoPlay={false}
       />

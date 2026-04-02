@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Card,
   Input,
+  InputNumber,
   Form,
   Space,
   Button,
@@ -12,23 +13,58 @@ import {
   Modal,
   message,
   Pagination,
+  Select,
+  Table,
 } from 'antd';
 import {
   EditOutlined,
   VideoCameraOutlined,
   PlusOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import { VideoConfig, VideoScene, VideoContentItem } from '../types';
-import { Player } from '@remotion/player';
-import { MyVideo } from '../remotion/MyVideo';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../utils/redditTransformer';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../components/VideoPreviewPlayer';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { SceneCard } from '../components/SceneCard';
 
 const { Text } = Typography;
 
+interface AuthorIdentityRow {
+  author: string;
+  alias: string;
+  color: string;
+}
+
+type ColorArrangementMode = 'uniform' | 'randomized';
+interface ColorArrangementSettings {
+  mode: ColorArrangementMode;
+  hueOffset: number;
+  hueStep: number;
+  saturation: number;
+  lightness: number;
+  seed: number;
+}
+
 interface EditorPageProps {
   draftConfig: VideoConfig;
   setDraftConfig: (config: VideoConfig) => void;
+  commentSortMode: CommentSortMode;
+  replyOrderMode: ReplyOrderMode;
+  onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  onRandomizeAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  onClearAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  colorArrangement: ColorArrangementSettings;
+  onRearrangeColorsAndApply: (
+    sortMode: CommentSortMode,
+    replyOrder: ReplyOrderMode,
+    settings: ColorArrangementSettings,
+  ) => void;
+  canApplyCommentSort: boolean;
+  allAuthors: string[];
+  authorProfiles: Record<string, AuthorProfile>;
+  onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
   onApply: () => void;
   onBack: () => void;
   toolDesc: string;
@@ -37,6 +73,17 @@ interface EditorPageProps {
 export const EditorPage: React.FC<EditorPageProps> = ({
   draftConfig,
   setDraftConfig,
+  commentSortMode,
+  replyOrderMode,
+  onApplyCommentSort,
+  onRandomizeAliasesAndApply,
+  onClearAliasesAndApply,
+  colorArrangement,
+  onRearrangeColorsAndApply,
+  canApplyCommentSort,
+  allAuthors,
+  authorProfiles,
+  onUpdateAuthorProfile,
   onApply,
   onBack,
   toolDesc,
@@ -45,6 +92,23 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [editorSortMode, setEditorSortMode] = useState<CommentSortMode>(commentSortMode);
+  const [editorReplyOrderMode, setEditorReplyOrderMode] = useState<ReplyOrderMode>(replyOrderMode);
+  const [editorColorArrangement, setEditorColorArrangement] = useState<ColorArrangementSettings>(colorArrangement);
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
+  const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
+
+  React.useEffect(() => {
+    setEditorSortMode(commentSortMode);
+  }, [commentSortMode]);
+
+  React.useEffect(() => {
+    setEditorReplyOrderMode(replyOrderMode);
+  }, [replyOrderMode]);
+
+  React.useEffect(() => {
+    setEditorColorArrangement(colorArrangement);
+  }, [colorArrangement]);
 
   // 计算当前分页的数据
   const pagedScenes = draftConfig.scenes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -182,8 +246,20 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         title={<span><EditOutlined /> 整体配置</span>}
         className="panel-card"
         bordered={false}
-        extra={<Text type="secondary">{toolDesc}</Text>}
+        extra={
+          <Space>
+            <Text type="secondary">{toolDesc}</Text>
+            <Button
+              size="small"
+              onClick={() => setIsConfigCollapsed((prev) => !prev)}
+              icon={isConfigCollapsed ? <DownOutlined /> : <UpOutlined />}
+            >
+              {isConfigCollapsed ? '展开' : '收起'}
+            </Button>
+          </Space>
+        }
       >
+        {!isConfigCollapsed && (
         <Form layout="vertical">
           <Row gutter={24}>
             <Col span={16}>
@@ -203,7 +279,211 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               </Form.Item>
             </Col>
           </Row>
+          <Row gutter={24}>
+            <Col xs={24} md={12}>
+              <Form.Item label="评论排序方式">
+                <Select<CommentSortMode>
+                  value={editorSortMode}
+                  onChange={setEditorSortMode}
+                  options={[
+                    { label: '最佳排序', value: 'best' },
+                    { label: '点赞排序', value: 'top' },
+                    { label: '时间排序（最新优先）', value: 'new' },
+                    { label: '时间排序（最旧优先）', value: 'old' },
+                    { label: '有争议排序', value: 'controversial' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="回复关系策略">
+                <Select<ReplyOrderMode>
+                  value={editorReplyOrderMode}
+                  onChange={setEditorReplyOrderMode}
+                  options={[
+                    { label: '保持回复关系（默认）', value: 'preserve' },
+                    { label: '全量排序（不考虑回复关系）', value: 'global' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item label=" ">
+                <Space wrap>
+                  <Button
+                    type="default"
+                    disabled={!canApplyCommentSort}
+                    onClick={() => onApplyCommentSort(editorSortMode, editorReplyOrderMode)}
+                  >
+                    应用排序与代号并重建脚本
+                  </Button>
+                  <Button
+                    type="primary"
+                    ghost
+                    disabled={!canApplyCommentSort || allAuthors.length === 0}
+                    onClick={() => onRandomizeAliasesAndApply(editorSortMode, editorReplyOrderMode)}
+                  >
+                    一键随机代号并应用
+                  </Button>
+                  <Button
+                    danger
+                    disabled={!canApplyCommentSort || allAuthors.length === 0}
+                    onClick={() => onClearAliasesAndApply(editorSortMode, editorReplyOrderMode)}
+                  >
+                    一键清空代号
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
+        )}
+      </Card>
+
+      <Card
+        title="用户隐私与身份映射"
+        className="panel-card"
+        bordered={false}
+        style={{ marginTop: 16 }}
+        extra={
+          <Button
+            size="small"
+            onClick={() => setIsPrivacyCollapsed((prev) => !prev)}
+            icon={isPrivacyCollapsed ? <DownOutlined /> : <UpOutlined />}
+          >
+            {isPrivacyCollapsed ? '展开' : '收起'}
+          </Button>
+        }
+      >
+        {!isPrivacyCollapsed && (
+        <>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+          扫描到的所有发言用户会显示在这里。你可以为每个用户设置代号和颜色，点击“应用排序与代号并重建脚本”后生效。
+        </Typography.Paragraph>
+        <Row gutter={12} style={{ marginBottom: 12 }}>
+          <Col xs={24} md={6}>
+            <Form.Item label="颜色模式" style={{ marginBottom: 8 }}>
+              <Select<ColorArrangementMode>
+                value={editorColorArrangement.mode}
+                onChange={(mode) => setEditorColorArrangement((prev) => ({ ...prev, mode }))}
+                options={[
+                  { label: '均匀分布', value: 'uniform' },
+                  { label: '随机打散', value: 'randomized' },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} md={4}>
+            <Form.Item label="色相起点" style={{ marginBottom: 8 }}>
+              <InputNumber
+                min={0}
+                max={359}
+                value={editorColorArrangement.hueOffset}
+                onChange={(value) => setEditorColorArrangement((prev) => ({ ...prev, hueOffset: Number(value ?? 0) }))}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} md={4}>
+            <Form.Item label="色相步进" style={{ marginBottom: 8 }}>
+              <InputNumber
+                min={1}
+                max={359}
+                value={editorColorArrangement.hueStep}
+                onChange={(value) => setEditorColorArrangement((prev) => ({ ...prev, hueStep: Number(value ?? 1) }))}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} md={4}>
+            <Form.Item label="饱和度%" style={{ marginBottom: 8 }}>
+              <InputNumber
+                min={20}
+                max={90}
+                value={editorColorArrangement.saturation}
+                onChange={(value) => setEditorColorArrangement((prev) => ({ ...prev, saturation: Number(value ?? 68) }))}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} md={4}>
+            <Form.Item label="亮度%" style={{ marginBottom: 8 }}>
+              <InputNumber
+                min={20}
+                max={80}
+                value={editorColorArrangement.lightness}
+                onChange={(value) => setEditorColorArrangement((prev) => ({ ...prev, lightness: Number(value ?? 52) }))}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={2}>
+            <Form.Item label="随机种子" style={{ marginBottom: 8 }}>
+              <InputNumber
+                min={1}
+                max={99999999}
+                value={editorColorArrangement.seed}
+                onChange={(value) => setEditorColorArrangement((prev) => ({ ...prev, seed: Number(value ?? 1) }))}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Space style={{ marginBottom: 12 }}>
+          <Button
+            disabled={!canApplyCommentSort || allAuthors.length === 0}
+            onClick={() => onRearrangeColorsAndApply(editorSortMode, editorReplyOrderMode, editorColorArrangement)}
+          >
+            按当前设置重排颜色并应用
+          </Button>
+        </Space>
+        <Table<AuthorIdentityRow>
+          rowKey={(record) => record.author}
+          size="small"
+          pagination={false}
+          dataSource={allAuthors.map((author) => ({
+            author,
+            alias: authorProfiles[author]?.alias || '',
+            color: authorProfiles[author]?.color || '#1890ff',
+          }))}
+          columns={[
+            {
+              title: '原用户名',
+              dataIndex: 'author',
+              key: 'author',
+              width: 280,
+              render: (value: string) => <Text code>u/{value}</Text>,
+            },
+            {
+              title: '代号',
+              dataIndex: 'alias',
+              key: 'alias',
+              render: (_: string, record: AuthorIdentityRow) => (
+                <Input
+                  value={record.alias}
+                  placeholder="留空则使用原用户名"
+                  onChange={(e) => onUpdateAuthorProfile(record.author, { alias: e.target.value })}
+                />
+              ),
+            },
+            {
+              title: '颜色',
+              dataIndex: 'color',
+              key: 'color',
+              width: 180,
+              render: (_: string, record: AuthorIdentityRow) => (
+                <Input
+                  type="color"
+                  value={record.color}
+                  onChange={(e) => onUpdateAuthorProfile(record.author, { color: e.target.value })}
+                  style={{ width: 80 }}
+                />
+              ),
+            },
+          ]}
+        />
+        </>
+        )}
       </Card>
 
       <div style={{ marginTop: 24 }}>
@@ -291,14 +571,14 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         destroyOnClose
       >
         {previewSceneId && (
-          <Player
-            component={MyVideo as React.FC<any>}
-            durationInFrames={(draftConfig.scenes.find(s => s.id === previewSceneId)?.duration || 5) * 30}
+          <VideoPreviewPlayer
+            videoConfig={draftConfig}
+            durationInFrames={(draftConfig.scenes.find(s => s.id === previewSceneId)?.duration || 5) * DEFAULT_PREVIEW_FPS}
             compositionWidth={1280}
             compositionHeight={720}
-            fps={30}
+            fps={DEFAULT_PREVIEW_FPS}
             style={{ width: '100%', aspectRatio: '16/9' }}
-            inputProps={{ ...draftConfig, focusedSceneId: previewSceneId }}
+            focusedSceneId={previewSceneId}
             controls
             autoPlay
           />
