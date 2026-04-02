@@ -12,6 +12,7 @@ import {
   Tag,
   Row,
   Col,
+  Divider,
 } from 'antd';
 import {
   LinkOutlined,
@@ -19,6 +20,8 @@ import {
   CopyOutlined,
   CodeOutlined,
   DeleteOutlined,
+  RocketOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -62,6 +65,30 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
 }) => {
   return (
     <>
+      <Card
+        size="small"
+        className="panel-card"
+        style={{ marginBottom: 16, background: '#f0f7ff', border: '1px solid #bae7ff' }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0050b3' }}>
+            <RocketOutlined />
+            <Text strong style={{ color: '#0050b3' }}>操作指南：启动 Python 后端以确保正常抓取与导出</Text>
+          </div>
+          <Text type="secondary" style={{ fontSize: '13px' }}>
+            为了绕过浏览器跨域限制并支持视频渲染，请确保在终端中运行以下命令启动后端服务：
+          </Text>
+          <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 4, border: '1px dashed #91d5ff' }}>
+            <code style={{ color: '#eb2f96' }}>python scripts/server.py</code>
+          </div>
+          <div style={{ display: 'flex', gap: 16, fontSize: '12px' }}>
+            <span><Tag color="blue">Step 1</Tag> 启动 Python 后端</span>
+            <span><Tag color="cyan">Step 2</Tag> 输入 Reddit 链接提取数据</span>
+            <span><Tag color="purple">Step 3</Tag> 进入编辑器调整并导出视频</span>
+          </div>
+        </Space>
+      </Card>
+
       <Card
         title="数据提取"
         className="panel-card"

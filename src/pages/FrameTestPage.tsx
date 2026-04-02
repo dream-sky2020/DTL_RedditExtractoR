@@ -17,22 +17,23 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
   const [scene, setScene] = useState<VideoScene>({
     id: 'test-scene-id',
     type: 'comments',
-    title: '测试评论画面格',
-    duration: 5,
+    title: '全能标签演示画面',
+    duration: 10,
     items: [
       {
         id: 'item-1',
-        author: 'RedditUser_01',
-        content: '这是第一条评论内容，用于测试卡片在折叠和展开状态下的显示效果。',
-        replyChain: [
-          { author: 'OriginalPoster', content: '这是原贴的内容预览' }
-        ]
+        author: 'StyleMaster',
+        content: '基础样式演示：\n[style color=#ff4500 size=40 b]红色加粗大字[/style]\n[style color=#1890ff i u]蓝色斜体下划线[/style]\n嵌套演示：[style color=#52c41a b]绿色加粗[style size=12 i]里面是微缩斜体[/style]回到加粗[/style]',
       },
       {
         id: 'item-2',
-        author: 'RedditUser_02',
-        content: '这是第二条带图片的评论。',
-        image: 'https://preview.redd.it/6z0q4p3n8xea1.jpg?width=640&crop=smart&auto=webp&v=enabled&s=7e5f0d3a7e5f0d3a7e5f0d3a'
+        author: 'QuoteCollector',
+        content: '[quote=Alice]这是第一层引用\n[quote=Bob  max=20]这是第二层引用,这是第二层引用，而且这一层的文字内容非常非常非常长，长到已经超过了我们设置的 20 个字符的限制。在真实场景下，Reddit 的评论有时会极其冗长，通过这个 max 属性，我们可以确保视频画面不会被超长文本撑破，而是优雅地显示“内容已省略”的提示。\n[quote=Charlie]这是第三层引用\n[quote=Dave]这是第四层引用，再深就要触发我们刚做的“作者链”提示了！\n[quote=Eve]这一层应该会被折叠...[/quote]\n[/quote]\n[/quote]\n[/quote]\n[/quote]\n普通回复内容放在引用下面。',
+      },
+      {
+        id: 'item-3',
+        author: 'MediaExpert',
+        content: '图片与图集演示：\n[image #示例图片]https://preview.redd.it/6z0q4p3n8xea1.jpg?width=640&crop=smart&auto=webp&v=enabled&s=7e5f0d3a7e5f0d3a7e5f0d3a[/image]\n下面是一个自动轮播图集：\n[gallery duration=2]https://i.redd.it/v025v9v8t6ka1.jpg, https://i.redd.it/v58v5v8t6ka1.jpg|1, https://i.redd.it/v125v9v8t6ka1.jpg[/gallery]',
       }
     ]
   });

@@ -391,12 +391,10 @@ const App: React.FC = () => {
 
     try {
       const jsonUrl = `${redditUrl.trim().replace(/\/$/, '')}.json`;
-      const response = await axios.get(jsonUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        },
-      });
+      // 使用 Python 后端代理抓取，彻底解决浏览器跨域 (CORS) 限制和 User-Agent 伪装问题
+      const proxyUrl = `http://localhost:5000/fetch_reddit?url=${encodeURIComponent(jsonUrl)}`;
+      const response = await axios.get(proxyUrl);
+      
       const nextAuthors = extractAuthorsFromRawData(response.data);
       const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
       setAllAuthors(nextAuthors);

@@ -4,9 +4,28 @@ import subprocess
 import json
 import os
 import platform
+import requests
 
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
+
+@app.route('/fetch_reddit', methods=['GET'])
+def fetch_reddit():
+    target_url = request.args.get('url')
+    if not target_url:
+        return jsonify({"success": False, "message": "未提供目标 URL"}), 400
+    
+    try:
+        print(f"📡 正在代理抓取: {target_url}")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        }
+        response = requests.get(target_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except Exception as e:
+        print(f"❌ 抓取失败: {str(e)}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/render', methods=['POST'])
 def render_video():
