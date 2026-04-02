@@ -42,6 +42,7 @@ interface SceneCardProps {
   dragHandleProps?: any;
   innerRef?: (element: HTMLElement | null) => void;
   isDragging?: boolean;
+  previewDisabled?: boolean;
 }
 
 export const SceneCard: React.FC<SceneCardProps> = ({
@@ -59,6 +60,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   dragHandleProps,
   innerRef,
   isDragging,
+  previewDisabled = false,
 }) => {
   const [editingItemIds, setEditingItemIds] = useState<Record<string, boolean>>({});
 
@@ -109,7 +111,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
               <InputNumber size="small" min={1} value={scene.duration} onChange={(val) => onUpdateScene({ duration: val || 3 })} addonAfter="s" style={{ width: 80 }} />
             </Space>
             <Divider type="vertical" />
-            <Button size="small" icon={<EyeOutlined />} onClick={onPreviewScene}>预览</Button>
+            <Button size="small" icon={<EyeOutlined />} onClick={onPreviewScene} disabled={previewDisabled}>预览</Button>
             <Button size="small" danger icon={<DeleteOutlined />} onClick={onRemoveScene} />
           </Space>
         }

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, Modal } from 'antd';
-import { ArrowLeftOutlined, ToolOutlined, BugOutlined } from '@ant-design/icons';
+import React, { useState, useMemo } from 'react';
+import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, InputNumber, message } from 'antd';
+import { ArrowLeftOutlined, ToolOutlined, BugOutlined, VideoCameraOutlined, FileImageOutlined, CopyOutlined } from '@ant-design/icons';
 import { VideoScene, VideoContentItem, VideoConfig } from '../types';
 import { SceneCard } from '../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
@@ -38,12 +38,13 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
   });
 
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-  const previewConfig: VideoConfig = {
+  const [frameOffset, setFrameOffset] = useState(15);
+  
+  const previewConfig: VideoConfig = useMemo(() => ({
     title: '测试预览',
     subreddit: 'test',
     scenes: [scene],
-  };
+  }), [scene]);
 
   const updateScene = (updates: Partial<VideoScene>) => {
     setScene(prev => ({ ...prev, ...updates }));
@@ -74,111 +75,170 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     }));
   };
 
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(scene, null, 2));
+      message.success('画面格 JSON 已复制到剪贴板');
+    } catch (err) {
+      console.error(err);
+      message.error('复制失败');
+    }
+  };
+
   return (
     <div className="frame-test-page" style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Space size="middle">
           <Button icon={<ArrowLeftOutlined />} onClick={onBack}>返回编辑器</Button>
-          <Title level={3} style={{ margin: 0 }}>画面格卡片 (SceneCard) 独立测试</Title>
+          <Title level={3} style={{ margin: 0 }}>画面格增强测试终端</Title>
         </Space>
-        <Alert message="此页面仅用于开发调试：测试 SceneCard 组件的 UI 交互与样式" type="info" showIcon />
+        <Alert message="实时联动预览已开启：左侧编辑，右侧即时生效" type="success" showIcon />
       </div>
 
       <Row gutter={24}>
-        {/* 左侧：组件展示区 */}
-        <Col span={14}>
-          <div style={{ background: '#fff', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <div style={{ marginBottom: 16 }}>
-              <Text type="secondary"><BugOutlined /> 组件预览区域</Text>
-            </div>
-            
-            <DragDropContext onDragEnd={() => {}}>
-              <Droppable droppableId="test-list" type="scene">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef}>
-                    <SceneCard
-                      scene={scene}
-                      index={0}
-                      isExpanded={isExpanded}
-                      onToggleExpand={() => setIsExpanded(!isExpanded)}
-                      onUpdateScene={updateScene}
-                      onRemoveScene={() => alert('触发删除画面格回调')}
-                      onPreviewScene={() => setIsPreviewVisible(true)}
-                      onUpdateItem={updateItem}
-                      onRemoveItem={removeItem}
-                      onAddItem={addItem}
-                    />
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-            
-            {scene.items.length === 0 && <Empty description="画面格内暂无内容项" />}
-          </div>
-        </Col>
-
-        {/* 右侧：状态控制与数据监控 */}
+        {/* 左侧：编辑区 */}
         <Col span={10}>
           <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Card title={<span><ToolOutlined /> 快速控制</span>} bordered={false}>
+            <Card title={<span><BugOutlined /> 画面编辑卡片</span>} bordered={false}>
+              <DragDropContext onDragEnd={() => {}}>
+                <Droppable droppableId="test-list" type="scene">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                      <SceneCard
+                        scene={scene}
+                        index={0}
+                        isExpanded={isExpanded}
+                        onToggleExpand={() => setIsExpanded(!isExpanded)}
+                        onUpdateScene={updateScene}
+                        onRemoveScene={() => alert('触发删除画面格回调')}
+                        onPreviewScene={() => {}} // 已经在右侧实时预览，不再需要 Modal
+                        onUpdateItem={updateItem}
+                        onRemoveItem={removeItem}
+                        onAddItem={addItem}
+                        previewDisabled={true}
+                      />
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+              {scene.items.length === 0 && <Empty description="画面格内暂无内容项" />}
+            </Card>
+
+            <Card 
+              title={<span><ToolOutlined /> 调试控制台</span>} 
+              bordered={false}
+              extra={<Button size="small" icon={<CopyOutlined />} onClick={copyToClipboard}>复制 JSON</Button>}
+            >
               <Space wrap>
                 <Button 
                   type={scene.type === 'post' ? 'primary' : 'default'}
-                  onClick={() => updateScene({ type: 'post', title: '切换为原贴模式' })}
+                  onClick={() => updateScene({ type: 'post', title: '原贴测试画面' })}
                 >
                   设为原贴模式
                 </Button>
                 <Button 
                   type={scene.type === 'comments' ? 'primary' : 'default'}
-                  onClick={() => updateScene({ type: 'comments', title: '切换为评论模式' })}
+                  onClick={() => updateScene({ type: 'comments', title: '评论测试画面' })}
                 >
                   设为评论模式
                 </Button>
-                <Divider type="vertical" />
                 <Button onClick={() => setIsExpanded(!isExpanded)}>
-                  {isExpanded ? '强制收起卡片' : '强制展开卡片'}
-                </Button>
-                <Button type="primary" onClick={() => setIsPreviewVisible(true)}>
-                  直接打开预览
+                  {isExpanded ? '折叠编辑区' : '展开编辑区'}
                 </Button>
               </Space>
-            </Card>
-
-            <Card title="当前画面格数据 (State)" bordered={false}>
-              <div style={{ background: '#001529', color: '#a6adb4', padding: '16px', borderRadius: '8px', maxHeight: '500px', overflow: 'auto' }}>
-                <pre style={{ margin: 0, fontSize: '12px' }}>
+              
+              <Divider style={{ margin: '16px 0' }} />
+              
+              <div style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', borderRadius: '8px', maxHeight: '300px', overflow: 'auto' }}>
+                <div style={{ marginBottom: 8, fontSize: '11px', color: '#888' }}>JSON 状态监控</div>
+                <pre style={{ margin: 0, fontSize: '11px', fontFamily: 'monospace' }}>
                   {JSON.stringify(scene, null, 2)}
                 </pre>
               </div>
             </Card>
           </Space>
         </Col>
-      </Row>
 
-      <Modal
-        title="测试画面实时预览"
-        open={isPreviewVisible}
-        onCancel={() => setIsPreviewVisible(false)}
-        footer={null}
-        width={800}
-        styles={{ body: { padding: 0, background: '#000' } }}
-        destroyOnClose
-      >
-        {isPreviewVisible && (
-          <VideoPreviewPlayer
-            videoConfig={previewConfig}
-            durationInFrames={scene.duration * DEFAULT_PREVIEW_FPS}
-            compositionWidth={1280}
-            compositionHeight={720}
-            fps={DEFAULT_PREVIEW_FPS}
-            style={{ width: '100%', aspectRatio: '16/9' }}
-            focusedSceneId={scene.id}
-            controls
-            autoPlay
-          />
-        )}
-      </Modal>
+        {/* 右侧：预览区 */}
+        <Col span={14}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            {/* 动态预览 */}
+            <Card 
+              title={<span><VideoCameraOutlined /> 实时动画预览</span>} 
+              bordered={false}
+              styles={{ body: { padding: 0, background: '#000', overflow: 'hidden', borderRadius: '0 0 8px 8px' } }}
+            >
+              <VideoPreviewPlayer
+                videoConfig={previewConfig}
+                // 使用 Math.floor 确保数值稳定
+                durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+                compositionWidth={1280}
+                compositionHeight={720}
+                fps={DEFAULT_PREVIEW_FPS}
+                style={{ width: '100%', aspectRatio: '16/9' }}
+                focusedSceneId={scene.id}
+                controls
+                autoPlay
+                // 仅在 ID、类型或内容变化时刷新播放器，时长变化通过 InputProps 传递给 Remotion 而不是销毁播放器
+                key={`video-${scene.id}-${scene.type}`}
+              />
+            </Card>
+
+            {/* 静态预览 */}
+            <Card 
+              title={<span><FileImageOutlined /> 略缩图快照预览</span>} 
+              bordered={false}
+              extra={
+                <Space>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>偏移</Text>
+                  <InputNumber 
+                    size="small" 
+                    min={0} 
+                    max={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS} 
+                    value={frameOffset} 
+                    onChange={(val) => setFrameOffset(Number(val) || 0)} 
+                    style={{ width: 60 }}
+                  />
+                  <Text type="secondary" style={{ fontSize: '12px' }}>帧</Text>
+                </Space>
+              }
+            >
+              <div style={{ 
+                background: '#000', 
+                borderRadius: 8, 
+                overflow: 'hidden',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                position: 'relative'
+              }}>
+                <VideoPreviewPlayer
+                  videoConfig={previewConfig}
+                  durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+                  fps={DEFAULT_PREVIEW_FPS}
+                  initialFrame={frameOffset}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '16 / 9',
+                  }}
+                  controls={false}
+                  autoPlay={false}
+                  focusedSceneId={scene.id}
+                  // 静态预览需要根据偏移和内容变化刷新，但 key 应该更精准
+                  key={`static-${scene.id}-${frameOffset}-${JSON.stringify(scene.items)}-${scene.type}`}
+                />
+                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: '11px' }}>
+                  Snapshot @ Frame {frameOffset}
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary" italic style={{ fontSize: '12px' }}>
+                  * 模拟 SlidePreviewPage 的渲染效果，通过调整“偏移帧”来检查不同时间点的画面渲染是否正确。
+                </Text>
+              </div>
+            </Card>
+          </Space>
+        </Col>
+      </Row>
     </div>
   );
 };
