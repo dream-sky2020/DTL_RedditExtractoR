@@ -180,7 +180,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                           </Row>
                         ) : (
                           <div style={{ padding: '8px 4px' }}>
-                            {parseQuotes(item.content)}
+                            {parseQuotes(item.content, false, -1, 0, 4, [item.author])}
                             {!item.content && <Text type="secondary" italic>(无内容)</Text>}
                           </div>
                         )}

@@ -42,6 +42,8 @@ import { SlidePreviewPage } from './pages/SlidePreviewPage';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
+const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
+const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 
 type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test';
 type ColorArrangementMode = 'uniform' | 'randomized';
@@ -180,6 +182,22 @@ const App: React.FC = () => {
     }
   };
 
+  const persistVideoConfig = (config: VideoConfig) => {
+    try {
+      localStorage.setItem(VIDEO_CONFIG_STORAGE_KEY, JSON.stringify(config));
+    } catch (err) {
+      console.warn('保存视频配置到 localStorage 失败:', err);
+    }
+  };
+
+  const persistAuthorProfiles = (profiles: Record<string, AuthorProfile>) => {
+    try {
+      localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+    } catch (err) {
+      console.warn('保存作者配置到 localStorage 失败:', err);
+    }
+  };
+
   const restoreRawRedditData = () => {
     try {
       const cached = localStorage.getItem(RAW_REDDIT_DATA_STORAGE_KEY);
@@ -191,13 +209,37 @@ const App: React.FC = () => {
     }
   };
 
+  const restoreVideoConfig = () => {
+    try {
+      const cached = localStorage.getItem(VIDEO_CONFIG_STORAGE_KEY);
+      if (!cached) return null;
+      return JSON.parse(cached);
+    } catch (err) {
+      console.warn('读取 localStorage 中的视频配置失败:', err);
+      return null;
+    }
+  };
+
+  const restoreAuthorProfiles = () => {
+    try {
+      const cached = localStorage.getItem(AUTHOR_PROFILES_STORAGE_KEY);
+      if (!cached) return {};
+      return JSON.parse(cached);
+    } catch (err) {
+      console.warn('读取 localStorage 中的作者配置失败:', err);
+      return {};
+    }
+  };
+
   const clearPersistedRawRedditData = () => {
     try {
       localStorage.removeItem(RAW_REDDIT_DATA_STORAGE_KEY);
+      localStorage.removeItem(VIDEO_CONFIG_STORAGE_KEY);
+      localStorage.removeItem(AUTHOR_PROFILES_STORAGE_KEY);
       setHasStoredRawData(false);
-      message.success('已清除本地缓存的 Reddit 原始数据');
+      message.success('已清除本地缓存的所有数据');
     } catch (err) {
-      console.warn('清除 localStorage 中的原始 Reddit 数据失败:', err);
+      console.warn('清除 localStorage 数据失败:', err);
       message.error('清除缓存失败，请重试');
     }
   };
@@ -229,22 +271,45 @@ const App: React.FC = () => {
   // 页面刷新后恢复最近一次提取的原始 Reddit 数据
   useEffect(() => {
     const cachedRawResult = restoreRawRedditData();
-    if (!cachedRawResult) return;
+    const cachedVideoConfig = restoreVideoConfig();
+    const cachedAuthorProfiles = restoreAuthorProfiles();
 
-    const nextAuthors = extractAuthorsFromRawData(cachedRawResult);
-    const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
-    const nextResult = transformRedditJson(cachedRawResult, {
-      sortMode: commentSortMode,
-      replyOrder: replyOrderMode,
-      authorProfiles: nextProfiles,
-    });
+    if (cachedAuthorProfiles) {
+      setAuthorProfiles(cachedAuthorProfiles);
+    }
 
-    setRawResult(cachedRawResult);
-    setAllAuthors(nextAuthors);
-    setAuthorProfiles(nextProfiles);
-    setResult(nextResult);
-    setHasStoredRawData(true);
-    message.success('已从本地缓存恢复最近一次 Reddit 提取数据');
+    if (cachedVideoConfig) {
+      setVideoConfig(cachedVideoConfig);
+      setDraftConfig(cachedVideoConfig);
+    }
+
+    if (cachedRawResult) {
+      const nextAuthors = extractAuthorsFromRawData(cachedRawResult);
+      // 如果没有缓存的作者配置，则生成
+      const nextProfiles = Object.keys(cachedAuthorProfiles).length > 0 
+        ? cachedAuthorProfiles 
+        : buildProfilesForAuthors(nextAuthors, {}, colorArrangement);
+      
+      const nextResult = transformRedditJson(cachedRawResult, {
+        sortMode: commentSortMode,
+        replyOrder: replyOrderMode,
+        authorProfiles: nextProfiles,
+      });
+
+      setRawResult(cachedRawResult);
+      setAllAuthors(nextAuthors);
+      setResult(nextResult);
+      setHasStoredRawData(true);
+      
+      // 如果没有缓存的视频配置，则根据提取结果生成
+      if (!cachedVideoConfig) {
+        const nextConfig = buildVideoConfigFromResult(nextResult);
+        setVideoConfig(nextConfig);
+        setDraftConfig(nextConfig);
+      }
+      
+      message.success('已从本地缓存恢复最近一次的数据');
+    }
   }, []);
 
   // 当抓取结果更新时，自动同步到草稿配置
@@ -254,6 +319,7 @@ const App: React.FC = () => {
       
       setVideoConfig(newConfig);
       setDraftConfig(newConfig);
+      persistVideoConfig(newConfig);
     }
   }, [result]);
 
@@ -335,6 +401,7 @@ const App: React.FC = () => {
       const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
       setAllAuthors(nextAuthors);
       setAuthorProfiles(nextProfiles);
+      persistAuthorProfiles(nextProfiles); // 持久化作者配置
       persistRawRedditData(response.data);
       setRawResult(response.data);
       setResult(transformRedditJson(response.data, {
@@ -403,13 +470,17 @@ const App: React.FC = () => {
     author: string,
     updates: Partial<AuthorProfile>,
   ) => {
-    setAuthorProfiles((prev) => ({
-      ...prev,
-      [author]: {
-        ...(prev[author] || {}),
-        ...updates,
-      },
-    }));
+    setAuthorProfiles((prev) => {
+      const next = {
+        ...prev,
+        [author]: {
+          ...(prev[author] || {}),
+          ...updates,
+        },
+      };
+      persistAuthorProfiles(next); // 持久化更新
+      return next;
+    });
   };
 
   const applyIdentityAndSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
@@ -629,7 +700,11 @@ const App: React.FC = () => {
             {activeTool === 'editor' && (
               <EditorPage 
                 draftConfig={draftConfig}
-                setDraftConfig={setDraftConfig}
+                setDraftConfig={(cfg) => {
+                  setDraftConfig(cfg);
+                  setVideoConfig(cfg); // 同时更新主配置，确保其他页面实时可见
+                  persistVideoConfig(cfg); // 持久化
+                }}
                 commentSortMode={commentSortMode}
                 replyOrderMode={replyOrderMode}
                 onApplyCommentSort={applyIdentityAndSortInEditor}
@@ -643,8 +718,9 @@ const App: React.FC = () => {
                 onUpdateAuthorProfile={updateAuthorProfile}
                 onApply={() => {
                   setVideoConfig(draftConfig);
+                  persistVideoConfig(draftConfig);
                   setActiveTool('preview');
-                  message.success('配置已应用并跳转到预览');
+                  message.success('配置已保存并跳转到预览');
                 }}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}

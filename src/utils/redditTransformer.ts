@@ -284,8 +284,12 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                 // 祖先引用构建规则：
                 // 1) 最外层是最近的父评论，最内层是最早的评论
                 // 2) 结构：[quote=父级] [quote=更早父级]...[/quote] \n 父级内容 [/quote]
+                // 3) 最大支持 4 层嵌套以防止 UI 溢出和脚本过大
                 let nestedAncestorQuote = '';
-                for (let i = 0; i < replyChain.length; i++) {
+                const MAX_QUOTE_NESTING = 4;
+                const startIdx = Math.max(0, replyChain.length - MAX_QUOTE_NESTING);
+                
+                for (let i = startIdx; i < replyChain.length; i++) {
                     const quote = replyChain[i];
                     const level = i + 1;
                     

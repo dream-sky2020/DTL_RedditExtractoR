@@ -190,7 +190,14 @@ const Gallery: React.FC<{
  * @param isVideo 是否在视频中渲染
  * @param parentMaxLimit 父级 quote 设定的最大文本长度限制，-1 表示不限制
  */
-export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLimit: number = -1): React.ReactNode => {
+export const parseQuotes = (
+  text: string, 
+  isVideo: boolean = false, 
+  parentMaxLimit: number = -1,
+  currentDepth: number = 0,
+  maxQuoteDepth: number = 4,
+  authorPath: string[] = []
+): React.ReactNode => {
   if (!text) return null;
 
   const nodes: React.ReactNode[] = [];
@@ -201,6 +208,32 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
   // 只有当 parentMaxLimit > 0 时才启用截断逻辑
   const hasLimit = parentMaxLimit > 0;
   let limitReached = false;
+
+  // 如果已经超过最大嵌套层级，直接返回一个提示或空（根据需求隐藏）
+  if (currentDepth >= maxQuoteDepth) {
+    if (isVideo) return null;
+    
+    // 完整路径：已经经过的作者路径 + 当前文本中剩余的所有 [quote] 作者
+    const fullChain = [...authorPath];
+    
+    // 使用正则提取剩余文本中的所有 [quote=作者]
+    const quoteRegex = /\[quote=([^\] #]+)/g;
+    let match;
+    while ((match = quoteRegex.exec(text)) !== null) {
+      fullChain.push(match[1]);
+    }
+    
+    if (fullChain.length > 0) {
+      const authorChain = fullChain.map(a => `u/${a}:...`).join('->');
+      return (
+        <Text type="secondary" italic style={{ fontSize: '11px' }}>
+          {authorChain} (已达到最大嵌套层级)
+        </Text>
+      );
+    }
+    
+    return <Text type="secondary" italic style={{ fontSize: '11px' }}>... (已达到最大嵌套层级)</Text>;
+  }
 
   while (currentPos < text.length) {
     // 寻找最近的标签 [quote=... , [image , 或 [style
@@ -324,7 +357,7 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
           >
             <div style={isVideo ? { color: '#374151' } : { color: 'inherit' }}>
               {/* 递归调用：每个 quote 独立计算自己的限制，且不会破坏标签结构 */}
-              {parseQuotes(innerText, isVideo, maxAttr)}
+              {parseQuotes(innerText, isVideo, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author])}
             </div>
           </div>
         );
@@ -414,7 +447,7 @@ export const parseQuotes = (text: string, isVideo: boolean = false, parentMaxLim
 
         nodes.push(
           <span key={foundIdx} style={style}>
-            {parseQuotes(innerText, isVideo, parentMaxLimit)}
+            {parseQuotes(innerText, isVideo, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath)}
           </span>
         );
         currentPos = endTagIdx + 8;

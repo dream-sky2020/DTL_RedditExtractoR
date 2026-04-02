@@ -86,7 +86,7 @@ export const MyVideo: React.FC<MyVideoProps> = ({ title, subreddit, scenes = [],
                 color: '#1a1a1b', 
                 lineHeight: 1.4,
               }}>
-                {parseQuotes(item.content, true)}
+                {parseQuotes(item.content, true, -1, 0, 4, [item.author])}
               </div>
             </div>
           ))}
