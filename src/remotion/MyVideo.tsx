@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { VideoConfig, VideoScene } from '../types';
-import { parseQuotes } from '../utils/quoteParser';
+import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
 
 export interface MyVideoProps extends VideoConfig {
   focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
@@ -50,46 +50,57 @@ export const MyVideo: React.FC<MyVideoProps> = ({ title, subreddit, scenes = [],
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: '#f3f4f6',
-        padding: 60,
+        backgroundColor: '#f0f2f5',
+        padding: 28,
         fontFamily: 'Inter, -apple-system, sans-serif',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', opacity }}>
-        {/* Subreddit Header */}
-        <div style={{ fontSize: 28, color: '#ff4500', fontWeight: 'bold', marginBottom: 10 }}>
-          r/{subreddit} {activeScene.type === 'post' ? '• 原贴' : '• 热门评论'}
-        </div>
-
-        {/* Content Container */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {activeScene.items.map((item: any, idx: number) => (
-            <div 
-              key={item.id} 
-              style={{ 
-                backgroundColor: '#fff', 
-                borderRadius: 16, 
-                padding: 30,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                borderLeft: `8px solid ${activeScene.type === 'post' ? '#ff4500' : '#1890ff'}`,
+        <div
+          style={{
+            flex: 1,
+            background: '#fff',
+            borderRadius: 12,
+            borderLeft: activeScene.type === 'post' ? '6px solid #ff4500' : '6px solid #1890ff',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            padding: 18,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                fontSize: 14,
+                padding: '2px 10px',
+                borderRadius: 12,
+                color: activeScene.type === 'post' ? '#d46b08' : '#0958d9',
+                background: activeScene.type === 'post' ? '#fff7e6' : '#e6f4ff',
               }}
             >
-              {/* Author */}
-              <div style={{ fontSize: 24, color: '#4b5563', marginBottom: 15, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}>
-                u/{item.author}
-              </div>
-
-              {/* Text Content (Parsed Quotes) */}
-              <div style={{ 
-                fontSize: activeScene.type === 'post' ? 42 : 32, 
-                fontWeight: 700, 
-                color: '#1a1a1b', 
-                lineHeight: 1.4,
-              }}>
-                {parseQuotes(item.content, true, -1, 0, 4, [item.author])}
-              </div>
+              {activeScene.type === 'post' ? '画面格: 原贴' : '画面格: 评论'}
             </div>
-          ))}
+            <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+              {activeScene.title || '未命名画面'} ({activeScene.items.length} 个项)
+            </div>
+          </div>
+
+          {/* 与编辑页使用同一脚本渲染组件，保证所见即所得 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 18 }}>
+            {activeScene.items.map((item: any) => (
+              <div
+                key={item.id}
+                style={{
+                  background: '#f8f9fa',
+                  border: '1px dashed #d9d9d9',
+                  borderRadius: 8,
+                  padding: '16px 12px',
+                }}
+              >
+                <ScriptContentRenderer content={item.content} author={item.author} />
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Progress Bar (Per Scene) */}

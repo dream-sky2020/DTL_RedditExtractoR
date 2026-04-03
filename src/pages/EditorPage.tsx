@@ -124,6 +124,16 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     setDraftConfig({ ...draftConfig, scenes: newScenes });
   };
 
+  const replaceScene = (sceneId: string, nextScene: VideoScene): { ok: boolean; message?: string } => {
+    const duplicatedId = draftConfig.scenes.some((s) => s.id === nextScene.id && s.id !== sceneId);
+    if (duplicatedId) {
+      return { ok: false, message: `scene.id "${nextScene.id}" 已存在，请改成唯一值` };
+    }
+    const newScenes = draftConfig.scenes.map((s) => (s.id === sceneId ? nextScene : s));
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    return { ok: true, message: '场景 JSON 已应用到画面格' };
+  };
+
   const updateItem = (sceneId: string, itemId: string, updates: Partial<VideoContentItem>) => {
     const newScenes = draftConfig.scenes.map(s => {
       if (s.id === sceneId) {
@@ -520,6 +530,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                           onUpdateScene={(updates) => updateScene(scene.id, updates)}
                           onRemoveScene={() => removeScene(scene.id)}
                           onPreviewScene={() => setPreviewSceneId(scene.id)}
+                          onReplaceScene={(nextScene) => replaceScene(scene.id, nextScene)}
                           onUpdateItem={(itemId, updates) => updateItem(scene.id, itemId, updates)}
                           onRemoveItem={(itemId) => removeItem(scene.id, itemId)}
                           onAddItem={() => addItemToScene(scene.id)}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   Button,
@@ -42,6 +42,9 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
   const [frameOffset, setFrameOffset] = useState(15);
   const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [galleryPageSize, setGalleryPageSize] = useState(12);
+  const FILMSTRIP_WINDOW = 3;
   const fps = DEFAULT_PREVIEW_FPS;
 
   const scenes = videoConfig.scenes;
@@ -57,6 +60,36 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   const seekFrame = useMemo(() => getSeekFrame(currentSceneIdx), [currentSceneIdx, scenes, hasScenes, frameOffset]);
 
   const totalFrames = getTotalFrames(videoConfig, fps);
+
+  const galleryStartIndex = (galleryPage - 1) * galleryPageSize;
+  const visibleGalleryScenes = useMemo(
+    () =>
+      scenes
+        .slice(galleryStartIndex, galleryStartIndex + galleryPageSize)
+        .map((scene, offset) => ({
+          scene,
+          sceneIdx: galleryStartIndex + offset,
+        })),
+    [scenes, galleryStartIndex, galleryPageSize]
+  );
+
+  const visibleFilmstripScenes = useMemo(() => {
+    if (!hasScenes) return [];
+    const start = Math.max(0, currentSceneIdx - FILMSTRIP_WINDOW);
+    const end = Math.min(scenes.length - 1, currentSceneIdx + FILMSTRIP_WINDOW);
+    const items: { sceneIdx: number; scene: typeof scenes[number] }[] = [];
+    for (let i = start; i <= end; i += 1) {
+      items.push({ sceneIdx: i, scene: scenes[i] });
+    }
+    return items;
+  }, [hasScenes, scenes, currentSceneIdx]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(scenes.length / galleryPageSize));
+    if (galleryPage > maxPage) {
+      setGalleryPage(maxPage);
+    }
+  }, [scenes.length, galleryPage, galleryPageSize]);
 
   const nextScene = () => {
     if (currentSceneIdx < scenes.length - 1) {
@@ -146,13 +179,13 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
               /* 图库模式：整齐的图片网格 */
               <div style={{ padding: '20px 0' }}>
                 <Row gutter={[16, 16]}>
-                  {scenes.map((scene, idx) => (
+                  {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
                     <Col xs={24} sm={12} md={8} lg={6} xl={4} key={scene.id}>
                       <div className="gallery-item-wrap">
-                        <FramePlayer idx={idx} isThumbnail />
+                        <FramePlayer idx={sceneIdx} isThumbnail />
                         <div style={{ marginTop: 8, textAlign: 'center' }}>
                           <Text strong ellipsis style={{ width: '100%', display: 'block', fontSize: '12px' }}>
-                            {idx + 1}. {scene.title || '未命名画面'}
+                            {sceneIdx + 1}. {scene.title || '未命名画面'}
                           </Text>
                         </div>
                       </div>
@@ -160,6 +193,21 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                   ))}
                   {scenes.length === 0 && <Empty description="暂无画面格" />}
                 </Row>
+                {scenes.length > galleryPageSize && (
+                  <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+                    <Pagination
+                      current={galleryPage}
+                      pageSize={galleryPageSize}
+                      total={scenes.length}
+                      onChange={(page, size) => {
+                        setGalleryPage(page);
+                        setGalleryPageSize(size || 12);
+                      }}
+                      showSizeChanger
+                      pageSizeOptions={['12', '24', '36']}
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               /* 详情模式：大图 + 底部胶片栏 */
@@ -216,7 +264,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                   borderRadius: 12,
                   marginBottom: 20
                 }}>
-                  {scenes.map((scene, idx) => (
+                  {visibleFilmstripScenes.map(({ scene, sceneIdx: idx }) => (
                     <div 
                       key={`filmstrip-${scene.id}`} 
                       style={{ 

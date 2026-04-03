@@ -35,3 +35,15 @@
 主要是ai修改渲染视频的样式不是长项,ai无法理解渲染后的视频效果好不好看
 所以不选择更换渲染代码来切换不同的渲染效果,而是实现一个读取<YYY>来指定渲染的代码
 先不要修改代码,想评判我的方案
+
+<scene id="test-scene-id" duration=5 type="comments" title="测试评论">
+  <item author="RedditUser_01">
+    [quote=OriginalPoster]这是原贴的内容预览[/quote]
+    这是第一条评论内容...
+  </item>
+  
+  <item author="RedditUser_02">
+    这是第二条带图片的评论。
+    [image]https://...[/image]
+  </item>
+</scene>

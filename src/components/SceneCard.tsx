@@ -10,6 +10,8 @@ import {
   Divider,
   InputNumber,
   Tag,
+  Modal,
+  message,
 } from 'antd';
 import {
   EditOutlined,
@@ -21,7 +23,7 @@ import {
 } from '@ant-design/icons';
 import { VideoScene, VideoContentItem } from '../types';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-import { parseQuotes } from '../utils/quoteParser';
+import { ScriptContentRenderer } from './ScriptContentRenderer';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -34,6 +36,7 @@ interface SceneCardProps {
   onUpdateScene: (updates: Partial<VideoScene>) => void;
   onRemoveScene: () => void;
   onPreviewScene: () => void;
+  onReplaceScene: (nextScene: VideoScene) => { ok: boolean; message?: string };
   onUpdateItem: (itemId: string, updates: Partial<VideoContentItem>) => void;
   onRemoveItem: (itemId: string) => void;
   onAddItem: () => void;
@@ -53,6 +56,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   onUpdateScene,
   onRemoveScene,
   onPreviewScene,
+  onReplaceScene,
   onUpdateItem,
   onRemoveItem,
   onAddItem,
@@ -63,9 +67,75 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   previewDisabled = false,
 }) => {
   const [editingItemIds, setEditingItemIds] = useState<Record<string, boolean>>({});
+  const [isSceneEditorOpen, setIsSceneEditorOpen] = useState(false);
+  const [sceneEditorText, setSceneEditorText] = useState('');
+  const [sceneEditorBackup, setSceneEditorBackup] = useState('');
+  const [isFormatErrorOpen, setIsFormatErrorOpen] = useState(false);
+  const [formatErrorMessage, setFormatErrorMessage] = useState('');
 
   const toggleItemEdit = (itemId: string) => {
     setEditingItemIds(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
+  const openSceneEditor = () => {
+    const snapshot = JSON.stringify(scene, null, 2);
+    setSceneEditorText(snapshot);
+    setSceneEditorBackup(snapshot);
+    setIsSceneEditorOpen(true);
+  };
+
+  const validateSceneJson = (raw: unknown): string | null => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '场景数据必须是 JSON 对象';
+    const candidate = raw as any;
+    if (typeof candidate.id !== 'string' || !candidate.id.trim()) return 'scene.id 必须是非空字符串';
+    if (candidate.type !== 'post' && candidate.type !== 'comments') return 'scene.type 只能是 post 或 comments';
+    if (candidate.title !== undefined && typeof candidate.title !== 'string') return 'scene.title 必须是字符串';
+    if (typeof candidate.duration !== 'number' || !Number.isFinite(candidate.duration) || candidate.duration <= 0) {
+      return 'scene.duration 必须是大于 0 的数字';
+    }
+    if (!Array.isArray(candidate.items) || candidate.items.length === 0) return 'scene.items 必须是非空数组';
+    for (let i = 0; i < candidate.items.length; i += 1) {
+      const item = candidate.items[i];
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return `items[${i}] 必须是对象`;
+      if (typeof item.id !== 'string' || !item.id.trim()) return `items[${i}].id 必须是非空字符串`;
+      if (typeof item.author !== 'string' || !item.author.trim()) return `items[${i}].author 必须是非空字符串`;
+      if (typeof item.content !== 'string') return `items[${i}].content 必须是字符串`;
+      if (item.image !== undefined && typeof item.image !== 'string') return `items[${i}].image 必须是字符串`;
+      if (item.replyChain !== undefined) {
+        if (!Array.isArray(item.replyChain)) return `items[${i}].replyChain 必须是数组`;
+        for (let j = 0; j < item.replyChain.length; j += 1) {
+          const reply = item.replyChain[j];
+          if (!reply || typeof reply !== 'object' || Array.isArray(reply)) return `items[${i}].replyChain[${j}] 必须是对象`;
+          if (typeof reply.author !== 'string' || typeof reply.content !== 'string') {
+            return `items[${i}].replyChain[${j}] 需要 author/content 字符串`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const applySceneEditor = () => {
+    try {
+      const parsed = JSON.parse(sceneEditorText);
+      const validationError = validateSceneJson(parsed);
+      if (validationError) {
+        setFormatErrorMessage(validationError);
+        setIsFormatErrorOpen(true);
+        return;
+      }
+      const result = onReplaceScene(parsed as VideoScene);
+      if (!result.ok) {
+        setFormatErrorMessage(result.message || '场景数据应用失败');
+        setIsFormatErrorOpen(true);
+        return;
+      }
+      setIsSceneEditorOpen(false);
+      message.success(result.message || '场景数据已应用');
+    } catch (err) {
+      setFormatErrorMessage(`JSON 解析失败：${err instanceof Error ? err.message : String(err)}`);
+      setIsFormatErrorOpen(true);
+    }
   };
 
   return (
@@ -111,6 +181,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
               <InputNumber size="small" min={1} value={scene.duration} onChange={(val) => onUpdateScene({ duration: val || 3 })} addonAfter="s" style={{ width: 80 }} />
             </Space>
             <Divider type="vertical" />
+            <Button size="small" icon={<EditOutlined />} onClick={openSceneEditor}>编辑场景内容</Button>
             <Button size="small" icon={<EyeOutlined />} onClick={onPreviewScene} disabled={previewDisabled}>预览</Button>
             <Button size="small" danger icon={<DeleteOutlined />} onClick={onRemoveScene} />
           </Space>
@@ -138,13 +209,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                           background: itemDSnapshot.isDragging ? '#e6f7ff' : '#f8f9fa',
                           border: itemDSnapshot.isDragging ? '1px solid #1890ff' : '1px dashed #d9d9d9'
                         }}
-                        title={
-                          <Space>
-                            <div {...itemDProvided.dragHandleProps}><HolderOutlined style={{ color: '#bfbfbf' }} /></div>
-                            <Tag icon={<EditOutlined />}>项 #{itemIdx + 1}</Tag>
-                            <Input size="small" value={item.author} onChange={(e) => onUpdateItem(item.id, { author: e.target.value })} placeholder="作者" prefix="u/" style={{ width: 140 }} />
-                          </Space>
-                        }
+                        title={<div {...itemDProvided.dragHandleProps}><HolderOutlined style={{ color: '#bfbfbf' }} /></div>}
                         extra={
                           <Space>
                             <Button 
@@ -182,8 +247,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                           </Row>
                         ) : (
                           <div style={{ padding: '8px 4px' }}>
-                            {parseQuotes(item.content, false, -1, 0, 4, [item.author])}
-                            {!item.content && <Text type="secondary" italic>(无内容)</Text>}
+                            <ScriptContentRenderer content={item.content} author={item.author} />
                           </div>
                         )}
                       </Card>
@@ -197,6 +261,52 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           )}
         </Droppable>
       </Card>
+
+      <Modal
+        title="编辑场景 JSON"
+        open={isSceneEditorOpen}
+        onCancel={() => setIsSceneEditorOpen(false)}
+        onOk={applySceneEditor}
+        okText="应用修改"
+        cancelText="取消"
+        width={860}
+      >
+        <Text type="secondary">
+          你可以直接编辑完整场景对象（包含 id / type / title / duration / items）。
+        </Text>
+        <TextArea
+          value={sceneEditorText}
+          onChange={(e) => setSceneEditorText(e.target.value)}
+          rows={20}
+          style={{ marginTop: 12, fontFamily: 'monospace' }}
+        />
+      </Modal>
+
+      <Modal
+        title="场景格式错误"
+        open={isFormatErrorOpen}
+        onCancel={() => setIsFormatErrorOpen(false)}
+        footer={[
+          <Button key="continue" onClick={() => setIsFormatErrorOpen(false)}>
+            继续修改
+          </Button>,
+          <Button
+            key="rollback"
+            danger
+            onClick={() => {
+              setSceneEditorText(sceneEditorBackup);
+              setIsFormatErrorOpen(false);
+              message.info('已回退到打开弹窗时的数据快照');
+            }}
+          >
+            回退数据
+          </Button>,
+        ]}
+      >
+        <Typography.Paragraph style={{ marginBottom: 0 }}>
+          {formatErrorMessage}
+        </Typography.Paragraph>
+      </Modal>
     </div>
   );
 };

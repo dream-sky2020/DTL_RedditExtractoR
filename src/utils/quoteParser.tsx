@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Typography, Button } from 'antd';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -9,190 +8,140 @@ const { Text } = Typography;
  * 内部组件：图集轮播
  */
 const Gallery: React.FC<{ 
-  urls: string[]; 
-  isVideo: boolean;
-  durations?: number[]; // 每张图的持续时间（秒），如果不提供则使用默认值
-}> = ({ urls, isVideo, durations = [] }) => {
+  urls: string[];
+}> = ({ urls }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const DEFAULT_SECONDS_PER_IMAGE = 2.5;
+  const next = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % urls.length);
+  };
+  const prev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + urls.length) % urls.length);
+  };
 
-  if (!isVideo) {
-    const next = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setCurrentIndex((prev) => (prev + 1) % urls.length);
-    };
-    const prev = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setCurrentIndex((prev) => (prev - 1 + urls.length) % urls.length);
-    };
-
-    return (
-      <div 
-        className="gallery-group"
-        style={{ 
-          position: 'relative', 
-          marginTop: 10, 
-          width: '100%', 
-          height: 240, 
-          borderRadius: 8, 
-          overflow: 'hidden', 
-          backgroundColor: '#1a1a1a', 
-          border: '1px solid #ddd',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <img 
-          src={urls[currentIndex]} 
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-          alt={`Gallery ${currentIndex}`} 
-          referrerPolicy="no-referrer" 
-        />
-        
-        {/* 左右导航按钮 */}
-        {urls.length > 1 && (
-          <>
-            <div 
-              onClick={prev}
-              style={{
-                position: 'absolute',
-                left: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 32,
-                height: 32,
-                backgroundColor: 'rgba(255,255,255,0.3)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                zIndex: 2
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
-            >
-              <LeftOutlined style={{ color: 'white', fontSize: 16 }} />
-            </div>
-            <div 
-              onClick={next}
-              style={{
-                position: 'absolute',
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 32,
-                height: 32,
-                backgroundColor: 'rgba(255,255,255,0.3)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                zIndex: 2
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
-            >
-              <RightOutlined style={{ color: 'white', fontSize: 16 }} />
-            </div>
-          </>
-        )}
-
-        {/* 底部指示圆点 (胶囊容器) */}
-        {urls.length > 1 && (
-          <div style={{
-            position: 'absolute',
-            bottom: 12,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 6,
-            zIndex: 2,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            padding: '4px 8px',
-            borderRadius: '12px',
-            backdropFilter: 'blur(4px)' // 加上磨砂玻璃效果，更有质感
-          }}>
-            {urls.map((_, idx) => (
-              <div 
-                key={idx}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  backgroundColor: currentIndex === idx ? 'white' : 'rgba(255,255,255,0.4)',
-                  transition: 'all 0.3s'
-                }}
-              />
-            ))}
+  return (
+    <div 
+      className="gallery-group"
+      style={{ 
+        position: 'relative', 
+        marginTop: 10, 
+        width: '100%', 
+        height: 240, 
+        borderRadius: 8, 
+        overflow: 'hidden', 
+        backgroundColor: '#1a1a1a', 
+        border: '1px solid #ddd',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <img 
+        src={urls[currentIndex]} 
+        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+        alt={`Gallery ${currentIndex}`} 
+        referrerPolicy="no-referrer" 
+      />
+      
+      {/* 左右导航按钮 */}
+      {urls.length > 1 && (
+        <>
+          <div 
+            onClick={prev}
+            style={{
+              position: 'absolute',
+              left: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 32,
+              height: 32,
+              backgroundColor: 'rgba(255,255,255,0.3)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              zIndex: 2
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+          >
+            <LeftOutlined style={{ color: 'white', fontSize: 16 }} />
           </div>
-        )}
+          <div 
+            onClick={next}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 32,
+              height: 32,
+              backgroundColor: 'rgba(255,255,255,0.3)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              zIndex: 2
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+          >
+            <RightOutlined style={{ color: 'white', fontSize: 16 }} />
+          </div>
+        </>
+      )}
 
-        {/* 右下角页码 */}
-        <div style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: 10, fontSize: 11, zIndex: 2 }}>
-          {currentIndex + 1} / {urls.length}
+      {/* 底部指示圆点 (胶囊容器) */}
+      {urls.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 12,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: 6,
+          zIndex: 2,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          padding: '4px 8px',
+          borderRadius: '12px',
+          backdropFilter: 'blur(4px)' // 加上磨砂玻璃效果，更有质感
+        }}>
+          {urls.map((_, idx) => (
+            <div 
+              key={idx}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: currentIndex === idx ? 'white' : 'rgba(255,255,255,0.4)',
+                transition: 'all 0.3s'
+              }}
+            />
+          ))}
         </div>
+      )}
+
+      {/* 右下角页码 */}
+      <div style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: 10, fontSize: 11, zIndex: 2 }}>
+        {currentIndex + 1} / {urls.length}
       </div>
-    );
-  }
-
-  // 视频模式下的自动轮播
-  try {
-    const frame = useCurrentFrame();
-    const { fps } = useVideoConfig();
-    
-    // 计算每张图片持续的帧数
-    const imageFrameDurations = urls.map((_, i) => {
-      const sec = durations[i] || DEFAULT_SECONDS_PER_IMAGE;
-      return Math.floor(fps * sec);
-    });
-
-    // 计算总持续帧数
-    const totalFrames = imageFrameDurations.reduce((a, b) => a + b, 0);
-    const relativeFrame = frame % totalFrames;
-
-    // 确定当前应该显示哪张图
-    let accumulated = 0;
-    let currentIdx = 0;
-    for (let i = 0; i < imageFrameDurations.length; i++) {
-      accumulated += imageFrameDurations[i];
-      if (relativeFrame < accumulated) {
-        currentIdx = i;
-        break;
-      }
-    }
-
-    return (
-      <div style={{ marginTop: 20, width: '100%', height: 400, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000', border: '2px solid #eee' }}>
-        <img 
-          src={urls[currentIdx]} 
-          key={urls[currentIdx]}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-          alt="Gallery Video"
-          referrerPolicy="no-referrer"
-        />
-      </div>
-    );
-  } catch (e) {
-    // 兜底方案
-    return <img src={urls[0]} style={{ width: '100%', height: 'auto' }} alt="Gallery Fallback" />;
-  }
+    </div>
+  );
 };
 
 /**
  * 递归解析嵌套的 [quote] 和 [image] 标签
  * 
  * @param text 待解析文本
- * @param isVideo 是否在视频中渲染
  * @param parentMaxLimit 父级 quote 设定的最大文本长度限制，-1 表示不限制
  */
 export const parseQuotes = (
   text: string, 
-  isVideo: boolean = false, 
   parentMaxLimit: number = -1,
   currentDepth: number = 0,
   maxQuoteDepth: number = 4,
@@ -211,8 +160,6 @@ export const parseQuotes = (
 
   // 如果已经超过最大嵌套层级，直接返回一个提示或空（根据需求隐藏）
   if (currentDepth >= maxQuoteDepth) {
-    if (isVideo) return null;
-    
     // 完整路径：已经经过的作者路径 + 当前文本中剩余的所有 [quote] 作者
     const fullChain = [...authorPath];
     
@@ -340,13 +287,7 @@ export const parseQuotes = (
         nodes.push(
           <div 
             key={foundIdx}
-            style={isVideo ? {
-              border: '2px solid #e5e7eb',
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-              padding: '20px',
-              margin: '10px 0',
-              borderRadius: '12px',
-            } : {
+            style={{
               border: '1px solid #e8e8e8',
               backgroundColor: '#f9f9f9',
               padding: '8px 12px',
@@ -355,9 +296,9 @@ export const parseQuotes = (
               fontSize: '12px'
             }}
           >
-            <div style={isVideo ? { color: '#374151' } : { color: 'inherit' }}>
+            <div style={{ color: 'inherit' }}>
               {/* 递归调用：每个 quote 独立计算自己的限制，且不会破坏标签结构 */}
-              {parseQuotes(innerText, isVideo, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author])}
+              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author])}
             </div>
           </div>
         );
@@ -381,16 +322,7 @@ export const parseQuotes = (
       
       if (endTagIdx !== -1) {
         const url = text.substring(startTagEnd, endTagIdx);
-        nodes.push(isVideo ? (
-          <div key={foundIdx} style={{ marginTop: 20, width: '100%', height: 300, borderRadius: 12, overflow: 'hidden', backgroundColor: '#e5e7eb' }}>
-            <img 
-              src={url} 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-              alt="Content" 
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        ) : (
+        nodes.push(
           <div key={foundIdx} style={{ margin: '8px 0', textAlign: 'center' }}>
             <img 
               src={url} 
@@ -399,7 +331,7 @@ export const parseQuotes = (
               referrerPolicy="no-referrer"
             />
           </div>
-        ));
+        );
         currentPos = endTagIdx + 8;
       } else {
         nodes.push(imgStartMatch[0]);
@@ -447,7 +379,7 @@ export const parseQuotes = (
 
         nodes.push(
           <span key={foundIdx} style={style}>
-            {parseQuotes(innerText, isVideo, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath)}
+            {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath)}
           </span>
         );
         currentPos = endTagIdx + 8;
@@ -491,7 +423,7 @@ export const parseQuotes = (
 
           if (urls.length > 0) {
             nodes.push(
-              <Gallery key={foundIdx} urls={urls} durations={durations} isVideo={isVideo} />
+              <Gallery key={foundIdx} urls={urls} />
             );
           }
           currentPos = endTagIdx + 10;
