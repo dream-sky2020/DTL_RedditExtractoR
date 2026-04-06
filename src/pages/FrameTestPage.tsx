@@ -33,7 +33,12 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
       {
         id: 'item-3',
         author: 'MediaExpert',
-        content: '图片与图集演示：\n[image #示例图片]https://preview.redd.it/6z0q4p3n8xea1.jpg?width=640&crop=smart&auto=webp&v=enabled&s=7e5f0d3a7e5f0d3a7e5f0d3a[/image]\n下面是一个自动轮播图集：\n[gallery duration=2]https://i.redd.it/v025v9v8t6ka1.jpg, https://i.redd.it/v58v5v8t6ka1.jpg|1, https://i.redd.it/v125v9v8t6ka1.jpg[/gallery]',
+        content: '图片与图集演示：\n[image]https://media.giphy.com/media/Ce2jJ1GCZOmD51CjJV/giphy.gif[/image]\n下面是一个自动轮播图集：\n[gallery]https://preview.redd.it/jujnstfkj8tg1.jpg?width=774&format=pjpg&auto=webp&s=a30b5e0cf23eed1ed12fe82e9e09b0f0d4a058a6,https://preview.redd.it/nv4b0ufkj8tg1.jpg?width=763&format=pjpg&auto=webp&s=1543bea7205d1615b44142ae485b55b9787f64e3[/gallery]',
+      },
+      {
+        id: 'item-4',
+        author: 'ScalingDemo',
+        content: '图片缩放与模式演示：\n1. 原始比例 (默认最大高度限制):\n[image]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n2. 指定宽度 200px (w=200):\n[image w=200]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n3. 等比例缩放 40% (s=0.4):\n[image s=0.4]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n4. 强制宽高 200x100 并裁剪填满 (mode=cover):\n[image w=200 h=100 mode=cover]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]',
       }
     ]
   });
@@ -76,6 +81,11 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     }));
   };
 
+  const replaceScene = (nextScene: VideoScene) => {
+    setScene(nextScene);
+    return { ok: true, message: '场景已更新' };
+  };
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(scene, null, 2));
@@ -113,6 +123,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                         onUpdateScene={updateScene}
                         onRemoveScene={() => alert('触发删除画面格回调')}
                         onPreviewScene={() => {}} // 已经在右侧实时预览，不再需要 Modal
+                        onReplaceScene={replaceScene}
                         onUpdateItem={updateItem}
                         onRemoveItem={removeItem}
                         onAddItem={addItem}

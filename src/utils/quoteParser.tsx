@@ -309,7 +309,7 @@ export const parseQuotes = (
         currentPos = startTagEnd;
       }
     } else if (type === 'image') {
-      // 4. 处理 [image #备注]URL[/image]
+      // 4. 处理 [image w=300 h=200 mode=contain]URL[/image]
       const imgStartMatch = text.substring(foundIdx).match(/^\[image([^\]]*)\]/);
       if (!imgStartMatch) {
         nodes.push('[image]');
@@ -317,16 +317,60 @@ export const parseQuotes = (
         continue;
       }
 
+      const attrStr = imgStartMatch[1];
       const startTagEnd = foundIdx + imgStartMatch[0].length;
       const endTagIdx = text.indexOf('[/image]', startTagEnd);
       
       if (endTagIdx !== -1) {
         const url = text.substring(startTagEnd, endTagIdx);
+        
+        // 解析图像属性
+        const imgStyle: React.CSSProperties = { 
+          maxWidth: '100%', 
+          maxHeight: '500px', // 默认最大高度
+          borderRadius: '4px', 
+          border: '1px solid #eee',
+          display: 'block',
+          margin: '0 auto'
+        };
+
+        // 宽度: w=300 或 width=50%
+        const widthMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
+        if (widthMatch) {
+          const val = widthMatch[2];
+          imgStyle.width = isNaN(Number(val)) ? val : `${val}px`;
+          // 如果指定了宽度，通常希望取消默认的 100% 限制以展示原始比例
+          imgStyle.maxWidth = '100%'; 
+        }
+
+        // 高度: h=200 或 height=150px
+        const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
+        if (heightMatch) {
+          const val = heightMatch[2];
+          imgStyle.height = isNaN(Number(val)) ? val : `${val}px`;
+          imgStyle.maxHeight = 'none';
+        }
+
+        // 缩放: s=0.5 或 scale=0.8
+        const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
+        if (scaleMatch) {
+          const scale = parseFloat(scaleMatch[2]);
+          if (!isNaN(scale)) {
+            imgStyle.width = `${scale * 100}%`;
+          }
+        }
+
+        // 模式: mode=cover/contain/fill
+        const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
+        if (modeMatch) {
+          imgStyle.objectFit = modeMatch[1] as any;
+        }
+
         nodes.push(
-          <div key={foundIdx} style={{ margin: '8px 0', textAlign: 'center' }}>
+          <div key={foundIdx} style={{ margin: '12px 0', textAlign: 'center' }}>
             <img 
               src={url} 
-              style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #eee' }} 
+              style={imgStyle} 
               alt="Content" 
               referrerPolicy="no-referrer"
             />

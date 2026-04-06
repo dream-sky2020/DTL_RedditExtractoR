@@ -227,7 +227,11 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                         {editingItemIds[item.id] ? (
                           <Row gutter={16}>
                             <Col span={24}>
-                              <div style={{ marginBottom: 8 }}><Text type="secondary" style={{ fontSize: '12px' }}>支持 [quote=作者]内容[/quote] 和 [image]URL[/image] 标签</Text></div>
+                              <div style={{ marginBottom: 8 }}>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  支持 [quote=作者]内容[/quote]、[image w=300 h=200 mode=contain]URL[/image] (支持 w, h, s/scale, mode 属性) 和 [style] 标签
+                                </Text>
+                              </div>
                               <TextArea 
                                 rows={8} 
                                 value={item.content} 
