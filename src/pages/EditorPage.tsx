@@ -23,7 +23,7 @@ import {
   DownOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene, VideoContentItem } from '../types';
+import { VideoConfig, VideoScene } from '../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../utils/redditTransformer';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../components/VideoPreviewPlayer';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -134,31 +134,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     return { ok: true, message: '场景 JSON 已应用到画面格' };
   };
 
-  const updateItem = (sceneId: string, itemId: string, updates: Partial<VideoContentItem>) => {
-    const newScenes = draftConfig.scenes.map(s => {
-      if (s.id === sceneId) {
-        return {
-          ...s,
-          items: s.items.map(item => item.id === itemId ? { ...item, ...updates } : item)
-        };
-      }
-      return s;
-    });
-    setDraftConfig({ ...draftConfig, scenes: newScenes });
-  };
-
   const removeScene = (id: string) => {
     const newScenes = draftConfig.scenes.filter(s => s.id !== id);
-    setDraftConfig({ ...draftConfig, scenes: newScenes });
-  };
-
-  const removeItem = (sceneId: string, itemId: string) => {
-    const newScenes = draftConfig.scenes.map(s => {
-      if (s.id === sceneId) {
-        return { ...s, items: s.items.filter(item => item.id !== itemId) };
-      }
-      return s;
-    }).filter(s => s.items.length > 0);
     setDraftConfig({ ...draftConfig, scenes: newScenes });
   };
 
@@ -184,23 +161,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       }]
     };
     setDraftConfig({ ...draftConfig, scenes: [...draftConfig.scenes, newScene] });
-  };
-
-  const addItemToScene = (sceneId: string) => {
-    const newScenes = draftConfig.scenes.map(s => {
-      if (s.id === sceneId) {
-        return {
-          ...s,
-          items: [...s.items, {
-            id: 'item-' + Date.now(),
-            author: 'NewUser',
-            content: '',
-          }]
-        };
-      }
-      return s;
-    });
-    setDraftConfig({ ...draftConfig, scenes: newScenes });
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -531,9 +491,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                           onRemoveScene={() => removeScene(scene.id)}
                           onPreviewScene={() => setPreviewSceneId(scene.id)}
                           onReplaceScene={(nextScene) => replaceScene(scene.id, nextScene)}
-                          onUpdateItem={(itemId, updates) => updateItem(scene.id, itemId, updates)}
-                          onRemoveItem={(itemId) => removeItem(scene.id, itemId)}
-                          onAddItem={() => addItemToScene(scene.id)}
                           innerRef={draggableProvided.innerRef}
                           draggableProps={draggableProvided.draggableProps}
                           dragHandleProps={draggableProvided.dragHandleProps}

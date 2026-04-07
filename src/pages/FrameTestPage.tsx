@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, InputNumber, message } from 'antd';
 import { ArrowLeftOutlined, ToolOutlined, BugOutlined, VideoCameraOutlined, FileImageOutlined, CopyOutlined } from '@ant-design/icons';
-import { VideoScene, VideoContentItem, VideoConfig } from '../types';
+import { VideoScene, VideoConfig } from '../types';
 import { SceneCard } from '../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../components/VideoPreviewPlayer';
@@ -56,31 +56,6 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     setScene(prev => ({ ...prev, ...updates }));
   };
 
-  const updateItem = (itemId: string, updates: Partial<VideoContentItem>) => {
-    setScene(prev => ({
-      ...prev,
-      items: prev.items.map(item => item.id === itemId ? { ...item, ...updates } : item)
-    }));
-  };
-
-  const removeItem = (itemId: string) => {
-    setScene(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== itemId)
-    }));
-  };
-
-  const addItem = () => {
-    setScene(prev => ({
-      ...prev,
-      items: [...prev.items, {
-        id: 'item-' + Date.now(),
-        author: 'NewUser',
-        content: '新内容...',
-      }]
-    }));
-  };
-
   const replaceScene = (nextScene: VideoScene) => {
     setScene(nextScene);
     return { ok: true, message: '场景已更新' };
@@ -124,9 +99,6 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                         onRemoveScene={() => alert('触发删除画面格回调')}
                         onPreviewScene={() => {}} // 已经在右侧实时预览，不再需要 Modal
                         onReplaceScene={replaceScene}
-                        onUpdateItem={updateItem}
-                        onRemoveItem={removeItem}
-                        onAddItem={addItem}
                         previewDisabled={true}
                       />
                       {provided.placeholder}

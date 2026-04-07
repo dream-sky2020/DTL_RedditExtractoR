@@ -1,0 +1,112 @@
+Scene DSL (HTML-style) 语法说明
+================================
+
+1) 根节点: <scene>
+-------------------
+一个脚本必须且只能有一个 <scene ...>...</scene> 根节点。
+
+必填属性:
+- id: 场景唯一 ID
+- duration: 场景时长(秒)
+- type: 只能是 "post" 或 "comments"
+
+可选属性:
+- title: 场景标题
+
+示例:
+<scene id="scene-001" duration=8 type="comments" title="评论段落">
+  ...
+</scene>
+
+
+2) 子节点: <item>
+------------------
+<scene> 内可包含多个 <item ...>...</item>，每个 item 代表一个内容格。
+
+必填属性:
+- id: item 唯一 ID
+- author: 作者名
+
+可选属性:
+- enterAt: 进入时间(秒)，默认 0
+- exitAt: 退出时间(秒)，默认等于 scene.duration
+- enterAnimation: 进入动画，默认 "none"
+- exitAnimation: 退出动画，默认 "none"
+
+动画可选值:
+- none
+- fade
+- slide-up
+- slide-down
+- slide-left
+- slide-right
+- zoom-in
+- zoom-out
+
+示例:
+<item
+  id="item-01"
+  author="UserA"
+  enterAt=0.5
+  exitAt=5.5
+  enterAnimation="slide-up"
+  exitAnimation="fade"
+>
+  [quote=OP]引用内容[/quote]
+  这是正文内容。
+</item>
+
+
+3) 完整脚本示例
+----------------
+<scene id="scene-001" duration=8 type="comments" title="示例场景">
+  <item id="item-01" author="UserA" enterAt=0 exitAt=4 enterAnimation="fade" exitAnimation="slide-down">
+    第一条内容
+  </item>
+
+  <item id="item-02" author="UserB" enterAt=2 exitAt=8 enterAnimation="zoom-in" exitAnimation="none">
+    [image]https://example.com/demo.jpg[/image]
+  </item>
+</scene>
+
+
+4) item 内容体内的 [tag] 语法
+-----------------------------
+说明: <item> 标签体里的正文支持 BBCode 风格标签，常用如下。
+
+[quote]
+- 基本用法: [quote=作者]内容[/quote]
+- 可选参数: max=数字，用于限制该层 quote 文本长度
+- 示例:
+  [quote=OriginalPoster]这是引用内容[/quote]
+  [quote=Alice max=120]这段引用超过 120 字会被截断[/quote]
+
+[style]
+- 用法: [style color=#ff4500 size=24 b i u]内容[/style]
+- 可选属性:
+  - color=颜色值(如 #ff4500 / red)
+  - size=字号(数字)
+  - b(加粗) i(斜体) u(下划线)
+
+[image]
+- 用法: [image w=300 h=200 mode=contain]图片URL[/image]
+- 可选属性:
+  - w 或 width
+  - h 或 height
+  - s 或 scale
+  - mode=cover/contain/fill
+
+[gallery]
+- 用法:
+  [gallery]url1,url2[/gallery]
+  [gallery duration=3]url1|2.5,url2|4[/gallery]
+- 说明:
+  - duration 是默认轮播时长
+  - 每个 URL 后可用 |单独时长 覆盖默认值
+
+
+5) 使用建议
+-----------
+- duration / title / type 建议只在 <scene> 属性中维护
+- 进入退出时间与动画建议只在 <item> 属性中维护
+- 修改完脚本后，通过“应用脚本”生效
