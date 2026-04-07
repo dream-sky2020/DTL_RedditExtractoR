@@ -134,13 +134,16 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
                   background: '#f8f9fa',
                   border: '1px dashed #d9d9d9',
                   borderRadius: 8,
-                  padding: '8px 4px',
+                  // Align with Antd Card (size="small") body spacing used in SceneCard
+                  padding: '12px',
                   opacity,
                   transform: transforms.length > 0 ? transforms.join(' ') : undefined,
                   transformOrigin: 'center center',
                 }}
               >
-                <ScriptContentRenderer content={item.content} author={item.author} />
+                <div style={{ padding: '8px 4px' }}>
+                  <ScriptContentRenderer content={item.content} author={item.author} />
+                </div>
               </div>
             );
           })}
