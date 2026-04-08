@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #1f2937;
-  background-color: #f3f5f9;
+  color: var(--text-dark);
+  background-color: var(--workspace-bg);
 }
 
 * {
@@ -18,7 +18,7 @@ body,
 }
 
 body {
-  background: #f3f5f9;
+  background: var(--workspace-bg);
   overflow: hidden;
 }
 
@@ -48,6 +48,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--brand-dark);
 }
 
 .admin-sider .ant-layout-sider-children {
@@ -60,6 +61,7 @@ body {
 .sider-menu {
   flex: 1;
   overflow-y: auto;
+  background: var(--brand-dark) !important;
 }
 
 .brand-wrap {
@@ -70,22 +72,63 @@ body {
 }
 
 .brand-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   line-height: 1.2;
 }
 
 .brand-subtitle {
-  color: rgb(255 255 255 / 60%);
+  color: var(--text-secondary);
   font-size: 12px;
+}
+
+.custom-blue-select .ant-select-selection-item {
+  color: var(--text-primary) !important;
+}
+
+.custom-blue-select .ant-select-arrow {
+  color: var(--text-primary) !important;
+}
+
+/* 移除 Select 组件在聚焦/选中时的背景高亮和阴影 */
+.custom-blue-select.ant-select-focused .ant-select-selector,
+.custom-blue-select.ant-select-open .ant-select-selector,
+.custom-blue-select .ant-select-selector:focus,
+.custom-blue-select .ant-select-selector:active {
+  background-color: var(--input-bg) !important;
+  border-color: var(--brand-border) !important;
+  box-shadow: none !important;
+}
+
+/* 修复下拉菜单选项的样式 */
+.ant-select-dropdown {
+  background-color: var(--brand-border) !important;
+  padding: 4px !important;
+}
+
+.ant-select-item {
+  color: var(--text-muted) !important;
+  transition: all 0.2s;
+  background-color: transparent !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: transparent !important;
+  color: var(--text-light-blue) !important;
+  font-weight: 600;
+}
+
+.ant-select-item-option-active {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
 }
 
 .admin-header {
   height: 64px;
   padding: 0 20px;
-  background: #0f172a;
-  border-bottom: 1px solid #1f2937;
+  background: var(--brand-dark);
+  border-bottom: 1px solid var(--brand-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -109,14 +152,14 @@ body {
 }
 
 .header-title {
-  color: #f8fafc;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
   line-height: 1.1;
 }
 
 .header-subtitle {
-  color: rgb(248 250 252 / 72%);
+  color: var(--text-secondary);
   font-size: 13px;
   padding-left: 10px;
   border-left: 1px solid rgb(248 250 252 / 28%);
@@ -128,6 +171,7 @@ body {
   height: 100%;
   overflow-y: auto;
   min-height: 0;
+  background: var(--workspace-bg);
 }
 
 .panel-card {

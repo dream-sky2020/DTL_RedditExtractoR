@@ -4,6 +4,52 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
+const INLINE_ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
+const QUOTE_OPEN_TAG_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/;
+const QUOTE_OPEN_TAG_GLOBAL_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/g;
+
+const parseInlineAttrs = (input: string): Record<string, string> => {
+  const attrs: Record<string, string> = {};
+  let match: RegExpExecArray | null;
+  INLINE_ATTR_RE.lastIndex = 0;
+  while ((match = INLINE_ATTR_RE.exec(input)) !== null) {
+    const key = (match[1] || '').trim().toLowerCase();
+    const value = (match[2] ?? match[3] ?? match[4] ?? '').trim();
+    if (key) attrs[key] = value;
+  }
+  return attrs;
+};
+
+const parseQuoteStartTag = (
+  source: string,
+  defaultMaxLimit: number
+): { fullTag: string; author: string; maxLimit: number; itemId: string } | null => {
+  const startTagMatch = source.match(/^\[quote(?:=[^\]]*|\s[^\]]*)?\]/);
+  if (!startTagMatch) return null;
+
+  const fullTag = startTagMatch[0];
+  let tail = fullTag.slice('[quote'.length, -1).trim();
+  let positionalAuthor = '';
+
+  // 兼容旧语法：[quote=Alice ...]
+  if (tail.startsWith('=')) {
+    tail = tail.slice(1).trim();
+    const positionalMatch = tail.match(/^(?:"([^"]+)"|'([^']+)'|([^\s#\]]+))(.*)$/);
+    if (positionalMatch) {
+      positionalAuthor = (positionalMatch[1] ?? positionalMatch[2] ?? positionalMatch[3] ?? '').trim();
+      tail = (positionalMatch[4] || '').trim();
+    }
+  }
+
+  const attrs = parseInlineAttrs(tail);
+  const author = (attrs.author || positionalAuthor || '').trim();
+  const maxFromAttr = Number(attrs.max);
+  const maxLimit = Number.isFinite(maxFromAttr) && maxFromAttr > 0 ? maxFromAttr : defaultMaxLimit;
+  const itemId = (attrs.id || '').trim();
+
+  return { fullTag, author, maxLimit, itemId };
+};
+
 /**
  * 内部组件：图集轮播
  */
@@ -30,8 +76,8 @@ const Gallery: React.FC<{
         height: 240, 
         borderRadius: 8, 
         overflow: 'hidden', 
-        backgroundColor: '#1a1a1a', 
-        border: '1px solid #ddd',
+        backgroundColor: 'var(--gallery-bg)', 
+        border: '1px solid var(--gallery-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -56,7 +102,7 @@ const Gallery: React.FC<{
               transform: 'translateY(-50%)',
               width: 32,
               height: 32,
-              backgroundColor: 'rgba(255,255,255,0.3)',
+              backgroundColor: 'var(--gallery-nav-bg)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -65,8 +111,8 @@ const Gallery: React.FC<{
               transition: 'background-color 0.2s',
               zIndex: 2
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg)'}
           >
             <LeftOutlined style={{ color: 'white', fontSize: 16 }} />
           </div>
@@ -79,7 +125,7 @@ const Gallery: React.FC<{
               transform: 'translateY(-50%)',
               width: 32,
               height: 32,
-              backgroundColor: 'rgba(255,255,255,0.3)',
+              backgroundColor: 'var(--gallery-nav-bg)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -88,8 +134,8 @@ const Gallery: React.FC<{
               transition: 'background-color 0.2s',
               zIndex: 2
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg)'}
           >
             <RightOutlined style={{ color: 'white', fontSize: 16 }} />
           </div>
@@ -118,7 +164,7 @@ const Gallery: React.FC<{
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                backgroundColor: currentIndex === idx ? 'white' : 'rgba(255,255,255,0.4)',
+                backgroundColor: currentIndex === idx ? 'white' : 'var(--gallery-dot-bg)',
                 transition: 'all 0.3s'
               }}
             />
@@ -163,11 +209,14 @@ export const parseQuotes = (
     // 完整路径：已经经过的作者路径 + 当前文本中剩余的所有 [quote] 作者
     const fullChain = [...authorPath];
     
-    // 使用正则提取剩余文本中的所有 [quote=作者]
-    const quoteRegex = /\[quote=([^\] #]+)/g;
+    // 使用正则提取剩余文本中的所有 quote 开标签，并解析 author（属性顺序无关）
+    const quoteRegex = new RegExp(QUOTE_OPEN_TAG_GLOBAL_RE);
     let match;
     while ((match = quoteRegex.exec(text)) !== null) {
-      fullChain.push(match[1]);
+      const parsed = parseQuoteStartTag(match[0], DEFAULT_MAX_LIMIT);
+      if (parsed?.author) {
+        fullChain.push(parsed.author);
+      }
     }
     
     if (fullChain.length > 0) {
@@ -184,7 +233,9 @@ export const parseQuotes = (
 
   while (currentPos < text.length) {
     // 寻找最近的标签 [quote=... , [image , 或 [style
-    const nextQuote = text.indexOf('[quote=', currentPos);
+    const nextQuoteMatch = text.substring(currentPos).match(QUOTE_OPEN_TAG_RE);
+    const nextQuote =
+      nextQuoteMatch && nextQuoteMatch.index != null ? currentPos + nextQuoteMatch.index : -1;
     const nextImageMatch = text.substring(currentPos).match(/\[image[^\]]*\]/);
     const nextImage = nextImageMatch ? text.indexOf(nextImageMatch[0], currentPos) : -1;
     const nextStyle = text.indexOf('[style', currentPos);
@@ -242,18 +293,21 @@ export const parseQuotes = (
     }
 
     if (type === 'quote') {
-      // 3. 处理 [quote=作者 max=100 #备注]
-      const authorMatch = text.substring(foundIdx).match(/^\[quote=([^\] #]+)(?:\s+max=(\d+))?([^\]]*)\]/);
-      if (!authorMatch) {
+      // 3. 处理 [quote ...]，支持属性无序 + 两种 author 写法：
+      // - [quote=Alice id=odu5u6a max=120]
+      // - [quote author=Alice max=120 id=odu5u6a]
+      const parsedStartTag = parseQuoteStartTag(text.substring(foundIdx), DEFAULT_MAX_LIMIT);
+      if (!parsedStartTag) {
         // 匹配失败，跳过 [quote=
         nodes.push('[quote=');
         currentPos = foundIdx + 7;
         continue;
       }
       
-      const author = authorMatch[1];
-      const maxAttr = authorMatch[2] ? parseInt(authorMatch[2]) : DEFAULT_MAX_LIMIT;
-      const startTagEnd = foundIdx + authorMatch[0].length;
+      const author = parsedStartTag.author;
+      const maxAttr = parsedStartTag.maxLimit;
+      const quotedItemId = parsedStartTag.itemId;
+      const startTagEnd = foundIdx + parsedStartTag.fullTag.length;
       
       // 寻找匹配的 [/quote]，需要考虑嵌套深度
       let depth = 1;
@@ -261,7 +315,9 @@ export const parseQuotes = (
       let endTagIdx = -1;
       
       while (depth > 0 && searchPos < text.length) {
-        const nextStart = text.indexOf('[quote=', searchPos);
+        const nextStartMatch = text.substring(searchPos).match(QUOTE_OPEN_TAG_RE);
+        const nextStart =
+          nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
         const nextEnd = text.indexOf('[/quote]', searchPos);
         
         if (nextEnd === -1) break; 
@@ -287,9 +343,10 @@ export const parseQuotes = (
         nodes.push(
           <div 
             key={foundIdx}
+            data-quote-id={quotedItemId || undefined}
             style={{
-              border: '1px solid #e8e8e8',
-              backgroundColor: '#f9f9f9',
+              border: '1px solid var(--quote-border)',
+              backgroundColor: 'var(--quote-bg)',
               padding: '8px 12px',
               margin: '4px 0',
               borderRadius: '4px',
@@ -305,7 +362,7 @@ export const parseQuotes = (
         currentPos = endTagIdx + 8;
       } else {
         // 未闭合标签
-        nodes.push(authorMatch[0]);
+        nodes.push(parsedStartTag.fullTag);
         currentPos = startTagEnd;
       }
     } else if (type === 'image') {
@@ -329,7 +386,7 @@ export const parseQuotes = (
           maxWidth: '100%', 
           maxHeight: '500px', // 默认最大高度
           borderRadius: '4px', 
-          border: '1px solid #eee',
+          border: '1px solid var(--image-border)',
           display: 'block',
           margin: '0 auto'
         };

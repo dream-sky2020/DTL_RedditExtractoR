@@ -1,0 +1,73 @@
+/* 模仿安卓 colors.xml 的全局颜色资源池 */
+:root {
+  /* 基础品牌色与背景 */
+  --brand-dark: #0f172a;
+  --brand-border: #1f2937;
+  --workspace-bg: #f3f5f9;
+  
+  /* 文字颜色 */
+  --text-primary: #f8fafc;
+  --text-secondary: rgba(248, 250, 252, 0.72);
+  --text-muted: rgba(248, 250, 252, 0.45);
+  --text-light-blue: #bae7ff;
+  --text-dark: #1f2937;
+  
+  /* 组件特定颜色 */
+  --btn-primary-bg: #0050b3;
+  --btn-primary-border: #0050b3;
+  --btn-danger-bg: #ff4d4f;
+  
+  /* 面板与输入框背景 */
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --panel-bg-translucent: rgba(255, 255, 255, 0.04);
+  --panel-bg-darker: rgba(255, 255, 255, 0.02);
+  
+  /* 交互状态 */
+  --select-item-selected-bg: rgba(0, 80, 179, 0.35);
+  --select-item-active-bg: rgba(24, 144, 255, 0.15);
+
+  /* 引导卡片 */
+  --guide-card-bg: #f0f7ff;
+  --guide-card-border: #bae7ff;
+  --guide-card-text: #0050b3;
+  --guide-code-bg: #fff;
+  --guide-code-border: #91d5ff;
+  --guide-code-text: #eb2f96;
+
+  /* 代码预览 */
+  --code-bg: #1e1e1e;
+  --code-text: #d4d4d4;
+
+  /* 调试与测试页面 */
+  --test-page-bg: #f0f2f5;
+  --test-monitor-bg: #1e1e1e;
+  --test-monitor-text: #d4d4d4;
+  --test-monitor-label: #888;
+  --test-snapshot-overlay: rgba(0,0,0,0.5);
+
+  /* 幻灯片预览 */
+  --slide-filmstrip-bg: #f5f5f5;
+  --slide-thumbnail-border: #1890ff;
+
+  /* 场景卡片 */
+  --scene-post-border: #ff4500;
+  --scene-comment-border: #1890ff;
+  --scene-card-bg: #fff;
+  --scene-card-bg-collapsed: #fafafa;
+  --scene-card-shadow: rgba(0,0,0,0.05);
+  --scene-card-shadow-expanded: rgba(0,0,0,0.12);
+  --scene-card-shadow-dragging: rgba(0,0,0,0.2);
+  --scene-item-bg: #f8f9fa;
+  --scene-item-border: #d9d9d9;
+  --scene-holder-icon: #bfbfbf;
+
+  /* 引用与媒体预览 */
+  --quote-bg: #f9f9f9;
+  --quote-border: #e8e8e8;
+  --gallery-bg: #1a1a1a;
+  --gallery-border: #dddddd;
+  --gallery-nav-bg: rgba(255,255,255,0.3);
+  --gallery-nav-bg-hover: rgba(255,255,255,0.5);
+  --gallery-dot-bg: rgba(255,255,255,0.4);
+  --image-border: #eeeeee;
+}

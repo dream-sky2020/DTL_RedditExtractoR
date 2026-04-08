@@ -63,6 +63,7 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
   }
 
   if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
+  const layoutMode = activeScene.layout === 'center' ? 'center' : 'top';
 
   return (
     <AbsoluteFill
@@ -77,8 +78,10 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
           style={{
             display: 'flex',
             flexDirection: 'column',
+            justifyContent: layoutMode === 'center' ? 'center' : 'flex-start',
             gap: 12,
             padding: '4px 8px',
+            minHeight: '100%',
           }}
         >
           {activeScene.items.map((item: VideoScene['items'][number]) => {

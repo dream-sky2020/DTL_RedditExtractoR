@@ -68,18 +68,18 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
       <Card
         size="small"
         className="panel-card"
-        style={{ marginBottom: 16, background: '#f0f7ff', border: '1px solid #bae7ff' }}
+        style={{ marginBottom: 16, background: 'var(--guide-card-bg)', border: '1px solid var(--guide-card-border)' }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0050b3' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--guide-card-text)' }}>
             <RocketOutlined />
-            <Text strong style={{ color: '#0050b3' }}>操作指南：启动 Python 后端以确保正常抓取与导出</Text>
+            <Text strong style={{ color: 'var(--guide-card-text)' }}>操作指南：启动 Python 后端以确保正常抓取与导出</Text>
           </div>
           <Text type="secondary" style={{ fontSize: '13px' }}>
             为了绕过浏览器跨域限制并支持视频渲染，请确保在终端中运行以下命令启动后端服务：
           </Text>
-          <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 4, border: '1px dashed #91d5ff' }}>
-            <code style={{ color: '#eb2f96' }}>python scripts/server.py</code>
+          <div style={{ background: 'var(--guide-code-bg)', padding: '8px 12px', borderRadius: 4, border: '1px dashed var(--guide-code-border)' }}>
+            <code style={{ color: 'var(--guide-code-text)' }}>python scripts/server.py</code>
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: '12px' }}>
             <span><Tag color="blue">Step 1</Tag> 启动 Python 后端</span>

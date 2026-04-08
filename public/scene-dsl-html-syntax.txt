@@ -12,9 +12,12 @@ Scene DSL (HTML-style) 语法说明
 
 可选属性:
 - title: 场景标题
+- layout: 内容格垂直布局。可选值:
+  - top: 从顶部开始排列（默认）
+  - center: 垂直居中排列
 
 示例:
-<scene id="scene-001" duration=8 type="comments" title="评论段落">
+<scene id="scene-001" duration=8 type="comments" layout="center" title="评论段落">
   ...
 </scene>
 
@@ -59,7 +62,7 @@ Scene DSL (HTML-style) 语法说明
 
 3) 完整脚本示例
 ----------------
-<scene id="scene-001" duration=8 type="comments" title="示例场景">
+<scene id="scene-001" duration=8 type="comments" layout="top" title="示例场景">
   <item id="item-01" author="UserA" enterAt=0 exitAt=4 enterAnimation="fade" exitAnimation="slide-down">
     第一条内容
   </item>

@@ -13,6 +13,8 @@ export type ItemAnimationType =
   | 'zoom-in'
   | 'zoom-out';
 
+export type SceneLayoutType = 'top' | 'center';
+
 export interface VideoContentItem {
   id: string;
   author: string;
@@ -29,6 +31,7 @@ export interface VideoScene {
   id: string;
   type: 'post' | 'comments'; // 是原贴还是评论画面
   title?: string; // 画面标题或主要标识
+  layout?: SceneLayoutType; // 内容布局：顶部开始或垂直居中
   duration: number; // 整个画面的显示时间 (秒)
   items: VideoContentItem[]; // 画面中包含的内容项 (评论)
 }

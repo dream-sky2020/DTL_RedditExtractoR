@@ -13,7 +13,7 @@ export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = ({
   style,
 }) => {
   return (
-    <div style={style}>
+    <div style={{ whiteSpace: 'pre-wrap', ...style }}>
       {parseQuotes(content, -1, 0, 4, [author])}
       {!content && (
         <span style={{ color: '#999', fontStyle: 'italic' }}>(无内容)</span>

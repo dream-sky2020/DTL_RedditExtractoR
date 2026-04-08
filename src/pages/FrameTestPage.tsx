@@ -72,7 +72,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="frame-test-page" style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
+    <div className="frame-test-page" style={{ padding: '24px', background: 'var(--test-page-bg)', minHeight: '100vh' }}>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Space size="middle">
           <Button icon={<ArrowLeftOutlined />} onClick={onBack}>返回编辑器</Button>
@@ -80,6 +80,12 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
         </Space>
         <Alert message="实时联动预览已开启：左侧编辑，右侧即时生效" type="success" showIcon />
       </div>
+      <Alert
+        style={{ marginBottom: 16 }}
+        type="info"
+        showIcon
+        message='DSL 换行示范：在场景脚本中使用 [\n]，例如 "第一行[\n]第二行"。'
+      />
 
       <Row gutter={24}>
         {/* 左侧：编辑区 */}
@@ -134,8 +140,8 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
               
               <Divider style={{ margin: '16px 0' }} />
               
-              <div style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', borderRadius: '8px', maxHeight: '300px', overflow: 'auto' }}>
-                <div style={{ marginBottom: 8, fontSize: '11px', color: '#888' }}>JSON 状态监控</div>
+              <div style={{ background: 'var(--test-monitor-bg)', color: 'var(--test-monitor-text)', padding: '12px', borderRadius: '8px', maxHeight: '300px', overflow: 'auto' }}>
+                <div style={{ marginBottom: 8, fontSize: '11px', color: 'var(--test-monitor-label)' }}>JSON 状态监控</div>
                 <pre style={{ margin: 0, fontSize: '11px', fontFamily: 'monospace' }}>
                   {JSON.stringify(scene, null, 2)}
                 </pre>
@@ -151,7 +157,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
             <Card 
               title={<span><VideoCameraOutlined /> 实时动画预览</span>} 
               bordered={false}
-              styles={{ body: { padding: 0, background: '#000', overflow: 'hidden', borderRadius: '0 0 8px 8px' } }}
+              styles={{ body: { padding: 0, background: 'var(--brand-dark)', overflow: 'hidden', borderRadius: '0 0 8px 8px' } }}
             >
               <VideoPreviewPlayer
                 videoConfig={previewConfig}
@@ -189,7 +195,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
               }
             >
               <div style={{ 
-                background: '#000', 
+                background: 'var(--brand-dark)', 
                 borderRadius: 8, 
                 overflow: 'hidden',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
@@ -210,7 +216,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                   // 静态预览需要根据偏移和内容变化刷新，但 key 应该更精准
                   key={`static-${scene.id}-${frameOffset}-${JSON.stringify(scene.items)}-${scene.type}`}
                 />
-                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: '11px' }}>
+                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'var(--test-snapshot-overlay)', color: 'var(--text-primary)', padding: '2px 8px', borderRadius: 4, fontSize: '11px' }}>
                   Snapshot @ Frame {frameOffset}
                 </div>
               </div>

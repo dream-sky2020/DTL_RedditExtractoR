@@ -51,7 +51,7 @@ export const RawJsonPage: React.FC<RawJsonPageProps> = ({
       {data ? (
         <div
           style={{
-            background: '#1e1e1e',
+            background: 'var(--code-bg)',
             padding: '16px',
             borderRadius: '8px',
             overflowX: 'auto',
@@ -60,7 +60,7 @@ export const RawJsonPage: React.FC<RawJsonPageProps> = ({
           <pre
             style={{
               margin: 0,
-              color: '#d4d4d4',
+              color: 'var(--code-text)',
               fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
               fontSize: '14px',
               whiteSpace: 'pre-wrap',

@@ -56,7 +56,7 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
               返回修改内容
             </Button>
           }
-          styles={{ body: { background: '#000', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' } }}
+          styles={{ body: { background: 'var(--brand-dark)', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' } }}
         >
           <VideoPreviewPlayer
             videoConfig={videoConfig}

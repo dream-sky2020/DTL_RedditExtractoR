@@ -106,7 +106,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   // 渲染单张画面的播放器组件（复用）
   const FramePlayer = ({ idx, isThumbnail = false }: { idx: number, isThumbnail?: boolean }) => (
     <div style={{ 
-      background: '#000', 
+      background: 'var(--brand-dark)', 
       borderRadius: isThumbnail ? 8 : 12, 
       overflow: 'hidden',
       boxShadow: isThumbnail ? '0 2px 8px rgba(0,0,0,0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
@@ -114,7 +114,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
       cursor: isThumbnail ? 'pointer' : 'default',
-      border: isThumbnail && currentSceneIdx === idx ? '3px solid #1890ff' : 'none'
+      border: isThumbnail && currentSceneIdx === idx ? '3px solid var(--slide-thumbnail-border)' : 'none'
     }}
     onClick={() => {
       if (isThumbnail) {
@@ -260,7 +260,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                   overflowX: 'auto', 
                   gap: 12, 
                   padding: '10px 5px',
-                  backgroundColor: '#f5f5f5',
+                  backgroundColor: 'var(--slide-filmstrip-bg)',
                   borderRadius: 12,
                   marginBottom: 20
                 }}>

@@ -20,6 +20,8 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
+import './colors.css';
+import './style.css';
 import {
   transformRedditJson,
   CommentSortMode,

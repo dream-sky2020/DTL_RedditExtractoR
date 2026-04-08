@@ -9,7 +9,7 @@ export interface CleanComment {
     createdUtc?: number;
     controversiality?: number;
     parentAuthor?: string;
-    replyChain?: { author: string; content: string }[];
+    replyChain?: { author: string; id?: string; content: string }[];
 }
 
 export interface CleanPost {
@@ -259,7 +259,11 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     };
 
     // 展平处理评论 (生成符合脚本需求的 quote 层级文本)
-    const flattenComments = (children: any[], depth = 0, replyChain: { author: string; content: string }[] = []): CleanComment[] => {
+    const flattenComments = (
+        children: any[],
+        depth = 0,
+        replyChain: { author: string; id?: string; content: string }[] = []
+    ): CleanComment[] => {
         if (!children || !Array.isArray(children)) return [];
 
         let flatList: CleanComment[] = [];
@@ -303,7 +307,8 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                         ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}` 
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
 
-                    nestedAncestorQuote = `[quote=${quoteAuthorToken} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
+                    const quotedIdAttr = quote.id ? ` id=${quote.id}` : '';
+                    nestedAncestorQuote = `[quote=${quoteAuthorToken}${quotedIdAttr} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
                 }
 
                 const finalContent = nestedAncestorQuote
@@ -330,7 +335,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                     const subComments = flattenComments(
                         c.replies.data.children,
                         depth + 1,
-                        [...replyChain, { author: commentAuthor, content: currentRawContent }]
+                        [...replyChain, { author: commentAuthor, id: c.id, content: currentRawContent }]
                     );
                     flatList = [...flatList, ...subComments];
                 }
