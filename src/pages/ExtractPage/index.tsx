@@ -68,6 +68,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
       <Card
         size="small"
         className="panel-card"
+        variant="outlined"
         style={{ marginBottom: 16, background: 'var(--guide-card-bg)', border: '1px solid var(--guide-card-border)' }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -92,7 +93,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
       <Card
         title="数据提取"
         className="panel-card"
-        bordered={false}
+        variant="borderless"
         extra={<Text type="secondary">{toolDesc}</Text>}
       >
         {error && (
@@ -192,7 +193,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
         <Card
           title="数据预览"
           className="panel-card result-card"
-          bordered={false}
+          variant="borderless"
           extra={
             <Space>
               <Button onClick={copyToClipboard} icon={<CopyOutlined />}>

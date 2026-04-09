@@ -63,7 +63,7 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
                 value={editorSortMode}
                 onChange={setEditorSortMode}
                 style={{ width: '100%' }}
-                dropdownStyle={{ background: 'var(--brand-border)' }}
+                styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
                 className="custom-blue-select"
                 options={[
                   { label: '最佳排序', value: 'best' },
@@ -82,7 +82,7 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
                 value={editorReplyOrderMode}
                 onChange={setEditorReplyOrderMode}
                 style={{ width: '100%' }}
-                dropdownStyle={{ background: 'var(--brand-border)' }}
+                styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
                 className="custom-blue-select"
                 options={[
                   { label: '保持回复关系（默认）', value: 'preserve' },

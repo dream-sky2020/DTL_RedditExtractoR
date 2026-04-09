@@ -5,14 +5,19 @@ import {
   Button,
   Typography,
   Divider,
+  message,
 } from 'antd';
 import {
   EditOutlined,
   DownOutlined,
   UpOutlined,
+  SelectOutlined,
+  DeleteOutlined,
+  MergeCellsOutlined,
 } from '@ant-design/icons';
-import { VideoConfig } from '../../../types';
+import { VideoConfig, VideoScene } from '../../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 import { GlobalConfigPanel } from './GlobalConfigPanel';
 import { PrivacyConfigPanel } from './PrivacyConfigPanel';
 import { QuickActions } from './QuickActions';
@@ -57,6 +62,11 @@ interface SidebarProps {
   onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
   setAllSceneLayouts: (layout: 'top' | 'center') => void;
   addScene: () => void;
+  isMultiSelectMode: boolean;
+  setIsMultiSelectMode: (mode: boolean) => void;
+  selectedSceneIds: string[];
+  setSelectedSceneIds: (ids: string[]) => void;
+  onRemoveSelectedScenes: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -87,9 +97,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onUpdateAuthorProfile,
   setAllSceneLayouts,
   addScene,
+  isMultiSelectMode,
+  setIsMultiSelectMode,
+  selectedSceneIds,
+  setSelectedSceneIds,
+  onRemoveSelectedScenes,
 }) => {
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
   const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
+  const [isMultiSelectCollapsed, setIsMultiSelectCollapsed] = useState(false);
 
   return (
     <div
@@ -167,16 +183,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Text strong style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>侧栏宽度</Text>
             <Space size="small" align="center">
-              <InputNumber
-                id="editor-page-sidebar-width-input"
-                name="sidebar-width-input"
-                min={SIDEBAR_MIN_WIDTH}
-                max={SIDEBAR_MAX_WIDTH}
-                value={sidebarWidth}
-                onChange={updateSidebarWidthByInput}
-                addonAfter="px"
-                style={{ width: 110, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
-              />
+              <Space.Compact style={{ width: 110 }}>
+                <InputNumber
+                  id="editor-page-sidebar-width-input"
+                  name="sidebar-width-input"
+                  min={SIDEBAR_MIN_WIDTH}
+                  max={SIDEBAR_MAX_WIDTH}
+                  value={sidebarWidth}
+                  onChange={updateSidebarWidthByInput}
+                  style={{ width: '100%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
+                />
+                <Button disabled style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>px</Button>
+              </Space.Compact>
               <Button id="editor-page-sidebar-width-reset-btn" name="sidebar-width-reset-btn" onClick={resetSidebarWidthToDefault} size="small" style={{ color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }}>还原默认</Button>
             </Space>
           </div>
@@ -235,6 +253,101 @@ export const Sidebar: React.FC<SidebarProps> = ({
               authorProfiles={authorProfiles}
               onUpdateAuthorProfile={onUpdateAuthorProfile}
             />
+          )}
+
+          <div id="editor-page-sidebar-bottom-divider-wrapper">
+            <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+          </div>
+
+          <div id="editor-page-multi-select-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Space size="small">
+              <SelectOutlined style={{ color: 'var(--text-primary)' }} />
+              <Text strong style={{ color: 'var(--text-primary)' }}>多选模式</Text>
+            </Space>
+            <Button
+              id="editor-page-multi-select-toggle-btn"
+              name="multi-select-toggle-btn"
+              size="small"
+              type="text"
+              onClick={() => setIsMultiSelectCollapsed((prev) => !prev)}
+              icon={isMultiSelectCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {isMultiSelectCollapsed ? '展开' : '收起'}
+            </Button>
+          </div>
+          {!isMultiSelectCollapsed && (
+            <div
+              id="editor-page-multi-select-panel"
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                border: '1px solid var(--brand-border)',
+                background: 'var(--panel-bg-translucent)',
+              }}
+            >
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: 'var(--text-secondary)' }}>
+                  {isMultiSelectMode ? `已选择 ${selectedSceneIds.length} 个画面格` : '未开启多选模式'}
+                </Text>
+                <Button
+                  id="editor-page-multi-select-mode-btn"
+                  size="small"
+                  type={isMultiSelectMode ? 'primary' : 'default'}
+                  onClick={() => {
+                    setIsMultiSelectMode(!isMultiSelectMode);
+                    if (isMultiSelectMode) setSelectedSceneIds([]);
+                  }}
+                >
+                  {isMultiSelectMode ? '退出多选' : '开启多选'}
+                </Button>
+              </div>
+              {isMultiSelectMode && (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Button
+                    id="editor-page-multi-delete-btn"
+                    block
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled={selectedSceneIds.length === 0}
+                    onClick={onRemoveSelectedScenes}
+                  >
+                    批量删除
+                  </Button>
+                  <Button
+                    id="editor-page-multi-merge-btn"
+                    block
+                    icon={<MergeCellsOutlined />}
+                    disabled={selectedSceneIds.length < 2}
+                    onClick={() => {
+                      const result = mergeSelectedScenes({
+                        scenes: draftConfig.scenes,
+                        selectedSceneIds: selectedSceneIds,
+                        strategy: 'auto',
+                      });
+                      if (result.ok) {
+                        setDraftConfig({ ...draftConfig, scenes: result.scenes });
+                        setSelectedSceneIds([]);
+                        message.success(result.message || '合并成功');
+                      } else {
+                        message.error(result.message || '合并失败');
+                      }
+                    }}
+                  >
+                    批量合并
+                  </Button>
+                  <Button
+                    id="editor-page-multi-clear-btn"
+                    block
+                    size="small"
+                    onClick={() => setSelectedSceneIds([])}
+                    disabled={selectedSceneIds.length === 0}
+                  >
+                    清空选择
+                  </Button>
+                </Space>
+              )}
+            </div>
           )}
 
           <div id="editor-page-sidebar-bottom-divider-wrapper">

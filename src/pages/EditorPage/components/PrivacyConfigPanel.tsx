@@ -61,7 +61,7 @@ export const PrivacyConfigPanel: React.FC<PrivacyConfigPanelProps> = ({
               size="small"
               value={editorColorArrangement.mode}
               onChange={(mode) => setEditorColorArrangement((prev) => ({ ...prev, mode }))}
-              dropdownStyle={{ background: 'var(--brand-border)' }}
+              styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
               className="custom-blue-select"
               options={[
                 { label: '均匀分布', value: 'uniform' },

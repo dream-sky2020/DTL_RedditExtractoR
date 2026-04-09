@@ -17,6 +17,9 @@ interface SceneFlowProps {
   replaceScene: (sceneId: string, nextScene: VideoScene) => { ok: boolean; message?: string };
   onDragEnd: (result: DropResult) => void;
   onPageChange: (page: number, size: number) => void;
+  isMultiSelectMode: boolean;
+  selectedSceneIds: string[];
+  onToggleSceneSelection: (id: string) => void;
 }
 
 export const SceneFlow: React.FC<SceneFlowProps> = ({
@@ -32,6 +35,9 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
   replaceScene,
   onDragEnd,
   onPageChange,
+  isMultiSelectMode,
+  selectedSceneIds,
+  onToggleSceneSelection,
 }) => {
   return (
     <div style={{ marginTop: 24 }}>
@@ -63,6 +69,9 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
                         draggableProps={draggableProvided.draggableProps}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         isDragging={snapshot.isDragging}
+                        isMultiSelectMode={isMultiSelectMode}
+                        isSelected={selectedSceneIds.includes(scene.id)}
+                        onToggleSelection={() => onToggleSceneSelection(scene.id)}
                       />
                     )}
                   </Draggable>

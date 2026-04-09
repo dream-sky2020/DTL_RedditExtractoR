@@ -88,6 +88,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [editorSortMode, setEditorSortMode] = useState<CommentSortMode>(commentSortMode);
   const [editorReplyOrderMode, setEditorReplyOrderMode] = useState<ReplyOrderMode>(replyOrderMode);
   const [editorColorArrangement, setEditorColorArrangement] = useState<ColorArrangementSettings>(colorArrangement);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
 
   React.useEffect(() => {
     setEditorSortMode(commentSortMode);
@@ -100,6 +102,11 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   React.useEffect(() => {
     setEditorColorArrangement(colorArrangement);
   }, [colorArrangement]);
+
+  // 当 draftConfig.scenes 发生变化时，清理掉已经不存在的选中 ID
+  React.useEffect(() => {
+    setSelectedSceneIds(prev => prev.filter(id => draftConfig.scenes.some(s => s.id === id)));
+  }, [draftConfig.scenes]);
 
   React.useEffect(() => {
     if (!isSidebarResizing) return;
@@ -184,6 +191,22 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const removeScene = (id: string) => {
     const newScenes = draftConfig.scenes.filter(s => s.id !== id);
     setDraftConfig({ ...draftConfig, scenes: newScenes });
+  };
+
+  const removeSelectedScenes = () => {
+    if (selectedSceneIds.length === 0) return;
+    Modal.confirm({
+      title: '确认批量删除',
+      content: `确认删除选中的 ${selectedSceneIds.length} 个画面格吗？`,
+      okText: '确认删除',
+      cancelText: '取消',
+      onOk: () => {
+        const newScenes = draftConfig.scenes.filter(s => !selectedSceneIds.includes(s.id));
+        setDraftConfig({ ...draftConfig, scenes: newScenes });
+        setSelectedSceneIds([]);
+        message.success(`已删除 ${selectedSceneIds.length} 个画面格`);
+      },
+    });
   };
 
   const setAllSceneLayouts = (layout: 'top' | 'center') => {
@@ -275,6 +298,13 @@ export const EditorPage: React.FC<EditorPageProps> = ({
             setPageSize(size || 10);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          isMultiSelectMode={isMultiSelectMode}
+          selectedSceneIds={selectedSceneIds}
+          onToggleSceneSelection={(id) => {
+            setSelectedSceneIds(prev => 
+              prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+            );
+          }}
         />
 
         <div id="editor-page-bottom-divider-wrapper">
@@ -314,6 +344,11 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         onUpdateAuthorProfile={onUpdateAuthorProfile}
         setAllSceneLayouts={setAllSceneLayouts}
         addScene={addScene}
+        isMultiSelectMode={isMultiSelectMode}
+        setIsMultiSelectMode={setIsMultiSelectMode}
+        selectedSceneIds={selectedSceneIds}
+        setSelectedSceneIds={setSelectedSceneIds}
+        onRemoveSelectedScenes={removeSelectedScenes}
       />
 
       <Modal
@@ -323,7 +358,10 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         footer={null}
         width={800}
         styles={{ body: { padding: 0, background: '#000' } }}
-        destroyOnClose
+        destroyOnHidden
+        afterClose={() => {
+          // 如果需要处理关闭后的逻辑
+        }}
       >
         <div id="editor-page-preview-modal-content">
           {previewSceneId && (

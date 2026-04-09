@@ -37,6 +37,9 @@ interface SceneCardProps {
   innerRef?: (element: HTMLElement | null) => void;
   isDragging?: boolean;
   previewDisabled?: boolean;
+  isMultiSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
 export const SceneCard: React.FC<SceneCardProps> = ({
@@ -53,6 +56,9 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   innerRef,
   isDragging,
   previewDisabled = false,
+  isMultiSelectMode = false,
+  isSelected = false,
+  onToggleSelection,
 }) => {
   const [isSceneEditorVisible, setIsSceneEditorVisible] = useState(false);
   const [sceneEditorText, setSceneEditorText] = useState('');
@@ -158,21 +164,53 @@ export const SceneCard: React.FC<SceneCardProps> = ({
       <Card
         id={`scene-card-${scene.id}`}
         size="small"
-        className={`scene-card ${isExpanded ? 'expanded' : 'collapsed'}`}
+        className={`scene-card ${isExpanded ? 'expanded' : 'collapsed'} ${isSelected ? 'selected' : ''}`}
+        variant="outlined"
         style={{ 
           borderLeft: scene.type === 'post' ? '6px solid var(--scene-post-border)' : '6px solid var(--scene-comment-border)',
           boxShadow: isDragging ? '0 12px 32px var(--scene-card-shadow-dragging)' : (isExpanded ? '0 8px 24px var(--scene-card-shadow-expanded)' : '0 2px 8px var(--scene-card-shadow)'),
-          background: isExpanded ? 'var(--scene-card-bg)' : 'var(--scene-card-bg-collapsed)',
+          background: isSelected ? 'var(--brand-primary-light)' : (isExpanded ? 'var(--scene-card-bg)' : 'var(--scene-card-bg-collapsed)'),
           borderRadius: 12,
+          cursor: isMultiSelectMode ? 'pointer' : 'default',
+          border: isSelected ? '2px solid var(--brand-primary)' : '1px solid transparent',
         }}
-        title={<div id={`scene-card-drag-handle-${scene.id}`} {...dragHandleProps}><HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} /></div>}
+        onClick={() => {
+          if (isMultiSelectMode && onToggleSelection) {
+            onToggleSelection();
+          }
+        }}
+        title={
+          <Space>
+            {isMultiSelectMode && (
+              <Checkbox 
+                checked={isSelected} 
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onToggleSelection?.();
+                }} 
+              />
+            )}
+            <div id={`scene-card-drag-handle-${scene.id}`} {...dragHandleProps}>
+              <HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} />
+            </div>
+          </Space>
+        }
         extra={
           <Space id={`scene-card-actions-${scene.id}`} size="middle">
-            <Button id={`scene-card-edit-btn-${scene.id}`} name="edit-dsl-btn" size="small" icon={<EditOutlined />} onClick={toggleSceneEditor}>
-              {isSceneEditorVisible ? '收起场景脚本' : '编辑场景脚本'}
-            </Button>
-            <Button id={`scene-card-preview-btn-${scene.id}`} name="preview-scene-btn" size="small" icon={<EyeOutlined />} onClick={onPreviewScene} disabled={previewDisabled}>预览</Button>
-            <Button id={`scene-card-delete-btn-${scene.id}`} name="delete-scene-btn" size="small" danger icon={<DeleteOutlined />} onClick={onRemoveScene} />
+            {!isMultiSelectMode && (
+              <>
+                <Button id={`scene-card-edit-btn-${scene.id}`} name="edit-dsl-btn" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); toggleSceneEditor(); }}>
+                  {isSceneEditorVisible ? '收起场景脚本' : '编辑场景脚本'}
+                </Button>
+                <Button id={`scene-card-preview-btn-${scene.id}`} name="preview-scene-btn" size="small" icon={<EyeOutlined />} onClick={(e) => { e.stopPropagation(); onPreviewScene(); }} disabled={previewDisabled}>预览</Button>
+                <Button id={`scene-card-delete-btn-${scene.id}`} name="delete-scene-btn" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); onRemoveScene(); }} />
+              </>
+            )}
+            {isMultiSelectMode && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {isSelected ? '已选中' : '未选中'}
+              </Text>
+            )}
           </Space>
         }
       >
@@ -180,6 +218,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           <Card
             id={`scene-card-dsl-editor-${scene.id}`}
             size="small"
+            variant="outlined"
             style={{ marginBottom: 12, background: 'var(--scene-card-bg-collapsed)', border: '1px solid var(--scene-item-border)' }}
             title="场景脚本（DSL）"
             extra={
@@ -258,6 +297,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
               <Card
                 id={`scene-card-item-${scene.id}-${item.id || idx}`}
                 size="small"
+                variant="outlined"
                 style={{
                   background: 'var(--scene-item-bg)',
                   border: '1px dashed var(--scene-item-border)',
@@ -276,6 +316,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         title="场景格式错误"
         open={isFormatErrorOpen}
         onCancel={() => setIsFormatErrorOpen(false)}
+        destroyOnHidden
         footer={[
           <Button id={`scene-card-format-error-continue-btn-${scene.id}`} key="continue" onClick={() => setIsFormatErrorOpen(false)}>
             继续修改
@@ -309,6 +350,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           setDslWarnings([]);
           setCloseAfterWarningApply(false);
         }}
+        destroyOnHidden
         footer={[
           <Button
             id={`scene-card-dsl-warning-back-btn-${scene.id}`}
@@ -366,6 +408,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         title="场景脚本有未保存修改"
         open={isUnsavedConfirmOpen}
         onCancel={() => setIsUnsavedConfirmOpen(false)}
+        destroyOnHidden
         footer={[
           <Button id={`scene-card-unsaved-continue-btn-${scene.id}`} key="continue-editing" onClick={() => setIsUnsavedConfirmOpen(false)}>
             继续编辑

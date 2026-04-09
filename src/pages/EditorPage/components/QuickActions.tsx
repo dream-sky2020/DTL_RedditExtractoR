@@ -67,10 +67,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       </Row>
       
       <div id="editor-page-layout-btns-wrapper" style={{ marginBottom: 8 }}>
-        <Button.Group size="small" style={{ width: '100%' }}>
+        <Space.Compact style={{ width: '100%' }}>
           <Button id="editor-page-set-top-btn" name="set-top-btn" style={{ flex: 1, color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }} onClick={() => setAllSceneLayouts('top')}>全部 Top</Button>
           <Button id="editor-page-set-center-btn" name="set-center-btn" style={{ flex: 1, color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }} onClick={() => setAllSceneLayouts('center')}>全部 Center</Button>
-        </Button.Group>
+        </Space.Compact>
       </div>
       <Button id="editor-page-add-scene-btn" name="add-scene-btn" type="primary" block icon={<PlusOutlined />} onClick={addScene} style={{ background: 'var(--btn-primary-bg)', borderColor: 'var(--btn-primary-border)' }}>
         新增画面格
