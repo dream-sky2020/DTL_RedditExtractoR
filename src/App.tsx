@@ -33,14 +33,14 @@ import { generateRandomAliasProfiles } from './utils/aliasGenerator';
 import { VideoConfig, VideoScene } from './types';
 
 // Pages
-import { ExtractPage } from './pages/ExtractPage';
-import { EditorPage } from './pages/EditorPage';
-import { VideoPreviewPage } from './pages/VideoPreviewPage';
-import { FilteredJsonPage } from './pages/FilteredJsonPage';
-import { RawJsonPage } from './pages/RawJsonPage';
-import { FrameTestPage } from './pages/FrameTestPage';
-import { ScriptJsonPage } from './pages/ScriptJsonPage';
-import { SlidePreviewPage } from './pages/SlidePreviewPage';
+import { ExtractPage } from './pages/ExtractPage/index';
+import { EditorPage } from './pages/EditorPage/index';
+import { VideoPreviewPage } from './pages/VideoPreviewPage/index';
+import { FilteredJsonPage } from './pages/FilteredJsonPage/index';
+import { RawJsonPage } from './pages/RawJsonPage/index';
+import { FrameTestPage } from './pages/FrameTestPage/index';
+import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
+import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';

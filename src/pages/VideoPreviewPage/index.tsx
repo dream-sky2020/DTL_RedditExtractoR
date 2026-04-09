@@ -15,11 +15,11 @@ import {
   VideoCameraOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
-import { VideoPreviewPlayer, getTotalFrames } from '../components/VideoPreviewPlayer';
+import { VideoPreviewPlayer, getTotalFrames } from '../../components/VideoPreviewPlayer';
 
 const { Text } = Typography;
 
-import { VideoConfig } from '../types';
+import { VideoConfig } from '../../types';
 
 interface VideoPreviewPageProps {
   videoConfig: VideoConfig;

@@ -150,11 +150,13 @@ export const SceneCard: React.FC<SceneCardProps> = ({
 
   return (
     <div
+      id={`scene-card-wrapper-${scene.id}`}
       ref={innerRef}
       {...draggableProps}
       style={{ ...draggableProps?.style, marginBottom: 20 }}
     >
       <Card
+        id={`scene-card-${scene.id}`}
         size="small"
         className={`scene-card ${isExpanded ? 'expanded' : 'collapsed'}`}
         style={{ 
@@ -163,25 +165,28 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           background: isExpanded ? 'var(--scene-card-bg)' : 'var(--scene-card-bg-collapsed)',
           borderRadius: 12,
         }}
-        title={<div {...dragHandleProps}><HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} /></div>}
+        title={<div id={`scene-card-drag-handle-${scene.id}`} {...dragHandleProps}><HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} /></div>}
         extra={
-          <Space size="middle">
-            <Button size="small" icon={<EditOutlined />} onClick={toggleSceneEditor}>
+          <Space id={`scene-card-actions-${scene.id}`} size="middle">
+            <Button id={`scene-card-edit-btn-${scene.id}`} name="edit-dsl-btn" size="small" icon={<EditOutlined />} onClick={toggleSceneEditor}>
               {isSceneEditorVisible ? '收起场景脚本' : '编辑场景脚本'}
             </Button>
-            <Button size="small" icon={<EyeOutlined />} onClick={onPreviewScene} disabled={previewDisabled}>预览</Button>
-            <Button size="small" danger icon={<DeleteOutlined />} onClick={onRemoveScene} />
+            <Button id={`scene-card-preview-btn-${scene.id}`} name="preview-scene-btn" size="small" icon={<EyeOutlined />} onClick={onPreviewScene} disabled={previewDisabled}>预览</Button>
+            <Button id={`scene-card-delete-btn-${scene.id}`} name="delete-scene-btn" size="small" danger icon={<DeleteOutlined />} onClick={onRemoveScene} />
           </Space>
         }
       >
         {isSceneEditorVisible && (
           <Card
+            id={`scene-card-dsl-editor-${scene.id}`}
             size="small"
             style={{ marginBottom: 12, background: 'var(--scene-card-bg-collapsed)', border: '1px solid var(--scene-item-border)' }}
             title="场景脚本（DSL）"
             extra={
-              <Space>
+              <Space id={`scene-card-dsl-actions-${scene.id}`}>
                 <Button
+                  id={`scene-card-dsl-reload-btn-${scene.id}`}
+                  name="dsl-reload-btn"
                   size="small"
                   onClick={() => {
                     const snapshot = sceneToDsl(scene);
@@ -193,6 +198,8 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                   从当前场景重载
                 </Button>
                 <Button
+                  id={`scene-card-dsl-rollback-btn-${scene.id}`}
+                  name="dsl-rollback-btn"
                   size="small"
                   onClick={() => {
                     setSceneEditorText(sceneEditorBackup);
@@ -201,13 +208,15 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                 >
                   回退
                 </Button>
-                <Button size="small" onClick={applySceneEditor}>
+                <Button id={`scene-card-dsl-apply-btn-${scene.id}`} name="dsl-apply-btn" size="small" onClick={applySceneEditor}>
                   应用
                 </Button>
-                <Button size="small" type="primary" onClick={saveSceneEditor}>
+                <Button id={`scene-card-dsl-save-btn-${scene.id}`} name="dsl-save-btn" size="small" type="primary" onClick={saveSceneEditor}>
                   保存
                 </Button>
                 <Checkbox
+                  id={`scene-card-dsl-auto-apply-checkbox-${scene.id}`}
+                  name="dsl-auto-apply-checkbox"
                   checked={autoApplySceneDsl}
                   onChange={(e) => setAutoApplySceneDsl(e.target.checked)}
                 >
@@ -216,10 +225,12 @@ export const SceneCard: React.FC<SceneCardProps> = ({
               </Space>
             }
           >
-            <Text type="secondary">
+            <Text id={`scene-card-dsl-desc-${scene.id}`} type="secondary">
               直接编辑场景 DSL。可在 scene 上使用 layout="top|center" 控制内容格垂直布局；在 item 正文中写 [\n] 可强制换行。
             </Text>
             <TextArea
+              id={`scene-card-dsl-textarea-${scene.id}`}
+              name="dsl-textarea"
               value={sceneEditorText}
               onChange={(e) => {
                 const nextText = e.target.value;
@@ -235,15 +246,17 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         )}
 
         <div
+          id={`scene-card-items-container-${scene.id}`}
           style={{
             padding: '4px 8px',
             minHeight: isExpanded ? '50px' : '0px',
             borderRadius: 8,
           }}
         >
-          {scene.items.map((item) => (
-            <div key={item.id} style={{ marginBottom: 12 }}>
+          {scene.items.map((item, idx) => (
+            <div id={`scene-card-item-wrapper-${scene.id}-${item.id || idx}`} key={item.id || idx} style={{ marginBottom: 12 }}>
               <Card
+                id={`scene-card-item-${scene.id}-${item.id || idx}`}
                 size="small"
                 style={{
                   background: 'var(--scene-item-bg)',
@@ -264,10 +277,11 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         open={isFormatErrorOpen}
         onCancel={() => setIsFormatErrorOpen(false)}
         footer={[
-          <Button key="continue" onClick={() => setIsFormatErrorOpen(false)}>
+          <Button id={`scene-card-format-error-continue-btn-${scene.id}`} key="continue" onClick={() => setIsFormatErrorOpen(false)}>
             继续修改
           </Button>,
           <Button
+            id={`scene-card-format-error-rollback-btn-${scene.id}`}
             key="rollback"
             danger
             onClick={() => {
@@ -280,9 +294,11 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           </Button>,
         ]}
       >
-        <Typography.Paragraph style={{ marginBottom: 0 }}>
-          {formatErrorMessage}
-        </Typography.Paragraph>
+        <div id={`scene-card-format-error-modal-content-${scene.id}`}>
+          <Typography.Paragraph id={`scene-card-format-error-msg-${scene.id}`} style={{ marginBottom: 0 }}>
+            {formatErrorMessage}
+          </Typography.Paragraph>
+        </div>
       </Modal>
       <Modal
         title="场景脚本存在警告"
@@ -295,6 +311,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         }}
         footer={[
           <Button
+            id={`scene-card-dsl-warning-back-btn-${scene.id}`}
             key="back-edit"
             onClick={() => {
               setIsDslWarningOpen(false);
@@ -306,6 +323,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
             返回修改
           </Button>,
           <Button
+            id={`scene-card-dsl-warning-ignore-btn-${scene.id}`}
             key="ignore-warning"
             type="primary"
             onClick={() => {
@@ -331,26 +349,29 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           </Button>,
         ]}
       >
-        <Typography.Paragraph>
-          检测到以下警告，已给出修复建议。你可以返回修改，或忽略警告继续应用：
-        </Typography.Paragraph>
-        {dslWarnings.map((warning, idx) => (
-          <Typography.Paragraph key={`dsl-warning-${idx}`} style={{ marginBottom: 8 }}>
-            {idx + 1}. {warning.message}
-            <br />
-            <Text type="secondary">建议：{warning.suggestion}</Text>
+        <div id={`scene-card-dsl-warning-modal-content-${scene.id}`}>
+          <Typography.Paragraph id={`scene-card-dsl-warning-desc-${scene.id}`}>
+            检测到以下警告，已给出修复建议。你可以返回修改，或忽略警告继续应用：
           </Typography.Paragraph>
-        ))}
+          {dslWarnings.map((warning, idx) => (
+            <Typography.Paragraph id={`scene-card-dsl-warning-item-${scene.id}-${idx}`} key={`dsl-warning-${idx}`} style={{ marginBottom: 8 }}>
+              {idx + 1}. {warning.message}
+              <br />
+              <Text type="secondary">建议：{warning.suggestion}</Text>
+            </Typography.Paragraph>
+          ))}
+        </div>
       </Modal>
       <Modal
         title="场景脚本有未保存修改"
         open={isUnsavedConfirmOpen}
         onCancel={() => setIsUnsavedConfirmOpen(false)}
         footer={[
-          <Button key="continue-editing" onClick={() => setIsUnsavedConfirmOpen(false)}>
+          <Button id={`scene-card-unsaved-continue-btn-${scene.id}`} key="continue-editing" onClick={() => setIsUnsavedConfirmOpen(false)}>
             继续编辑
           </Button>,
           <Button
+            id={`scene-card-unsaved-discard-btn-${scene.id}`}
             key="discard-and-close"
             danger
             onClick={() => {
@@ -363,6 +384,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
             不保存并退出
           </Button>,
           <Button
+            id={`scene-card-unsaved-save-btn-${scene.id}`}
             key="save-and-close"
             type="primary"
             onClick={() => {
@@ -377,9 +399,11 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           </Button>,
         ]}
       >
-        <Typography.Paragraph style={{ marginBottom: 0 }}>
-          你修改了场景脚本但还未保存，是否先保存再退出？
-        </Typography.Paragraph>
+        <div id={`scene-card-unsaved-modal-content-${scene.id}`}>
+          <Typography.Paragraph id={`scene-card-unsaved-msg-${scene.id}`} style={{ marginBottom: 0 }}>
+            你修改了场景脚本但还未保存，是否先保存再退出？
+          </Typography.Paragraph>
+        </div>
       </Modal>
     </div>
   );

@@ -25,8 +25,8 @@ import {
   DEFAULT_PREVIEW_FPS,
   getTotalFrames,
   getSceneStartFrame,
-} from '../components/VideoPreviewPlayer';
-import { VideoConfig } from '../types';
+} from '../../components/VideoPreviewPlayer';
+import { VideoConfig } from '../../types';
 
 const { Text, Title } = Typography;
 

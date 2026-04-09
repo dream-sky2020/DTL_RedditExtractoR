@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, InputNumber, message } from 'antd';
 import { ArrowLeftOutlined, ToolOutlined, BugOutlined, VideoCameraOutlined, FileImageOutlined, CopyOutlined } from '@ant-design/icons';
-import { VideoScene, VideoConfig } from '../types';
-import { SceneCard } from '../components/SceneCard';
+import { VideoScene, VideoConfig } from '../../types';
+import { SceneCard } from '../../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../components/VideoPreviewPlayer';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 
 const { Title, Text } = Typography;
 

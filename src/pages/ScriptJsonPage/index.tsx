@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Button, Space, Typography, Empty, message } from 'antd';
 import { CopyOutlined, ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
-import { VideoConfig } from '../types';
+import { VideoConfig } from '../../types';
 
 const { Text } = Typography;
 
