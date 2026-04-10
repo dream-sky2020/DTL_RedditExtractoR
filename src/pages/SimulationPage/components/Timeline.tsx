@@ -1,10 +1,11 @@
 import React from 'react';
 import { Typography, Tag } from 'antd';
+import { FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
 
 const { Text } = Typography;
 
 interface TimelineProps {
-  frames: any[];
+  frames: FrameData[];
   selectedFrameIdx: number | null;
   onJumpToFrame: (index: number) => void;
   isRunning: boolean;

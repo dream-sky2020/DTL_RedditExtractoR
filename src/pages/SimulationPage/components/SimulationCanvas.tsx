@@ -1,9 +1,9 @@
 import React from 'react';
-import { PhysicalDataCompressor } from '../../../utils/physicsEngine';
+import { PhysicalDataCompressor, FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
 
 interface SimulationCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  selectedFrame: any | null;
+  selectedFrame: FrameData | null;
   bodyIds: string[];
 }
 
@@ -44,6 +44,19 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
           <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(PhysicalDataCompressor.decodeFrame(selectedFrame.data, bodyIds), null, 2)}
           </pre>
+
+          <div style={{ marginTop: 12, marginBottom: 8, borderBottom: '1px solid #555', paddingBottom: 4, fontWeight: 'bold', color: '#aaa' }}>
+            本帧产生的物理事件 ({selectedFrame.events.length})
+          </div>
+          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+            {selectedFrame.events.length > 0 ? (
+              <pre style={{ margin: 0, fontSize: 10, color: '#ffcc00' }}>
+                {JSON.stringify(selectedFrame.events, null, 2)}
+              </pre>
+            ) : (
+              <div style={{ fontSize: 10, color: '#666' }}>无事件</div>
+            )}
+          </div>
           
           <div style={{ marginTop: 12, marginBottom: 8, borderBottom: '1px solid #555', paddingBottom: 4, fontWeight: 'bold', color: '#aaa' }}>
             原始二进制数据 (Float32Array)

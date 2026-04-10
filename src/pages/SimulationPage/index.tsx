@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Row, Col, message } from 'antd';
-import { PhysicsEngine, RigidBody, createRect, createRegularPolygon, PhysicalDataCompressor, Vector2 } from '../../utils/physicsEngine';
+import { PhysicsEngine, RigidBody, createRect, createRegularPolygon, createCircle, PhysicalDataCompressor, Vector2, FrameData } from '../../utils/simulationEngine/physicsEngine/index';
 
 // 组件拆分
 import { HeaderActions } from './components/HeaderActions';
@@ -10,12 +10,6 @@ import { Timeline } from './components/Timeline';
 
 interface SimulationPageProps {
   onBack: () => void;
-}
-
-interface FrameData {
-  frame: number;
-  timestamp: number;
-  data: Float32Array;
 }
 
 export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
@@ -63,6 +57,20 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
       ));
     });
 
+    // 添加一些圆形
+    for (let i = 0; i < 3; i++) {
+      engine.addBody(createCircle(
+        `circle-${i}`,
+        150 + i * 200,
+        50,
+        20,
+        {
+          restitution: 0.8,
+          velocity: { x: (Math.random() - 0.5) * 200, y: 100 }
+        }
+      ));
+    }
+
     bodyIdsRef.current = engine.bodies.map(b => b.id);
     engineRef.current = engine;
   };
@@ -94,34 +102,52 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
     const bodiesToDraw = customBodies || engine.bodies;
 
     bodiesToDraw.forEach(bodyOrState => {
-      let verts: Vector2[];
+      let verts: Vector2[] = [];
       let pos: Vector2;
       let angle: number;
       let isStatic: boolean;
+      let shapeType: 'circle' | 'polygon';
+      let radius: number = 0;
 
-      if ('vertices' in bodyOrState) {
-        verts = engine.getWorldVertices(bodyOrState as RigidBody);
+      if ('shapeType' in bodyOrState && !('pos' in bodyOrState)) {
+        // 这是一个真正的 RigidBody 对象
         pos = bodyOrState.position;
         angle = bodyOrState.angle;
         isStatic = bodyOrState.isStatic;
+        shapeType = bodyOrState.shapeType;
+        radius = bodyOrState.radius;
+        if (shapeType === 'polygon') {
+          verts = engine.getWorldVertices(bodyOrState as RigidBody);
+        }
       } else {
-        const originalBody = engine.bodies.find(b => b.id === bodyOrState.id);
-        if (!originalBody) return;
-        pos = bodyOrState.pos;
+        // 这是一个从全参数帧数据解码出来的状态对象 (RigidBody)
+        pos = bodyOrState.position;
         angle = bodyOrState.angle;
-        isStatic = originalBody.isStatic;
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        verts = originalBody.vertices.map(v => ({
-          x: pos.x + v.x * cos - v.y * sin,
-          y: pos.y + v.x * sin + v.y * cos
-        }));
+        isStatic = bodyOrState.isStatic;
+        shapeType = bodyOrState.shapeType;
+        radius = bodyOrState.radius;
+
+        if (shapeType === 'polygon') {
+          // 使用解码出来的 vertices 计算世界顶点
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          verts = (bodyOrState.vertices as Vector2[]).map(v => ({
+            x: pos.x + v.x * cos - v.y * sin,
+            y: pos.y + v.x * sin + v.y * cos
+          }));
+        }
       }
       
       ctx.beginPath();
-      ctx.moveTo(verts[0].x, verts[0].y);
-      for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
-      ctx.closePath();
+      if (shapeType === 'circle') {
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      } else {
+        ctx.moveTo(verts[0].x, verts[0].y);
+        for (let i = 1; i < verts.length; i++) {
+          ctx.lineTo(verts[i].x, verts[i].y);
+        }
+        ctx.closePath();
+      }
 
       ctx.fillStyle = isStatic ? '#444' : '#1890ff';
       ctx.strokeStyle = isStatic ? '#666' : '#096dd9';
@@ -129,9 +155,14 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // 绘制朝向线
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
-      ctx.lineTo(pos.x + Math.cos(angle) * 20, pos.y + Math.sin(angle) * 20);
+      const forward = {
+        x: pos.x + Math.cos(angle) * radius,
+        y: pos.y + Math.sin(angle) * radius
+      };
+      ctx.lineTo(forward.x, forward.y);
       ctx.strokeStyle = '#fff';
       ctx.stroke();
     });
@@ -145,8 +176,18 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
       
       setCurrentFrame(prev => {
         const nextFrame = prev + 1;
+        const engine = engineRef.current;
+        
+        // 执行物理步进并获取本帧产生的事件
+        const frameEvents = engine.step(1 / fps, subSteps);
+        
         const frameData = PhysicalDataCompressor.encodeFrame(engine.bodies);
-        setFrames(f => [...f, { frame: nextFrame, timestamp: Date.now(), data: frameData }]);
+        setFrames(f => [...f, { 
+          frame: nextFrame, 
+          timestamp: Date.now(), 
+          data: frameData,
+          events: frameEvents // 保存事件
+        }]);
         return nextFrame;
       });
       lastTimeRef.current = time;
@@ -172,7 +213,12 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
   const handleSave = () => {
     const exportData = {
       metadata: { fps, totalFrames: frames.length, bodyIds: bodyIdsRef.current, recordedAt: new Date().toISOString() },
-      frames: frames.map(f => ({ f: f.frame, t: f.timestamp, d: Array.from(f.data) }))
+      frames: frames.map(f => ({ 
+        f: f.frame, 
+        t: f.timestamp, 
+        d: Array.from(f.data),
+        e: f.events // 导出事件
+      }))
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -187,7 +233,25 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
   const jumpToFrame = (index: number) => {
     if (isRunning) setIsRunning(false);
     setSelectedFrameIdx(index);
-    draw(PhysicalDataCompressor.decodeFrame(frames[index].data, bodyIdsRef.current));
+    
+    // 数据的统一驱动：直接通过 loadFrame 重建引擎内部状态
+    engineRef.current.loadFrame(frames[index].data, bodyIdsRef.current);
+    
+    const decoded = PhysicalDataCompressor.decodeFrame(frames[index].data, bodyIdsRef.current);
+    draw(decoded);
+  };
+
+  const handleStartFromSelected = () => {
+    if (selectedFrameIdx === null) return;
+    
+    // 剪断时间轴：保留 0 到 selectedFrameIdx 的帧
+    const newFrames = frames.slice(0, selectedFrameIdx + 1);
+    setFrames(newFrames);
+    setCurrentFrame(newFrames.length);
+    setSelectedFrameIdx(null);
+    
+    // 开始运行
+    setIsRunning(true);
   };
 
   return (
@@ -214,6 +278,8 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
                 onFpsChange={setFps}
                 subSteps={subSteps}
                 onSubStepsChange={setSubSteps}
+                selectedFrameIdx={selectedFrameIdx}
+                onStartFromSelected={handleStartFromSelected}
               />
             }
           >
