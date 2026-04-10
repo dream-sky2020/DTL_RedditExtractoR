@@ -91,110 +91,47 @@ body {
   color: var(--text-primary) !important;
 }
 
-/* 统一 Select 组件的背景颜色、边框和文字颜色 */
-.custom-blue-select .ant-select-selector {
-  background-color: var(--input-bg) !important;
-  border-color: var(--brand-border) !important;
-  color: var(--text-primary) !important;
-}
-
-/* 移除 Select 组件在聚焦/选中时的阴影，保持背景色一致 */
-.custom-blue-select.ant-select-focused .ant-select-selector,
-.custom-blue-select.ant-select-open .ant-select-selector,
-.custom-blue-select .ant-select-selector:focus,
-.custom-blue-select .ant-select-selector:active {
-  background-color: var(--input-bg) !important;
-  border-color: var(--brand-border) !important;
-  box-shadow: none !important;
-}
-
-/* 修复下拉菜单选项的样式 */
-.ant-select-dropdown {
-  background-color: var(--brand-border) !important;
-  padding: 4px !important;
-}
-
-.ant-select-item {
-  color: var(--text-muted) !important;
-  transition: all 0.2s;
-  background-color: transparent !important;
-}
-
-.ant-select-item-option-selected {
-  background-color: transparent !important;
-  color: var(--text-light-blue) !important;
-  font-weight: 600;
-}
-
-.ant-select-item-option-active {
-  background-color: transparent !important;
-  color: var(--text-primary) !important;
-}
-
-/* 表格暗色风格定制 */
-.ant-table {
-  background: transparent !important;
-  color: var(--text-primary) !important;
-}
-
-.ant-table-thead > tr > th {
-  background: var(--panel-bg-darker) !important;
-  color: var(--text-muted) !important;
-  border-bottom: 1px solid var(--brand-border) !important;
-}
-
-.ant-table-tbody > tr > td {
-  border-bottom: 1px solid var(--brand-border) !important;
-  background: transparent !important;
-}
-
-.ant-table-tbody > tr:hover > td {
-  background: var(--panel-bg-darker) !important;
-}
-
-/* 分页器暗色风格 - 仅应用于深色容器或表格内 */
-.ant-table .ant-pagination-item, 
-.ant-table .ant-pagination-prev, 
-.ant-table .ant-pagination-next, 
-.ant-table .ant-pagination-jump-prev, 
-.ant-table .ant-pagination-next {
-  background: transparent !important;
-  border-color: var(--brand-border) !important;
-}
-
-.ant-table .ant-pagination-item a {
-  color: var(--text-secondary) !important;
-}
-
-.ant-table .ant-pagination-item-active {
-  border-color: var(--text-light-blue) !important;
-}
-
-.ant-table .ant-pagination-item-active a {
-  color: var(--text-light-blue) !important;
-}
-
-/* 确保主内容区的分页器使用深色文字（针对浅色背景） */
-#editor-page-pagination-wrapper .ant-pagination-item a,
-#editor-page-pagination-wrapper .ant-pagination-prev .ant-pagination-item-link,
-#editor-page-pagination-wrapper .ant-pagination-next .ant-pagination-item-link {
-  color: var(--text-dark) !important;
-}
-
-#editor-page-pagination-wrapper .ant-pagination-item {
-  background: #fff !important;
-  border-color: #d9d9d9 !important;
-}
-
-#editor-page-pagination-wrapper .ant-pagination-item-active {
-  border-color: var(--btn-primary-border) !important;
-}
-
-#editor-page-pagination-wrapper .ant-pagination-item-active a {
-  color: var(--btn-primary-bg) !important;
-}
-
-.admin-header {
+  /* 统一 Select 组件的背景颜色、边框和文字颜色 */
+  .custom-blue-select .ant-select-selector {
+    background-color: var(--input-bg) !important;
+    border-color: var(--brand-border) !important;
+    color: var(--text-primary) !important;
+  }
+  
+  /* 移除 Select 组件在聚焦/选中时的阴影，保持背景色一致 */
+  .custom-blue-select.ant-select-focused .ant-select-selector,
+  .custom-blue-select.ant-select-open .ant-select-selector,
+  .custom-blue-select .ant-select-selector:focus,
+  .custom-blue-select .ant-select-selector:active {
+    background-color: var(--input-bg) !important;
+    border-color: var(--brand-border) !important;
+    box-shadow: none !important;
+  }
+  
+  /* 修复下拉菜单选项的样式 */
+  .ant-select-dropdown {
+    background-color: var(--brand-border) !important;
+    padding: 4px !important;
+  }
+  
+  .ant-select-item {
+    color: var(--text-muted) !important;
+    transition: all 0.2s;
+    background-color: transparent !important;
+  }
+  
+  .ant-select-item-option-selected {
+    background-color: transparent !important;
+    color: var(--text-light-blue) !important;
+    font-weight: 600;
+  }
+  
+  .ant-select-item-option-active {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+  }
+  
+  .admin-header {
   height: 64px;
   padding: 0 20px;
   background: var(--brand-dark);

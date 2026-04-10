@@ -1,0 +1,84 @@
+# 幸存者大战僵尸：自动化视频生成方案 (Remotion + 预计算模拟)
+
+## 1. 核心理念 (Core Concept)
+通过 "离线模拟计算" + "逐帧数据驱动渲染" 的方式，生成高质量、高帧率稳定的自动化战斗视频。
+- **差异化**：相比传统的颜色填充抢地盘，引入“幸存者”、“僵尸群”、“AI 拾取武器”、“生存升级”等叙事元素。
+- **技术优势**：彻底解决录屏导致的帧率抖动、音画不同步问题。
+
+---
+
+## 2. 架构设计 (Architecture)
+
+### A. 模拟引擎层 (The Simulator - `zombieEngine.ts`)
+负责纯逻辑计算，不涉及任何 UI 渲染。
+- **输入**：地图尺寸、随机种子 (Seed)、僵尸密度、武器生成速率。
+- **AI 逻辑**：
+  - 幸存者：寻找最近武器 -> 自动瞄准射击 -> 避开僵尸群。
+  - 僵尸：简单的群集行为 (Flocking)，向幸存者位置聚集。
+- **输出 (Simulation JSON)**：
+  ```json
+  {
+    "config": { "width": 1280, "height": 720, "fps": 60 },
+    "frames": [
+      {
+        "frame": 0,
+        "player": { "x": 640, "y": 360, "hp": 100, "weapon": "pistol" },
+        "zombies": [{ "id": 1, "x": 100, "y": 100, "hp": 10 }],
+        "bullets": [],
+        "events": [] 
+      },
+      ...
+    ]
+  }
+  ```
+
+### B. 渲染表现层 (The Renderer - `ZombieVideo.tsx`)
+Remotion 组件根据模拟数据进行逐帧“快照”渲染。
+- **背景层**：绘制房间、障碍物。
+- **精灵层**：根据当前帧 `frame` 的坐标渲染幸存者、僵尸、子弹图片。
+- **特效层 (VFX)**：
+  - 击中瞬间：屏幕震动 (Screenshake)、火花粒子。
+  - 死亡效果：僵尸消失动画、地面血迹贴图。
+- **UI 层**：实时显示击杀数、幸存者等级、倒计时。
+
+### C. 音效集成层 (Audio - `[audio]` DSL 逻辑)
+根据模拟数据中的 `events` 自动触发音效。
+- `event: "shoot"` -> 播放枪声。
+- `event: "hit"` -> 播放打击声。
+- `event: "pickup"` -> 播放升级/拾取声。
+
+---
+
+## 3. DSL 语法扩展 (DSL Integration)
+在项目中通过 DSL 定义关卡参数：
+```xml
+<zombie-game id="level-001" duration=60 seed=8888>
+  <survivor speed=4 initialWeapon="knife" ai="aggressive" />
+  <zombie-spawn rate=5 maxCount=200 type="fast" />
+  <loot-drop interval=10s items="shotgun,machine-gun,medkit" />
+</zombie-game>
+```
+
+---
+
+## 4. 实施步骤 (Implementation Roadmap)
+
+### 第一阶段：基础模拟器 (MVP)
+1. 编写 `zombieEngine.ts`，实现小球在矩形区域内移动和简单的碰撞判定。
+2. 在 `EditorPage` 增加一个“模拟”按钮，点击后生成并缓存 `simulation.json`。
+
+### 第二阶段：Remotion 渲染适配
+1. 创建 `ZombieVideo` 组件，使用 `useCurrentFrame` 从 JSON 中提取坐标。
+2. 实现简单的圆形/矩形绘制，验证位移是否平滑。
+
+### 第三阶段：视觉与音效增强
+1. 替换为精美的 2D 精灵图 (Sprites)。
+2. 加入枪火、震动特效。
+3. 自动根据事件流合成音效。
+
+---
+
+## 5. 商业价值与量产
+- **一键多版**：只需更改 `seed`，即可生成完全不同的战斗过程。
+- **社交媒体友好**：自动在视频末尾添加“挑战成功/失败”的结算画面。
+- **差异化内容**：相比枯燥的抢地盘，这种“AI 自动闯关”更具观赏性。

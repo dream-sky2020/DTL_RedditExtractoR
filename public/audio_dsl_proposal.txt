@@ -1,0 +1,88 @@
+# [audio] DSL 标签实现方案探讨
+
+## 1. DSL 语法设计 (Syntax)
+在 `<item>` 标签的内容正文中嵌入 `[audio ...]` 标签。
+
+### 示例：
+```xml
+<scene id="scene-1" duration=5>
+  <item author="UserA" enterAt=0.5>
+    [audio src="pop.mp3" start=0.1 volume=0.8]
+    这是一条带音效的评论。
+    [audio src="ding.mp3" start=2.0]
+  </item>
+</scene>
+```
+
+### 属性说明 (Attributes):
+- `src`: 音效文件名（存放于 public/assets/audio/sfx/）。
+- `start`: 触发偏移量（秒）。相对于该 item 的 `enterAt` 时间。
+- `volume`: 音量 (0.0 - 1.0)，默认 1.0。
+- `loop`: 是否循环 (true/false)，默认 false。
+
+---
+
+## 2. 数据结构扩展 (Data Structure)
+在 `src/types.ts` 中扩展 `VideoContentItem`。
+
+```typescript
+export interface AudioEffect {
+  src: string;
+  startOffset: number; // 秒
+  volume: number;
+}
+
+export interface VideoContentItem {
+  // ... 现有属性
+  audios?: AudioEffect[]; 
+}
+```
+
+---
+
+## 3. 解析逻辑措施 (Parsing Steps)
+在 `src/utils/sceneDsl.ts` 的 `parseSceneDsl` 函数中：
+
+1. **正则匹配**：使用 `/\[audio\s+([^\]]+)\]/g` 扫描 item 的 content。
+2. **提取属性**：对匹配到的每个标签调用 `parseAttrs`。
+3. **内容剥离**：将 `[audio ...]` 从原始 content 中移除，确保画面渲染时不显示标签文本。
+4. **存入数组**：将解析出的 `AudioEffect` 对象存入 item 的 `audios` 字段。
+
+---
+
+## 4. 视频渲染集成 (Rendering in Remotion)
+在 `src/remotion/MyVideo.tsx` 中使用 Remotion 的 `<Audio />` 组件。
+
+```tsx
+import { Audio, staticFile } from 'remotion';
+
+// 在 item 循环渲染中：
+{item.audios?.map((audio, idx) => (
+  <Audio
+    key={`${item.id}-audio-${idx}`}
+    src={staticFile(`assets/audio/sfx/${audio.src}`)}
+    startAt={Math.floor((item.enterAt + audio.startOffset) * fps)}
+    volume={audio.volume}
+  />
+))}
+```
+
+---
+
+## 5. 音效管理与预览 UI (Management UI)
+在 `Sidebar.tsx` 中新增“音效库”面板。
+
+### 自动生成机制：
+1. **资源扫描**：在 `public/assets/audio/sfx/` 存放音效文件（如 pop.mp3, ding.mp3, swoosh.wav）。
+2. **清单文件**：维护一个 `audio-manifest.json` 记录所有可用音效。
+3. **动态按钮**：
+   - 遍历清单，生成红色按钮。
+   - **点击左键**：调用浏览器 `Audio` API 播放预览。
+   - **点击右键/图标**：自动生成 DSL 代码块并复制到剪贴板。
+
+---
+
+## 6. 待解决细节 (Open Questions)
+- **音效重叠**：同一 item 多个音效的混音处理（Remotion 默认支持）。
+- **音效时长**：如果音效长于 item 的显示时间，是否需要自动裁剪（`endAt` 属性）。
+- **全局 BGM**：是否需要在 `<scene>` 级别也支持 `[bgm]` 标签。

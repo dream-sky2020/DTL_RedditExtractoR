@@ -1,0 +1,98 @@
+/* 表格暗色风格定制 - 专门用于深色背景容器中的表格 */
+.ant-table {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--panel-bg-darker) !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--brand-border) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--brand-border) !important;
+  background: transparent !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--panel-bg-darker) !important;
+}
+
+/* 分页器暗色风格 - 仅应用于深色容器或表格内 */
+.ant-table .ant-pagination-item, 
+.ant-table .ant-pagination-prev, 
+.ant-table .ant-pagination-next, 
+.ant-table .ant-pagination-jump-prev, 
+.ant-table .ant-pagination-next {
+  background: transparent !important;
+  border-color: var(--brand-border) !important;
+}
+
+.ant-table .ant-pagination-item a {
+  color: var(--text-secondary) !important;
+}
+
+.ant-table .ant-pagination-item-active {
+  border-color: var(--text-light-blue) !important;
+}
+
+.ant-table .ant-pagination-item-active a {
+  color: var(--text-light-blue) !important;
+}
+
+/* 确保主内容区的分页器使用深色文字（针对浅色背景） */
+#editor-page-pagination-wrapper .ant-pagination-item a,
+#editor-page-pagination-wrapper .ant-pagination-prev .ant-pagination-item-link,
+#editor-page-pagination-wrapper .ant-pagination-next .ant-pagination-item-link {
+  color: var(--text-dark) !important;
+}
+
+#editor-page-pagination-wrapper .ant-pagination-item {
+  background: #fff !important;
+  border-color: #d9d9d9 !important;
+}
+
+#editor-page-pagination-wrapper .ant-pagination-item-active {
+  border-color: var(--btn-primary-border) !important;
+}
+
+#editor-page-pagination-wrapper .ant-pagination-item-active a {
+  color: var(--btn-primary-bg) !important;
+}
+
+/* 模拟程序页面专用表格样式 */
+.simulation-data-table .ant-table {
+  background: #fff !important;
+  color: #333 !important;
+}
+
+.simulation-data-table .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: #666 !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  font-weight: 600 !important;
+}
+
+.simulation-data-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f0f0f0 !important;
+  background: #fff !important;
+  padding: 8px 12px !important;
+}
+
+.simulation-data-table .ant-table-tbody > tr:hover > td {
+  background: #f5f5f5 !important;
+}
+
+.simulation-data-table pre {
+  background: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  color: #495057;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 11px;
+}

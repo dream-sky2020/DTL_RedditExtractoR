@@ -18,10 +18,12 @@ import {
   FileImageOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
-import './colors.css';
-import './style.css';
+import './style/colors.css';
+import './style/style.css';
+import './style/tables.css';
 import {
   transformRedditJson,
   CommentSortMode,
@@ -41,13 +43,14 @@ import { RawJsonPage } from './pages/RawJsonPage/index';
 import { FrameTestPage } from './pages/FrameTestPage/index';
 import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
 import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
+import { SimulationPage } from './pages/SimulationPage/index';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation';
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
   mode: ColorArrangementMode;
@@ -375,6 +378,12 @@ const App: React.FC = () => {
           desc: '独立调试单个画面格的视觉样式与动画效果。',
           button: '',
         };
+      case 'simulation':
+        return {
+          title: '物理过程模拟程序',
+          desc: '渲染物理过程并保存为一帧帧的数据。',
+          button: '',
+        };
     }
   }, [activeTool]);
 
@@ -651,6 +660,11 @@ const App: React.FC = () => {
                 icon: <CodeOutlined />,
                 label: '画面格测试',
               },
+              {
+                key: 'simulation',
+                icon: <PlayCircleOutlined />,
+                label: '模拟程序',
+              },
             ]}
           />
 
@@ -773,6 +787,12 @@ const App: React.FC = () => {
 
             {activeTool === 'frame_test' && (
               <FrameTestPage 
+                onBack={() => setActiveTool('editor')}
+              />
+            )}
+
+            {activeTool === 'simulation' && (
+              <SimulationPage 
                 onBack={() => setActiveTool('editor')}
               />
             )}
