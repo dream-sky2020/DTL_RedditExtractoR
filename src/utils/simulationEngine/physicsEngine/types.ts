@@ -16,6 +16,7 @@ export const vec2 = {
     return m === 0 ? { x: 0, y: 0 } : { x: v.x / m, y: v.y / m };
   },
   perp: (v: Vector2): Vector2 => ({ x: -v.y, y: v.x }),
+  perpMul: (v: Vector2, s: number): Vector2 => ({ x: -v.y * s, y: v.x * s }),
 };
 
 export interface RigidBody {
@@ -37,6 +38,11 @@ export interface RigidBody {
   vertices: Vector2[];
   radius: number;
   isStatic: boolean;
+  
+  // 新增：睡眠机制
+  isSleeping?: boolean;
+  sleepTimer?: number;
+  motionHistory?: number[]; // 记录最近几帧的动能，用于判断是否进入睡眠
   
   // 新增：碰撞过滤
   collisionFilter?: {

@@ -4,22 +4,33 @@ import { PhysicalDataCompressor } from './compressor';
 export class PhysicsEngine {
   bodies: RigidBody[] = [];
   gravity: Vector2 = { x: 0, y: 9.81 * 100 };
-  currentEvents: PhysicsEvent[] = []; // 存储当前子步产生的事件
+  currentEvents: PhysicsEvent[] = [];
+
+  // 睡眠参数
+  private readonly SLEEP_EPSILON = 0.5; // 动能阈值
+  private readonly SLEEP_TIME_THRESHOLD = 1.0; // 进入睡眠所需的静止时间 (秒)
 
   addBody(body: RigidBody) {
+    body.isSleeping = false;
+    body.sleepTimer = 0;
+    body.motionHistory = [];
     this.bodies.push(body);
   }
 
-  /**
-   * 检查两个物体是否应该发生碰撞
-   */
   private shouldCollide(bodyA: RigidBody, bodyB: RigidBody): boolean {
-    if (!bodyA.collisionFilter || !bodyB.collisionFilter) return true;
+    // 如果两个物体都在睡眠，不检测碰撞
+    if (bodyA.isSleeping && bodyB.isSleeping) return false;
     
+    if (!bodyA.collisionFilter || !bodyB.collisionFilter) return true;
     const canACollideWithB = (bodyA.collisionFilter.mask & bodyB.collisionFilter.category) !== 0;
     const canBCollideWithA = (bodyB.collisionFilter.mask & bodyA.collisionFilter.category) !== 0;
-    
     return canACollideWithB && canBCollideWithA;
+  }
+
+  private wakeBody(body: RigidBody) {
+    if (body.isStatic) return;
+    body.isSleeping = false;
+    body.sleepTimer = 0;
   }
 
   getWorldVertices(body: RigidBody): Vector2[] {
@@ -52,7 +63,8 @@ export class PhysicsEngine {
 
   integrate(dt: number) {
     for (const body of this.bodies) {
-      if (body.isStatic) continue;
+      // 如果物体被标记为拖拽中或锁定，跳过物理模拟
+      if (body.isStatic || body.isSleeping || (body as any).isDragging) continue;
 
       const a = this.evaluate(body, 0, { dPos: { x: 0, y: 0 }, dVel: { x: 0, y: 0 }, dAngle: 0, dAngularVel: 0 });
       const b = this.evaluate(body, dt * 0.5, a);
@@ -71,6 +83,19 @@ export class PhysicsEngine {
 
       body.force = { x: 0, y: 0 };
       body.torque = 0;
+
+      // 更新睡眠计时器
+      const motion = vec2.magSq(body.velocity) + body.angularVelocity * body.angularVelocity;
+      if (motion < this.SLEEP_EPSILON) {
+        body.sleepTimer = (body.sleepTimer || 0) + dt;
+        if (body.sleepTimer >= this.SLEEP_TIME_THRESHOLD) {
+          body.isSleeping = true;
+          body.velocity = { x: 0, y: 0 };
+          body.angularVelocity = 0;
+        }
+      } else {
+        body.sleepTimer = 0;
+      }
     }
   }
 
@@ -81,14 +106,11 @@ export class PhysicsEngine {
       const circle = bodyA.shapeType === 'circle' ? bodyA : bodyB;
       const polygon = bodyA.shapeType === 'circle' ? bodyB : bodyA;
       const manifold = this.collideCirclePolygon(circle, polygon);
-      
-      if (manifold) {
-        if (bodyA.shapeType !== 'circle') {
-          const temp = manifold.bodyA;
-          manifold.bodyA = manifold.bodyB;
-          manifold.bodyB = temp;
-          manifold.normal = vec2.mul(manifold.normal, -1);
-        }
+      if (manifold && bodyA.shapeType !== 'circle') {
+        const temp = manifold.bodyA;
+        manifold.bodyA = manifold.bodyB;
+        manifold.bodyB = temp;
+        manifold.normal = vec2.mul(manifold.normal, -1);
       }
       return manifold;
     } else {
@@ -100,13 +122,12 @@ export class PhysicsEngine {
     const d = vec2.sub(bodyB.position, bodyA.position);
     const distSq = vec2.magSq(d);
     const radiusSum = bodyA.radius + bodyB.radius;
-
     if (distSq > radiusSum * radiusSum) return null;
-
     const dist = Math.sqrt(distSq);
     const normal = dist === 0 ? { x: 1, y: 0 } : vec2.mul(d, 1 / dist);
-
-    return { bodyA, bodyB, normal, penetration: radiusSum - dist, contacts: [] };
+    const penetration = radiusSum - dist;
+    const contact = vec2.add(bodyA.position, vec2.mul(normal, bodyA.radius - penetration * 0.5));
+    return { bodyA, bodyB, normal, penetration, contacts: [contact] };
   }
 
   private collideCirclePolygon(circle: RigidBody, polygon: RigidBody): CollisionManifold | null {
@@ -119,20 +140,16 @@ export class PhysicsEngine {
       const p2 = verts[(i + 1) % verts.length];
       const edge = vec2.sub(p2, p1);
       const axis = vec2.normalize(vec2.perp(edge));
-
       let minP = Infinity, maxP = -Infinity;
       for (const v of verts) {
         const proj = vec2.dot(v, axis);
         minP = Math.min(minP, proj);
         maxP = Math.max(maxP, proj);
       }
-
       const circleProj = vec2.dot(circle.position, axis);
       const minC = circleProj - circle.radius;
       const maxC = circleProj + circle.radius;
-
       if (maxP < minC || maxC < minP) return null;
-
       const overlap = Math.min(maxP, maxC) - Math.max(minP, minC);
       if (overlap < minOverlap) {
         minOverlap = overlap;
@@ -157,13 +174,10 @@ export class PhysicsEngine {
       minP = Math.min(minP, proj);
       maxP = Math.max(maxP, proj);
     }
-
     const circleProj = vec2.dot(circle.position, axis);
     const minC = circleProj - circle.radius;
     const maxC = circleProj + circle.radius;
-
     if (maxP < minC || maxC < minP) return null;
-
     const overlap = Math.min(maxP, maxC) - Math.max(minP, minC);
     if (overlap < minOverlap) {
       minOverlap = overlap;
@@ -171,11 +185,9 @@ export class PhysicsEngine {
     }
 
     const d = vec2.sub(polygon.position, circle.position);
-    if (vec2.dot(d, collisionNormal) < 0) {
-      collisionNormal = vec2.mul(collisionNormal, -1);
-    }
-
-    return { bodyA: circle, bodyB: polygon, normal: collisionNormal, penetration: minOverlap, contacts: [] };
+    if (vec2.dot(d, collisionNormal) < 0) collisionNormal = vec2.mul(collisionNormal, -1);
+    const contact = vec2.add(circle.position, vec2.mul(collisionNormal, circle.radius - minOverlap * 0.5));
+    return { bodyA: circle, bodyB: polygon, normal: collisionNormal, penetration: minOverlap, contacts: [contact] };
   }
 
   private collidePolygons(bodyA: RigidBody, bodyB: RigidBody): CollisionManifold | null {
@@ -190,23 +202,19 @@ export class PhysicsEngine {
         const p2 = axesOwnerVerts[(i + 1) % axesOwnerVerts.length];
         const edge = vec2.sub(p2, p1);
         const axis = vec2.normalize(vec2.perp(edge));
-
         let minA = Infinity, maxA = -Infinity;
         for (const v of axesOwnerVerts) {
           const proj = vec2.dot(v, axis);
           minA = Math.min(minA, proj);
           maxA = Math.max(maxA, proj);
         }
-
         let minB = Infinity, maxB = -Infinity;
         for (const v of otherVerts) {
           const proj = vec2.dot(v, axis);
           minB = Math.min(minB, proj);
           maxB = Math.max(maxB, proj);
         }
-
         if (maxA < minB || maxB < minA) return false;
-
         const overlap = Math.min(maxA, maxB) - Math.max(minA, minB);
         if (overlap < minOverlap) {
           minOverlap = overlap;
@@ -220,62 +228,107 @@ export class PhysicsEngine {
     if (!checkAxes(vertsB, vertsA)) return null;
 
     const d = vec2.sub(bodyB.position, bodyA.position);
-    if (vec2.dot(d, collisionNormal) < 0) {
-      collisionNormal = vec2.mul(collisionNormal, -1);
-    }
+    if (vec2.dot(d, collisionNormal) < 0) collisionNormal = vec2.mul(collisionNormal, -1);
 
-    return { bodyA, bodyB, normal: collisionNormal, penetration: minOverlap, contacts: [] };
+    const contacts: Vector2[] = [];
+    for (const v of vertsA) if (this.isPointInPolygon(v, vertsB)) contacts.push(v);
+    for (const v of vertsB) if (this.isPointInPolygon(v, vertsA)) contacts.push(v);
+
+    return { bodyA, bodyB, normal: collisionNormal, penetration: minOverlap, contacts: contacts.slice(0, 2) };
+  }
+
+  private isPointInPolygon(p: Vector2, verts: Vector2[]): boolean {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+      if (((verts[i].y > p.y) !== (verts[j].y > p.y)) &&
+          (p.x < (verts[j].x - verts[i].x) * (p.y - verts[i].y) / (verts[j].y - verts[i].y) + verts[i].x)) {
+        inside = !inside;
+      }
+    }
+    return inside;
   }
 
   resolveCollision(manifold: CollisionManifold) {
-    const { bodyA, bodyB, normal, penetration } = manifold;
+    const { bodyA, bodyB, normal, penetration, contacts } = manifold;
 
-    // 记录碰撞事件
+    // 唤醒睡眠中的物体
+    if (!bodyA.isStatic && bodyA.isSleeping) this.wakeBody(bodyA);
+    if (!bodyB.isStatic && bodyB.isSleeping) this.wakeBody(bodyB);
+
     this.currentEvents.push({
       type: 'collision',
       bodyAId: bodyA.id,
       bodyBId: bodyB.id,
-      point: vec2.add(bodyA.position, vec2.mul(normal, bodyA.radius || 0)), // 简化版碰撞点
+      point: contacts.length > 0 ? { ...contacts[0] } : { ...bodyA.position },
       normal: { ...normal },
-      impulse: 0 // 初始为 0，后面计算
+      impulse: 0
     });
 
-    // 如果其中一个是传感器，则不进行物理响应
-    if (bodyA.isSensor || bodyB.isSensor) {
-      this.currentEvents.push({
-        type: 'sensor',
-        sensorId: bodyA.isSensor ? bodyA.id : bodyB.id,
-        bodyId: bodyA.isSensor ? bodyB.id : bodyA.id,
-        state: 'stay' // 简化版，实际需要维护状态机
-      });
-      return;
-    }
+    if (bodyA.isSensor || bodyB.isSensor) return;
 
-    const percent = 0.2;
+    const percent = 0.2; 
     const slop = 0.01;
     const correction = vec2.mul(normal, (Math.max(penetration - slop, 0) / (bodyA.invMass + bodyB.invMass)) * percent);
     if (!bodyA.isStatic) bodyA.position = vec2.sub(bodyA.position, vec2.mul(correction, bodyA.invMass));
     if (!bodyB.isStatic) bodyB.position = vec2.add(bodyB.position, vec2.mul(correction, bodyB.invMass));
 
-    const relativeVelocity = vec2.sub(bodyB.velocity, bodyA.velocity);
-    const velAlongNormal = vec2.dot(relativeVelocity, normal);
+    if (contacts.length === 0) {
+      const rv = vec2.sub(bodyB.velocity, bodyA.velocity);
+      const velAlongNormal = vec2.dot(rv, normal);
+      if (velAlongNormal > 0) return;
+      const e = Math.min(bodyA.restitution, bodyB.restitution);
+      let j = -(1 + e) * velAlongNormal / (bodyA.invMass + bodyB.invMass);
+      const impulse = vec2.mul(normal, j);
+      if (!bodyA.isStatic) bodyA.velocity = vec2.sub(bodyA.velocity, vec2.mul(impulse, bodyA.invMass));
+      if (!bodyB.isStatic) bodyB.velocity = vec2.add(bodyB.velocity, vec2.mul(impulse, bodyB.invMass));
+      return;
+    }
 
-    if (velAlongNormal > 0) return;
+    for (const contact of contacts) {
+      const ra = vec2.sub(contact, bodyA.position);
+      const rb = vec2.sub(contact, bodyB.position);
+      const rv = vec2.sub(
+        vec2.add(bodyB.velocity, vec2.perpMul(rb, bodyB.angularVelocity)),
+        vec2.add(bodyA.velocity, vec2.perpMul(ra, bodyA.angularVelocity))
+      );
 
-    const e = Math.min(bodyA.restitution, bodyB.restitution);
-    let j = -(1 + e) * velAlongNormal;
-    j /= (bodyA.invMass + bodyB.invMass);
+      const contactVel = vec2.dot(rv, normal);
+      if (contactVel > 0) continue;
 
-    const impulse = vec2.mul(normal, j);
-    if (!bodyA.isStatic) bodyA.velocity = vec2.sub(bodyA.velocity, vec2.mul(impulse, bodyA.invMass));
-    if (!bodyB.isStatic) bodyB.velocity = vec2.add(bodyB.velocity, vec2.mul(impulse, bodyB.invMass));
+      const raCrossN = vec2.cross(ra, normal);
+      const rbCrossN = vec2.cross(rb, normal);
+      const invMassSum = bodyA.invMass + bodyB.invMass + 
+                         (raCrossN * raCrossN) * bodyA.invInertia + 
+                         (rbCrossN * rbCrossN) * bodyB.invInertia;
 
-    // 更新最后一个事件的冲量大小
-    if (this.currentEvents.length > 0) {
-      const lastEvent = this.currentEvents[this.currentEvents.length - 1];
-      if (lastEvent.type === 'collision') {
-        lastEvent.impulse = j;
+      const e = Math.min(bodyA.restitution, bodyB.restitution);
+      let j = -(1 + e) * contactVel / invMassSum / contacts.length;
+      const impulse = vec2.mul(normal, j);
+      this.applyImpulse(bodyA, bodyB, impulse, ra, rb);
+
+      const tangent = vec2.normalize(vec2.sub(rv, vec2.mul(normal, vec2.dot(rv, normal))));
+      if (vec2.magSq(tangent) > 0.0001) {
+        const raCrossT = vec2.cross(ra, tangent);
+        const rbCrossT = vec2.cross(rb, tangent);
+        const invMassSumT = bodyA.invMass + bodyB.invMass + 
+                           (raCrossT * raCrossT) * bodyA.invInertia + 
+                           (rbCrossT * rbCrossT) * bodyB.invInertia;
+        const jt = -vec2.dot(rv, tangent) / invMassSumT / contacts.length;
+        const mu = Math.sqrt(bodyA.staticFriction * bodyB.staticFriction);
+        const frictionImpulse = Math.abs(jt) < j * mu ? vec2.mul(tangent, jt) : vec2.mul(tangent, -j * mu);
+        this.applyImpulse(bodyA, bodyB, frictionImpulse, ra, rb);
       }
+    }
+  }
+
+  private applyImpulse(bodyA: RigidBody, bodyB: RigidBody, impulse: Vector2, ra: Vector2, rb: Vector2) {
+    if (!bodyA.isStatic) {
+      bodyA.velocity = vec2.sub(bodyA.velocity, vec2.mul(impulse, bodyA.invMass));
+      bodyA.angularVelocity -= vec2.cross(ra, impulse) * bodyA.invInertia;
+    }
+    if (!bodyB.isStatic) {
+      bodyB.velocity = vec2.add(bodyB.velocity, vec2.mul(impulse, bodyB.invMass));
+      bodyB.angularVelocity += vec2.cross(rb, impulse) * bodyB.invInertia;
     }
   }
 
@@ -290,24 +343,15 @@ export class PhysicsEngine {
         for (let j = i + 1; j < this.bodies.length; j++) {
           const bodyA = this.bodies[i];
           const bodyB = this.bodies[j];
-          
           if (!this.shouldCollide(bodyA, bodyB)) continue;
 
-          // 基础 CCD 实现：针对 isBullet 物体，在子步内进行射线扫掠检测
           if (bodyA.isBullet || bodyB.isBullet) {
             const bullet = bodyA.isBullet ? bodyA : bodyB;
             const target = bodyA.isBullet ? bodyB : bodyA;
-            
-            // 计算本子步的位移
             const movement = vec2.mul(bullet.velocity, subDt);
-            const ray: Ray = {
-              start: bullet.position,
-              end: vec2.add(bullet.position, movement)
-            };
-            
+            const ray: Ray = { start: bullet.position, end: vec2.add(bullet.position, movement) };
             const hit = this.raycastBody(ray, target);
             if (hit) {
-              // 发生扫掠碰撞，立即修正位置并解决碰撞
               bullet.position = hit.point;
               const manifold = this.detectCollision(bodyA, bodyB);
               if (manifold) this.resolveCollision(manifold);
@@ -329,13 +373,26 @@ export class PhysicsEngine {
   }
 
   /**
-   * 射线投射检测
-   * 返回射线击中的第一个物体信息
+   * 查找包含指定点的物体
    */
+  getBodyAtPoint(point: Vector2): RigidBody | null {
+    // 从后往前找，优先选中最上层的物体
+    for (let i = this.bodies.length - 1; i >= 0; i--) {
+      const body = this.bodies[i];
+      if (body.shapeType === 'circle') {
+        const distSq = vec2.magSq(vec2.sub(point, body.position));
+        if (distSq <= body.radius * body.radius) return body;
+      } else {
+        const verts = this.getWorldVertices(body);
+        if (this.isPointInPolygon(point, verts)) return body;
+      }
+    }
+    return null;
+  }
+
   raycast(ray: Ray): RaycastHit | null {
     let closestHit: RaycastHit | null = null;
     let minFraction = 1.0;
-
     for (const body of this.bodies) {
       const hit = this.raycastBody(ray, body);
       if (hit && hit.fraction < minFraction) {
@@ -343,41 +400,28 @@ export class PhysicsEngine {
         closestHit = hit;
       }
     }
-
     return closestHit;
   }
 
   private raycastBody(ray: Ray, body: RigidBody): RaycastHit | null {
-    if (body.shapeType === 'circle') {
-      return this.raycastCircle(ray, body);
-    } else {
-      return this.raycastPolygon(ray, body);
-    }
+    if (body.shapeType === 'circle') return this.raycastCircle(ray, body);
+    return this.raycastPolygon(ray, body);
   }
 
   private raycastCircle(ray: Ray, circle: RigidBody): RaycastHit | null {
     const s = vec2.sub(ray.start, circle.position);
     const d = vec2.sub(ray.end, ray.start);
     const r = circle.radius;
-
     const a = vec2.dot(d, d);
     const b = 2 * vec2.dot(s, d);
     const c = vec2.dot(s, s) - r * r;
-
     const discriminant = b * b - 4 * a * c;
     if (discriminant < 0) return null;
-
     const t1 = (-b - Math.sqrt(discriminant)) / (2 * a);
     if (t1 >= 0 && t1 <= 1) {
       const hitPoint = vec2.add(ray.start, vec2.mul(d, t1));
-      return {
-        bodyId: circle.id,
-        point: hitPoint,
-        normal: vec2.normalize(vec2.sub(hitPoint, circle.position)),
-        fraction: t1
-      };
+      return { bodyId: circle.id, point: hitPoint, normal: vec2.normalize(vec2.sub(hitPoint, circle.position)), fraction: t1 };
     }
-
     return null;
   }
 
@@ -386,12 +430,9 @@ export class PhysicsEngine {
     let minT = 1.0;
     let hitNormal = { x: 0, y: 0 };
     let hasHit = false;
-
     for (let i = 0; i < verts.length; i++) {
       const p1 = verts[i];
       const p2 = verts[(i + 1) % verts.length];
-      
-      // 线段求交
       const hit = this.lineIntersection(ray.start, ray.end, p1, p2);
       if (hit && hit.t < minT) {
         minT = hit.t;
@@ -399,16 +440,7 @@ export class PhysicsEngine {
         hasHit = true;
       }
     }
-
-    if (hasHit) {
-      return {
-        bodyId: polygon.id,
-        point: vec2.add(ray.start, vec2.mul(vec2.sub(ray.end, ray.start), minT)),
-        normal: hitNormal,
-        fraction: minT
-      };
-    }
-
+    if (hasHit) return { bodyId: polygon.id, point: vec2.add(ray.start, vec2.mul(vec2.sub(ray.end, ray.start), minT)), normal: hitNormal, fraction: minT };
     return null;
   }
 
@@ -417,16 +449,10 @@ export class PhysicsEngine {
     const s = vec2.sub(b2, b1);
     const rxs = vec2.cross(r, s);
     const qpxr = vec2.cross(vec2.sub(b1, a1), r);
-
     if (rxs === 0) return null;
-
     const t = vec2.cross(vec2.sub(b1, a1), s) / rxs;
     const u = qpxr / rxs;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-      return { t };
-    }
-
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return { t };
     return null;
   }
 }

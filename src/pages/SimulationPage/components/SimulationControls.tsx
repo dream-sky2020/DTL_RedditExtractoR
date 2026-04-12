@@ -1,6 +1,6 @@
 import React from 'react';
 import { Space, Button, InputNumber } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, PauseCircleOutlined, ReloadOutlined, SelectOutlined, DragOutlined } from '@ant-design/icons';
 
 interface SimulationControlsProps {
   isRunning: boolean;
@@ -12,6 +12,10 @@ interface SimulationControlsProps {
   onSubStepsChange: (val: number) => void;
   selectedFrameIdx: number | null;
   onStartFromSelected: () => void;
+  isSelectMode: boolean;
+  onToggleSelectMode: () => void;
+  isDragMode: boolean;
+  onToggleDragMode: () => void;
 }
 
 export const SimulationControls: React.FC<SimulationControlsProps> = ({
@@ -23,10 +27,29 @@ export const SimulationControls: React.FC<SimulationControlsProps> = ({
   subSteps,
   onSubStepsChange,
   selectedFrameIdx,
-  onStartFromSelected
+  onStartFromSelected,
+  isSelectMode,
+  onToggleSelectMode,
+  isDragMode,
+  onToggleDragMode
 }) => {
   return (
     <Space>
+      <Button 
+        type={isSelectMode ? 'primary' : 'default'}
+        icon={<SelectOutlined />} 
+        onClick={onToggleSelectMode}
+      >
+        选中模式
+      </Button>
+      <Button 
+        type={isDragMode ? 'primary' : 'default'}
+        icon={<DragOutlined />} 
+        onClick={onToggleDragMode}
+        disabled={!isSelectMode}
+      >
+        拖拽模式
+      </Button>
       {selectedFrameIdx !== null && (
         <Button 
           type="primary" 
