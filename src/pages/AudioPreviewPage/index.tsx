@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, Space, Typography, Empty, Row, Col, message, Tooltip, Spin } from 'antd';
+import { Card, Button, Input, Space, Typography, Empty, Row, Col, Tooltip, Spin } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, SoundOutlined, SearchOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { toast } from '../../components/Toast';
 
 const { Title, Text } = Typography;
+
+const AUDIO_ITEMS_STORAGE_KEY = 'reddit-extractor.audio-items.v1';
 
 interface AudioItem {
   name: string;
@@ -18,8 +21,30 @@ export const AudioPreviewPage: React.FC = () => {
   const [audioItems, setAudioItems] = useState<AudioItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 从 localStorage 恢复音频列表
+  const restoreAudioItems = () => {
+    try {
+      const cached = localStorage.getItem(AUDIO_ITEMS_STORAGE_KEY);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (err) {
+      console.warn('读取 localStorage 中的音频列表失败:', err);
+    }
+    return [];
+  };
+
+  // 保存音频列表到 localStorage
+  const persistAudioItems = (items: AudioItem[]) => {
+    try {
+      localStorage.setItem(AUDIO_ITEMS_STORAGE_KEY, JSON.stringify(items));
+    } catch (err) {
+      console.warn('保存音频列表到 localStorage 失败:', err);
+    }
+  };
+
   // 从后端获取音频列表
-  const fetchAudioList = async () => {
+  const fetchAudioList = async (isAutoRefresh = false) => {
     setLoading(true);
     try {
       const response = await axios.get('http://localhost:5000/list_audio');
@@ -33,19 +58,30 @@ export const AudioPreviewPage: React.FC = () => {
           return { name, path, url };
         });
         setAudioItems(items);
+        persistAudioItems(items);
+        if (!isAutoRefresh) {
+          toast.success('音频列表已更新');
+        }
       } else {
-        message.error('获取音频列表失败: ' + response.data.message);
+        toast.error('获取音频列表失败: ' + response.data.message);
       }
     } catch (err) {
       console.error('获取音频列表出错:', err);
-      message.error('无法连接到后端服务，请确保 scripts/server.py 正在运行');
+      toast.error('无法连接到后端服务', {
+        description: '请确保 scripts/server.py 正在运行'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAudioList();
+    const cachedItems = restoreAudioItems();
+    if (cachedItems.length > 0) {
+      setAudioItems(cachedItems);
+    } else {
+      fetchAudioList(true);
+    }
   }, []);
 
   const filteredItems = audioItems.filter(item => 
@@ -60,8 +96,11 @@ export const AudioPreviewPage: React.FC = () => {
     const audio = new Audio(item.url);
     audio.play().catch(err => {
       console.error('播放失败:', err);
-      message.error('音频播放失败，文件可能不存在，正在尝试刷新列表...');
-      fetchAudioList(); // 播放失败时自动刷新列表
+      toast.error(`音频播放失败: ${item.name}`, {
+        description: '文件可能已被移动或删除，正在尝试自动刷新列表。',
+        duration: 4
+      });
+      fetchAudioList(true); // 播放失败时自动刷新列表
     });
 
     setAudioInstance(audio);
@@ -83,10 +122,10 @@ export const AudioPreviewPage: React.FC = () => {
     const fileName = item.path.split('/').pop() || '';
     const tag = `[audio src="${fileName}" start="0" volume="1.0"]`;
     navigator.clipboard.writeText(tag).then(() => {
-      message.success(`已复制标签: ${tag}`);
+      toast.success('标签已复制', { description: tag });
     }).catch(err => {
       console.error('复制失败:', err);
-      message.error('复制失败，请重试');
+      toast.error('复制失败，请重试');
     });
   };
 
@@ -118,7 +157,7 @@ export const AudioPreviewPage: React.FC = () => {
           />
           <Button 
             icon={<ReloadOutlined />} 
-            onClick={fetchAudioList} 
+            onClick={() => fetchAudioList(false)} 
             loading={loading}
           >
             刷新列表

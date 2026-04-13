@@ -1,8 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Typography, Button, Tooltip } from 'antd';
 import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
+import { toast } from '../components/Toast';
+import axios from 'axios';
 
 const { Text } = Typography;
+
+const AUDIO_ITEMS_STORAGE_KEY = 'reddit-extractor.audio-items.v1';
+
+// 辅助函数：触发音频列表刷新并更新缓存
+const refreshAudioCache = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/list_audio');
+    if (response.data.success) {
+      const files: string[] = response.data.files;
+      const items = files.map((path: string) => {
+        const fileName = path.split('/').pop() || path;
+        const name = fileName.replace(/\.[^/.]+$/, "");
+        const url = '/' + path.replace(/^public\//, '');
+        return { name, path, url };
+      });
+      localStorage.setItem(AUDIO_ITEMS_STORAGE_KEY, JSON.stringify(items));
+      return items;
+    }
+  } catch (err) {
+    console.error('自动刷新音频缓存失败:', err);
+  }
+  return null;
+};
 
 const INLINE_ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
 const QUOTE_OPEN_TAG_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/;
@@ -568,13 +593,19 @@ export const parseQuotes = (
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                const audio = new Audio(`/audio/shortAudio/Unassigned/${src}`);
+                const audioUrl = `/audio/shortAudio/Unassigned/${src}`;
+                const audio = new Audio(audioUrl);
                 audio.volume = Math.max(0, Math.min(1, volume));
                 audio.play().catch(err => {
                   console.error('预览播放失败:', err);
-                  // 尝试其他可能的路径
+                  // 尝试备用路径
                   new Audio(`/audio/${src}`).play().catch(() => {
-                    message.error('音频文件不存在');
+                    toast.error(`音频文件不存在: ${src}`, {
+                      description: '正在尝试自动刷新音频缓存，请稍后重试。',
+                      duration: 5
+                    });
+                    // 触发后台刷新
+                    refreshAudioCache();
                   });
                 });
               }}
