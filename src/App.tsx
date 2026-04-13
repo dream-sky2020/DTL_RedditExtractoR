@@ -49,6 +49,7 @@ import { SimulationPage } from './pages/SimulationPage/index';
 import { AudioPreviewPage } from './pages/AudioPreviewPage/index';
 import { ComponentTestPage } from './pages/ComponentTestPage/index';
 import { DialogsInit } from './components/Dialogs';
+import { ToastInit } from './components/Toast';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
@@ -600,6 +601,7 @@ const App: React.FC = () => {
   return (
     <AntdApp>
       <DialogsInit />
+      <ToastInit />
       <Layout className={`admin-layout ${headerHidden ? 'admin-layout--header-hidden' : ''}`}>
         {!headerHidden && (
         <Header className="admin-header">

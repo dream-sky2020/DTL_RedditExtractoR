@@ -1,12 +1,24 @@
-import { message, notification } from 'antd';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
+import { App } from 'antd';
 
 interface ToastOptions {
   duration?: number;
   description?: string;
   placement?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 }
+
+// 单例引用
+let messageApi: any = null;
+let notificationApi: any = null;
+
+/**
+ * ToastInit 组件：用于在 Ant Design 的 App 组件内部获取 message 和 notification 实例
+ */
+export const ToastInit: React.FC = () => {
+  const { message: antdMessage, notification: antdNotification } = App.useApp();
+  messageApi = antdMessage;
+  notificationApi = antdNotification;
+  return null;
+};
 
 /**
  * 统一的 Toast 弹窗组件
@@ -15,53 +27,53 @@ interface ToastOptions {
 export const toast = {
   success: (content: string, options?: ToastOptions) => {
     if (options?.description) {
-      notification.success({
+      notificationApi?.success({
         message: content,
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
       });
     } else {
-      message.success(content, options?.duration);
+      messageApi?.success(content, options?.duration);
     }
   },
   
   error: (content: string, options?: ToastOptions) => {
     if (options?.description) {
-      notification.error({
+      notificationApi?.error({
         message: content,
         description: options.description,
-        duration: options.duration || 0, // 错误默认不自动关闭
+        duration: options.duration || 0,
         placement: options.placement || 'topRight',
       });
     } else {
-      message.error(content, options?.duration || 4);
+      messageApi?.error(content, options?.duration || 4);
     }
   },
   
   info: (content: string, options?: ToastOptions) => {
     if (options?.description) {
-      notification.info({
+      notificationApi?.info({
         message: content,
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
       });
     } else {
-      message.info(content, options?.duration);
+      messageApi?.info(content, options?.duration);
     }
   },
   
   warning: (content: string, options?: ToastOptions) => {
     if (options?.description) {
-      notification.warning({
+      notificationApi?.warning({
         message: content,
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
       });
     } else {
-      message.warning(content, options?.duration);
+      messageApi?.warning(content, options?.duration);
     }
   }
 };
