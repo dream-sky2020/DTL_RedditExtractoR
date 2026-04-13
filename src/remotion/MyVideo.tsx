@@ -187,7 +187,7 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
                   );
                 })}
                 <div style={{ padding: '8px 4px' }}>
-                  <ScriptContentRenderer content={item.content} author={item.author} />
+                  <ScriptContentRenderer content={item.content} author={item.author} hideAudio={true} />
                 </div>
               </div>
             );

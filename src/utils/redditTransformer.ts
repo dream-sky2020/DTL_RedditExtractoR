@@ -37,6 +37,7 @@ export interface TransformOptions {
     sortMode?: CommentSortMode;
     replyOrder?: ReplyOrderMode;
     authorProfiles?: Record<string, AuthorProfile>;
+    imageLayoutMode?: 'gallery' | 'row' | 'single';
 }
 
 const AUTHOR_TAG_COLOR = '#1890ff';
@@ -166,6 +167,7 @@ const DEFAULT_OPTIONS: Required<TransformOptions> = {
     sortMode: 'best',
     replyOrder: 'preserve',
     authorProfiles: {},
+    imageLayoutMode: 'gallery',
 };
 
 const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>): CleanPost => {
@@ -387,12 +389,24 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         postImages = [bodyImg];
     }
 
-    // 组装最终正文：将图集包装为 [gallery] 标签追加到末尾
+    // 组装最终正文：将图集包装为 [gallery] 或 [row] 标签追加到末尾
     if (postImages.length > 1) {
-        // 如果是多图，使用 [gallery]
-        const galleryTag = `\n[gallery]${postImages.join(',')}[/gallery]`;
-        if (!postText.includes('[gallery]')) {
-            postText = `${postText}${galleryTag}`;
+        let multiImageTag = '';
+        if (mergedOptions.imageLayoutMode === 'row') {
+            // 如果是 row 模式，计算宽度
+            const width = Math.floor(100 / Math.min(postImages.length, 3)) - 2;
+            const images = postImages.map(url => `[image w=${width}%]${url}[/image]`).join('\n  ');
+            multiImageTag = `\n[row gap=10 justify=center]\n  ${images}\n[/row]`;
+        } else if (mergedOptions.imageLayoutMode === 'single') {
+            // 如果是 single 模式，逐个排布
+            multiImageTag = `\n${postImages.map(url => `[image]${url}[/image]`).join('\n')}`;
+        } else {
+            // 默认 gallery 模式
+            multiImageTag = `\n[gallery]${postImages.join(',')}[/gallery]`;
+        }
+
+        if (!postText.includes('[gallery]') && !postText.includes('[row]')) {
+            postText = `${postText}${multiImageTag}`;
         }
     } else if (postImages.length === 1) {
         // 如果是单图，使用 [image]

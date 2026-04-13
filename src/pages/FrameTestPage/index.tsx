@@ -1,6 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Divider, Alert, Empty, InputNumber, message } from 'antd';
-import { ArrowLeftOutlined, ToolOutlined, BugOutlined, VideoCameraOutlined, FileImageOutlined, CopyOutlined } from '@ant-design/icons';
+import { Card, Typography, Button, Space, Alert, InputNumber, message, Modal, Divider } from 'antd';
+import {
+  ArrowLeftOutlined,
+  ToolOutlined,
+  BugOutlined,
+  VideoCameraOutlined,
+  FileImageOutlined,
+  CopyOutlined,
+  EyeOutlined
+} from '@ant-design/icons';
 import { VideoScene, VideoConfig } from '../../types';
 import { SceneCard } from '../../components/SceneCard';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
@@ -13,39 +21,150 @@ interface FrameTestPageProps {
 }
 
 export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
-  // 测试用的画面格数据
-  const [scene, setScene] = useState<VideoScene>({
-    id: 'test-scene-id',
-    type: 'comments',
-    title: '全能标签演示画面',
-    duration: 10,
-    items: [
-      {
-        id: 'item-1',
-        author: 'StyleMaster',
-        content: '基础样式演示：\n[style color=#ff4500 size=40 b]红色加粗大字[/style]\n[style color=#1890ff i u]蓝色斜体下划线[/style]\n嵌套演示：[style color=#52c41a b]绿色加粗[style size=12 i]里面是微缩斜体[/style]回到加粗[/style]',
-      },
-      {
-        id: 'item-2',
-        author: 'QuoteCollector',
-        content: '[quote=Alice]这是第一层引用\n[quote=Bob  max=20]这是第二层引用,这是第二层引用，而且这一层的文字内容非常非常非常长，长到已经超过了我们设置的 20 个字符的限制。在真实场景下，Reddit 的评论有时会极其冗长，通过这个 max 属性，我们可以确保视频画面不会被超长文本撑破，而是优雅地显示“内容已省略”的提示。\n[quote=Charlie]这是第三层引用\n[quote=Dave]这是第四层引用，再深就要触发我们刚做的“作者链”提示了！\n[quote=Eve]这一层应该会被折叠...[/quote]\n[/quote]\n[/quote]\n[/quote]\n[/quote]\n普通回复内容放在引用下面。',
-      },
-      {
-        id: 'item-3',
-        author: 'MediaExpert',
-        content: '图片与图集演示：\n[image]https://media.giphy.com/media/Ce2jJ1GCZOmD51CjJV/giphy.gif[/image]\n下面是一个自动轮播图集：\n[gallery]https://preview.redd.it/jujnstfkj8tg1.jpg?width=774&format=pjpg&auto=webp&s=a30b5e0cf23eed1ed12fe82e9e09b0f0d4a058a6,https://preview.redd.it/nv4b0ufkj8tg1.jpg?width=763&format=pjpg&auto=webp&s=1543bea7205d1615b44142ae485b55b9787f64e3[/gallery]',
-      },
-      {
-        id: 'item-4',
-        author: 'ScalingDemo',
-        content: '图片缩放与模式演示：\n1. 原始比例 (默认最大高度限制):\n[image]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n2. 指定宽度 200px (w=200):\n[image w=200]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n3. 等比例缩放 40% (s=0.4):\n[image s=0.4]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n4. 强制宽高 200x100 并裁剪填满 (mode=cover):\n[image w=200 h=100 mode=cover]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]',
-      }
-    ]
-  });
+  const DEFAULT_SIDEBAR_WIDTH = 500;
+  const SIDEBAR_MIN_WIDTH = 400;
+  const SIDEBAR_MAX_WIDTH = 800;
+  const FIXED_SIDEBAR_TOP_OFFSET = 64;
 
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
+  const sidebarResizeRef = React.useRef<{ startX: number; startWidth: number } | null>(null);
+
+  // 预设示例数据
+  const PRESET_EXAMPLES: Record<string, VideoScene> = {
+    '基础样式': {
+      id: 'style-demo',
+      type: 'comments',
+      title: '文本样式演示',
+      duration: 5,
+      items: [{
+        id: 'item-style',
+        author: 'StyleMaster',
+        content: '[style align=center size=32 b color=#ff4500]居中大标题[/style]\n\n这是普通文本。[style color=#1890ff b]加粗蓝色[/style]，[style i u]斜体下划线[/style]。\n\n[style align=right color=#52c41a]右对齐绿色文本[/style]',
+      }]
+    },
+    '引用嵌套': {
+      id: 'quote-demo',
+      type: 'comments',
+      title: '多层引用演示',
+      duration: 8,
+      items: [{
+        id: 'item-quote',
+        author: 'QuoteCollector',
+        content: '[quote=Alice]第一层引用\n[quote=Bob max=30]第二层引用（限长30字）\n[quote=Charlie]第三层引用[/quote]\n[/quote]\n[/quote]\n回复内容放在最下面。',
+      }]
+    },
+    '两列并排': {
+      id: 'row-2-demo',
+      type: 'comments',
+      title: '两列并排演示',
+      duration: 5,
+      items: [{
+        id: 'item-row-2',
+        author: 'LayoutExpert',
+        content: '两列并排 (w=45%)：\n[row gap=12 justify=center]\n  [image w=45%]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n  [image w=45%]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n[/row]',
+      }]
+    },
+    '三列分布': {
+      id: 'row-3-demo',
+      type: 'comments',
+      title: '三列分布演示',
+      duration: 5,
+      items: [{
+        id: 'item-row-3',
+        author: 'LayoutExpert',
+        content: '三列分布 (w=30%)：\n[row gap=8 justify=between]\n  [image w=30%]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n  [image w=30%]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n  [image w=30%]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n[/row]',
+      }]
+    },
+    '单图演示': {
+      id: 'image-single-demo',
+      type: 'comments',
+      title: '单张图片演示',
+      duration: 5,
+      items: [{
+        id: 'item-image-single',
+        author: 'MediaExpert',
+        content: '1. 原始比例 (默认高度限制):\n[image]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n\n2. 指定宽度 (w=300):\n[image w=300]https://media.giphy.com/media/Ce2jJ1GCZOmD51CjJV/giphy.gif[/image]\n\n3. 等比例缩放 (s=0.4):\n[image s=0.4]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]',
+      }]
+    },
+    '图像裁切': {
+      id: 'image-crop-demo',
+      type: 'comments',
+      title: '图像裁切与填充演示',
+      duration: 5,
+      items: [{
+        id: 'item-image-crop',
+        author: 'MediaExpert',
+        content: '1. 强制宽高并裁切填满 (w=200 h=100 mode=cover):\n[image w=200 h=100 mode=cover]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n\n2. 强制宽高并包含显示 (w=200 h=100 mode=contain):\n[image w=200 h=100 mode=contain]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n\n3. 强制拉伸填满 (w=200 h=100 mode=fill):\n[image w=200 h=100 mode=fill]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]',
+      }]
+    },
+    '轮播图集': {
+      id: 'gallery-demo',
+      type: 'comments',
+      title: '轮播图集演示',
+      duration: 10,
+      items: [{
+        id: 'item-gallery',
+        author: 'MediaExpert',
+        content: '自动轮播图集 (gallery)：\n[gallery]https://preview.redd.it/jujnstfkj8tg1.jpg?width=774&format=pjpg&auto=webp&s=a30b5e0cf23eed1ed12fe82e9e09b0f0d4a058a6,https://preview.redd.it/nv4b0ufkj8tg1.jpg?width=763&format=pjpg&auto=webp&s=1543bea7205d1615b44142ae485b55b9787f64e3[/gallery]',
+      }]
+    },
+    '音频音效': {
+      id: 'audio-demo',
+      type: 'comments',
+      title: '音频标签演示',
+      duration: 5,
+      items: [{
+        id: 'item-audio',
+        author: 'SoundDesigner',
+        content: '点击下方按钮试听音效：\n\n[audio src="among-us-role-reveal-sound.mp3" volume=0.8]\n\n[audio src="vine-boom.mp3" start=0.2]',
+      }]
+    }
+  };
+
+  const [scene, setScene] = useState<VideoScene>(PRESET_EXAMPLES['基础样式']);
   const [isExpanded, setIsExpanded] = useState(true);
   const [frameOffset, setFrameOffset] = useState(15);
-  
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+
+  React.useEffect(() => {
+    if (!isSidebarResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const resizeSnapshot = sidebarResizeRef.current;
+      if (!resizeSnapshot) return;
+      const deltaX = resizeSnapshot.startX - event.clientX;
+      const nextWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, resizeSnapshot.startWidth + deltaX));
+      setSidebarWidth(nextWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsSidebarResizing(false);
+      sidebarResizeRef.current = null;
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isSidebarResizing]);
+
+  const startSidebarResize = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    sidebarResizeRef.current = {
+      startX: event.clientX,
+      startWidth: sidebarWidth,
+    };
+    setIsSidebarResizing(true);
+  };
+
   const previewConfig: VideoConfig = useMemo(() => ({
     title: '测试预览',
     subreddit: 'test',
@@ -56,7 +175,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     setScene(prev => ({ ...prev, ...updates }));
   };
 
-  const replaceScene = (nextScene: VideoScene) => {
+  const replaceScene = (sceneId: string, nextScene: VideoScene) => {
     setScene(nextScene);
     return { ok: true, message: '场景已更新' };
   };
@@ -72,27 +191,70 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="frame-test-page" style={{ padding: '24px', background: 'var(--test-page-bg)', minHeight: '100vh' }}>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Space size="middle">
-          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>返回编辑器</Button>
-          <Title level={3} style={{ margin: 0 }}>画面格增强测试终端</Title>
-        </Space>
-        <Alert message="实时联动预览已开启：左侧编辑，右侧即时生效" type="success" showIcon />
-      </div>
-      <Alert
-        style={{ marginBottom: 16 }}
-        type="info"
-        showIcon
-        message='DSL 换行示范：在场景脚本中使用 [\n]，例如 "第一行[\n]第二行"。'
-      />
+    <div className="frame-test-page" style={{ position: 'relative', minHeight: '100vh', background: 'var(--test-page-bg)' }}>
+      {/* 顶部导航栏 */}
 
-      <Row gutter={24}>
-        {/* 左侧：编辑区 */}
-        <Col span={10}>
+      <div style={{ display: 'flex', minHeight: `calc(100vh - ${FIXED_SIDEBAR_TOP_OFFSET}px)` }}>
+        {/* 左侧：主编辑区 */}
+        <div style={{ flex: 1, padding: '24px', marginRight: sidebarWidth }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Space align="center">
+              <Typography.Title level={4} style={{ marginBottom: 0 }}>画面格增强测试终端</Typography.Title>
+            </Space>
+          </div>
+
           <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Card title={<span><BugOutlined /> 画面编辑卡片</span>} bordered={false}>
-              <DragDropContext onDragEnd={() => {}}>
+            <Alert
+              type="info"
+              showIcon
+              message={
+                <div id="frame-test-dsl-guide">
+                  <Text strong>DSL 语法全指南：</Text>
+                  <div style={{ marginTop: 8, fontSize: '12px' }}>
+                    <Space direction="vertical" size={0}>
+                      <div>• <Text code>[style color=#ff4500 size=24 align=center b i u]文本[/style]</Text> : 颜色、字号、对齐、加粗、斜体、下划线</div>
+                      <div>• <Text code>[quote=Author id=123 max=100]内容[/quote]</Text> : 引用块，支持嵌套、ID追踪和字数截断</div>
+                      <div>• <Text code>[image w=300 h=200 mode=cover]URL[/image]</Text> : 图片，支持宽高、缩放、填充模式</div>
+                      <div>• <Text code>[row gap=10 align=center justify=between]...[/row]</Text> : 行容器，用于图片并排</div>
+                      <div>• <Text code>[gallery]URL1,URL2[/gallery]</Text> : 自动轮播图集</div>
+                      <div>• <Text code>[audio src="file.mp3" volume=1.0 start=0]</Text> : 插入音效/背景音</div>
+                      <div>• <Text code>[\n]</Text> : 强制换行符</div>
+                    </Space>
+                  </div>
+                </div>
+              }
+            />
+
+            <Card
+              size="small"
+              variant="outlined"
+              style={{ background: 'var(--panel-bg-translucent)', borderRadius: 12 }}
+              title={<span><ToolOutlined /> 快速加载测试预设</span>}
+            >
+              <Space wrap size="small">
+                {Object.keys(PRESET_EXAMPLES).map(name => (
+                  <Button
+                    key={name}
+                    size="small"
+                    type={scene.id === PRESET_EXAMPLES[name].id ? 'primary' : 'default'}
+                    onClick={() => {
+                      setScene(PRESET_EXAMPLES[name]);
+                      message.success(`已加载“${name}”示例`);
+                    }}
+                    icon={<BugOutlined />}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </Space>
+            </Card>
+
+            <Card
+              title={<span><BugOutlined /> 画面编辑卡片</span>}
+              variant="outlined"
+              style={{ borderRadius: 12 }}
+            >
+              <DragDropContext onDragEnd={() => { }}>
                 <Droppable droppableId="test-list" type="scene">
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef}>
@@ -103,132 +265,133 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
                         onToggleExpand={() => setIsExpanded(!isExpanded)}
                         onUpdateScene={updateScene}
                         onRemoveScene={() => alert('触发删除画面格回调')}
-                        onPreviewScene={() => {}} // 已经在右侧实时预览，不再需要 Modal
-                        onReplaceScene={replaceScene}
-                        previewDisabled={true}
+                        onPreviewScene={() => setIsPreviewModalVisible(true)}
+                        onReplaceScene={(next) => replaceScene('', next)}
+                        previewDisabled={false}
                       />
                       {provided.placeholder}
                     </div>
                   )}
                 </Droppable>
               </DragDropContext>
-              {scene.items.length === 0 && <Empty description="画面格内暂无内容项" />}
-            </Card>
-
-            <Card 
-              title={<span><ToolOutlined /> 调试控制台</span>} 
-              bordered={false}
-              extra={<Button size="small" icon={<CopyOutlined />} onClick={copyToClipboard}>复制 JSON</Button>}
-            >
-              <Space wrap>
-                <Button 
-                  type={scene.type === 'post' ? 'primary' : 'default'}
-                  onClick={() => updateScene({ type: 'post', title: '原贴测试画面' })}
-                >
-                  设为原贴模式
-                </Button>
-                <Button 
-                  type={scene.type === 'comments' ? 'primary' : 'default'}
-                  onClick={() => updateScene({ type: 'comments', title: '评论测试画面' })}
-                >
-                  设为评论模式
-                </Button>
-                <Button onClick={() => setIsExpanded(!isExpanded)}>
-                  {isExpanded ? '折叠编辑区' : '展开编辑区'}
-                </Button>
-              </Space>
-              
-              <Divider style={{ margin: '16px 0' }} />
-              
-              <div style={{ background: 'var(--test-monitor-bg)', color: 'var(--test-monitor-text)', padding: '12px', borderRadius: '8px', maxHeight: '300px', overflow: 'auto' }}>
-                <div style={{ marginBottom: 8, fontSize: '11px', color: 'var(--test-monitor-label)' }}>JSON 状态监控</div>
-                <pre style={{ margin: 0, fontSize: '11px', fontFamily: 'monospace' }}>
-                  {JSON.stringify(scene, null, 2)}
-                </pre>
-              </div>
             </Card>
           </Space>
-        </Col>
+        </div>
 
-        {/* 右侧：预览区 */}
-        <Col span={14}>
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            {/* 动态预览 */}
-            <Card 
-              title={<span><VideoCameraOutlined /> 实时动画预览</span>} 
-              bordered={false}
-              styles={{ body: { padding: 0, background: 'var(--brand-dark)', overflow: 'hidden', borderRadius: '0 0 8px 8px' } }}
-            >
-              <VideoPreviewPlayer
-                videoConfig={previewConfig}
-                // 使用 Math.floor 确保数值稳定
-                durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
-                compositionWidth={1280}
-                compositionHeight={720}
-                fps={DEFAULT_PREVIEW_FPS}
-                style={{ width: '100%', aspectRatio: '16/9' }}
-                focusedSceneId={scene.id}
-                controls
-                autoPlay
-                // 仅在 ID、类型或内容变化时刷新播放器，时长变化通过 InputProps 传递给 Remotion 而不是销毁播放器
-                key={`video-${scene.id}-${scene.type}`}
-              />
-            </Card>
+        {/* 右侧：固定预览面板 */}
+        <div
+          style={{
+            position: 'fixed',
+            right: 0,
+            top: FIXED_SIDEBAR_TOP_OFFSET,
+            bottom: 0,
+            width: sidebarWidth,
+            overflowY: 'auto',
+            zIndex: 20,
+            borderLeft: '1px solid var(--brand-border)',
+            background: 'var(--brand-dark)',
+          }}
+        >
+          <div
+            onMouseDown={startSidebarResize}
+            style={{
+              position: 'absolute',
+              left: -4,
+              top: 0,
+              bottom: 0,
+              width: 8,
+              cursor: 'col-resize',
+              zIndex: 21,
+              background: isSidebarResizing ? 'rgba(24,144,255,0.22)' : 'transparent',
+            }}
+          />
 
-            {/* 静态预览 */}
-            <Card 
-              title={<span><FileImageOutlined /> 略缩图快照预览</span>} 
-              bordered={false}
-              extra={
-                <Space>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>偏移</Text>
-                  <InputNumber 
-                    size="small" 
-                    min={0} 
-                    max={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS} 
-                    value={frameOffset} 
-                    onChange={(val) => setFrameOffset(Number(val) || 0)} 
-                    style={{ width: 60 }}
-                  />
-                  <Text type="secondary" style={{ fontSize: '12px' }}>帧</Text>
-                </Space>
-              }
-            >
-              <div style={{ 
-                background: 'var(--brand-dark)', 
-                borderRadius: 8, 
-                overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                position: 'relative'
-              }}>
+          <div style={{ padding: 16 }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="large">
+              <Card
+                title={<span><VideoCameraOutlined /> 实时动画预览</span>}
+                size="small"
+                variant="outlined"
+                styles={{ body: { padding: 0, background: '#000', overflow: 'hidden' } }}
+              >
                 <VideoPreviewPlayer
                   videoConfig={previewConfig}
                   durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+                  compositionWidth={1280}
+                  compositionHeight={720}
                   fps={DEFAULT_PREVIEW_FPS}
-                  initialFrame={frameOffset}
-                  style={{
-                    width: '100%',
-                    aspectRatio: '16 / 9',
-                  }}
-                  controls={false}
-                  autoPlay={false}
+                  style={{ width: '100%', aspectRatio: '16/9' }}
                   focusedSceneId={scene.id}
-                  // 静态预览需要根据偏移和内容变化刷新，但 key 应该更精准
-                  key={`static-${scene.id}-${frameOffset}-${JSON.stringify(scene.items)}-${scene.type}`}
+                  controls
+                  autoPlay
+                  key={`video-${scene.id}`}
                 />
-                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'var(--test-snapshot-overlay)', color: 'var(--text-primary)', padding: '2px 8px', borderRadius: 4, fontSize: '11px' }}>
-                  Snapshot @ Frame {frameOffset}
+              </Card>
+
+              <Card
+                title={<span><FileImageOutlined /> 略缩图快照</span>}
+                size="small"
+                variant="outlined"
+                extra={
+                  <Space>
+                    <InputNumber
+                      size="small"
+                      min={0}
+                      max={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+                      value={frameOffset}
+                      onChange={(val) => setFrameOffset(Number(val) || 0)}
+                      style={{ width: 60 }}
+                    />
+                    <Text type="secondary" style={{ fontSize: '11px' }}>帧</Text>
+                  </Space>
+                }
+              >
+                <div style={{ background: '#000', borderRadius: 4, overflow: 'hidden' }}>
+                  <VideoPreviewPlayer
+                    videoConfig={previewConfig}
+                    durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+                    fps={DEFAULT_PREVIEW_FPS}
+                    initialFrame={frameOffset}
+                    style={{ width: '100%', aspectRatio: '16/9' }}
+                    controls={false}
+                    autoPlay={false}
+                    focusedSceneId={scene.id}
+                    key={`static-${scene.id}-${frameOffset}`}
+                  />
                 </div>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <Text type="secondary" italic style={{ fontSize: '12px' }}>
-                  * 模拟 SlidePreviewPage 的渲染效果，通过调整“偏移帧”来检查不同时间点的画面渲染是否正确。
-                </Text>
-              </div>
-            </Card>
-          </Space>
-        </Col>
-      </Row>
+              </Card>
+
+              <Card title="JSON 状态监控" size="small" variant="outlined">
+                <pre style={{ margin: 0, fontSize: '10px', fontFamily: 'monospace', maxHeight: '200px', overflow: 'auto', background: '#1e1e1e', color: '#d4d4d4', padding: '8px', borderRadius: '4px' }}>
+                  {JSON.stringify(scene, null, 2)}
+                </pre>
+              </Card>
+            </Space>
+          </div>
+        </div>
+      </div>
+
+      <Modal
+        title="全屏实时预览"
+        open={isPreviewModalVisible}
+        onCancel={() => setIsPreviewModalVisible(false)}
+        footer={null}
+        width={1000}
+        styles={{ body: { padding: 0, background: '#000' } }}
+        destroyOnHidden
+      >
+        <VideoPreviewPlayer
+          videoConfig={previewConfig}
+          durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
+          compositionWidth={1280}
+          compositionHeight={720}
+          fps={DEFAULT_PREVIEW_FPS}
+          style={{ width: '100%', aspectRatio: '16/9' }}
+          focusedSceneId={scene.id}
+          controls
+          autoPlay
+        />
+      </Modal>
     </div>
   );
 };

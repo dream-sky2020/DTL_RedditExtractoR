@@ -216,9 +216,17 @@ export const parseQuotes = (
   parentMaxLimit: number = -1,
   currentDepth: number = 0,
   maxQuoteDepth: number = 4,
-  authorPath: string[] = []
+  authorPath: string[] = [],
+  hideAudio: boolean = false
 ): React.ReactNode => {
   if (!text) return null;
+
+  // 规范化特殊字符，解决 UI 和视频渲染不一致的问题
+  // 将智能引号、特殊省略号等统一转换为标准 ASCII 字符
+  const normalizedText = text
+    .replace(/[‘’]/g, "'")  // 统一单引号
+    .replace(/[“”]/g, '"')  // 统一双引号
+    .replace(/…/g, '...'); // 统一省略号
 
   const nodes: React.ReactNode[] = [];
   let currentPos = 0;
@@ -237,7 +245,7 @@ export const parseQuotes = (
     // 使用正则提取剩余文本中的所有 quote 开标签，并解析 author（属性顺序无关）
     const quoteRegex = new RegExp(QUOTE_OPEN_TAG_GLOBAL_RE);
     let match;
-    while ((match = quoteRegex.exec(text)) !== null) {
+    while ((match = quoteRegex.exec(normalizedText)) !== null) {
       const parsed = parseQuoteStartTag(match[0], DEFAULT_MAX_LIMIT);
       if (parsed?.author) {
         fullChain.push(parsed.author);
@@ -256,29 +264,32 @@ export const parseQuotes = (
     return <Text type="secondary" italic style={{ fontSize: '11px' }}>... (已达到最大嵌套层级)</Text>;
   }
 
-  while (currentPos < text.length) {
+  while (currentPos < normalizedText.length) {
     // 寻找最近的标签 [quote=... , [image , 或 [style
-    const nextQuoteMatch = text.substring(currentPos).match(QUOTE_OPEN_TAG_RE);
+    const nextQuoteMatch = normalizedText.substring(currentPos).match(QUOTE_OPEN_TAG_RE);
     const nextQuote =
       nextQuoteMatch && nextQuoteMatch.index != null ? currentPos + nextQuoteMatch.index : -1;
-    const nextImageMatch = text.substring(currentPos).match(/\[image[^\]]*\]/);
-    const nextImage = nextImageMatch ? text.indexOf(nextImageMatch[0], currentPos) : -1;
-    const nextStyle = text.indexOf('[style', currentPos);
-    const nextGalleryMatch = text.substring(currentPos).match(/\[gallery[^\]]*\]/);
-    const nextGallery = nextGalleryMatch ? text.indexOf(nextGalleryMatch[0], currentPos) : -1;
-    const nextAudioMatch = text.substring(currentPos).match(/\[audio[^\]]*\]/);
-    const nextAudio = nextAudioMatch ? text.indexOf(nextAudioMatch[0], currentPos) : -1;
+    const nextImageMatch = normalizedText.substring(currentPos).match(/\[image[^\]]*\]/);
+    const nextImage = nextImageMatch ? normalizedText.indexOf(nextImageMatch[0], currentPos) : -1;
+    const nextStyle = normalizedText.indexOf('[style', currentPos);
+    const nextGalleryMatch = normalizedText.substring(currentPos).match(/\[gallery[^\]]*\]/);
+    const nextGallery = nextGalleryMatch ? normalizedText.indexOf(nextGalleryMatch[0], currentPos) : -1;
+    const nextAudioMatch = normalizedText.substring(currentPos).match(/\[audio[^\]]*\]/);
+    const nextAudio = nextAudioMatch ? normalizedText.indexOf(nextAudioMatch[0], currentPos) : -1;
+    const nextRowMatch = normalizedText.substring(currentPos).match(/\[row[^\]]*\]/);
+    const nextRow = nextRowMatch ? normalizedText.indexOf(nextRowMatch[0], currentPos) : -1;
 
     // 确定哪个标签更近
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
     if (nextGallery !== -1) indices.push({ idx: nextGallery, type: 'gallery' });
     if (nextAudio !== -1) indices.push({ idx: nextAudio, type: 'audio' });
+    if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
 
     indices.sort((a, b) => a.idx - b.idx);
 
@@ -289,7 +300,7 @@ export const parseQuotes = (
 
     if (type === 'none') {
       // 1. 处理剩余普通文本
-      const remainingText = text.substring(currentPos);
+      const remainingText = normalizedText.substring(currentPos);
       if (hasLimit && !limitReached) {
         if (currentLevelChars + remainingText.length > parentMaxLimit) {
           nodes.push(remainingText.substring(0, parentMaxLimit - currentLevelChars) + '... (内容已省略)');
@@ -306,7 +317,7 @@ export const parseQuotes = (
 
     // 2. 处理标签之前的普通文本
     if (foundIdx > currentPos) {
-      const prefixText = text.substring(currentPos, foundIdx);
+      const prefixText = normalizedText.substring(currentPos, foundIdx);
       if (hasLimit && !limitReached) {
         if (currentLevelChars + prefixText.length > parentMaxLimit) {
           nodes.push(prefixText.substring(0, parentMaxLimit - currentLevelChars) + '... (内容已省略)');
@@ -324,7 +335,7 @@ export const parseQuotes = (
       // 3. 处理 [quote ...]，支持属性无序 + 两种 author 写法：
       // - [quote=Alice id=odu5u6a max=120]
       // - [quote author=Alice max=120 id=odu5u6a]
-      const parsedStartTag = parseQuoteStartTag(text.substring(foundIdx), DEFAULT_MAX_LIMIT);
+      const parsedStartTag = parseQuoteStartTag(normalizedText.substring(foundIdx), DEFAULT_MAX_LIMIT);
       if (!parsedStartTag) {
         // 匹配失败，跳过 [quote=
         nodes.push('[quote=');
@@ -342,11 +353,11 @@ export const parseQuotes = (
       let searchPos = startTagEnd;
       let endTagIdx = -1;
       
-      while (depth > 0 && searchPos < text.length) {
-        const nextStartMatch = text.substring(searchPos).match(QUOTE_OPEN_TAG_RE);
+      while (depth > 0 && searchPos < normalizedText.length) {
+        const nextStartMatch = normalizedText.substring(searchPos).match(QUOTE_OPEN_TAG_RE);
         const nextStart =
           nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
-        const nextEnd = text.indexOf('[/quote]', searchPos);
+        const nextEnd = normalizedText.indexOf('[/quote]', searchPos);
         
         if (nextEnd === -1) break; 
         
@@ -364,7 +375,7 @@ export const parseQuotes = (
       }
       
       if (endTagIdx !== -1) {
-        const innerText = text.substring(startTagEnd, endTagIdx);
+        const innerText = normalizedText.substring(startTagEnd, endTagIdx);
         // 渲染 quote 容器。注意：即便父级已经 limitReached，我们也应该渲染嵌套的 quote，
         // 除非逻辑要求父级截断后直接丢弃所有后续节点。但根据您的需求“不影响内部 quote”，
         // 这里我们选择始终渲染嵌套的 quote。
@@ -383,7 +394,7 @@ export const parseQuotes = (
           >
             <div style={{ color: 'inherit' }}>
               {/* 递归调用：每个 quote 独立计算自己的限制，且不会破坏标签结构 */}
-              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author])}
+              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio)}
             </div>
           </div>
         );
@@ -395,7 +406,7 @@ export const parseQuotes = (
       }
     } else if (type === 'image') {
       // 4. 处理 [image w=300 h=200 mode=contain]URL[/image]
-      const imgStartMatch = text.substring(foundIdx).match(/^\[image([^\]]*)\]/);
+      const imgStartMatch = normalizedText.substring(foundIdx).match(/^\[image([^\]]*)\]/);
       if (!imgStartMatch) {
         nodes.push('[image]');
         currentPos = foundIdx + 7;
@@ -404,28 +415,37 @@ export const parseQuotes = (
 
       const attrStr = imgStartMatch[1];
       const startTagEnd = foundIdx + imgStartMatch[0].length;
-      const endTagIdx = text.indexOf('[/image]', startTagEnd);
+      const endTagIdx = normalizedText.indexOf('[/image]', startTagEnd);
       
       if (endTagIdx !== -1) {
-        const url = text.substring(startTagEnd, endTagIdx);
+        const url = normalizedText.substring(startTagEnd, endTagIdx);
         
         // 解析图像属性
         const imgStyle: React.CSSProperties = { 
           maxWidth: '100%', 
-          maxHeight: '500px', // 默认最大高度
           borderRadius: '4px', 
           border: '1px solid var(--image-border)',
           display: 'block',
-          margin: '0 auto'
+          margin: '0 auto',
+          height: 'auto', // 强制高度自动，保持比例
+          objectFit: 'contain' // 默认包含模式，不裁剪
         };
+
+        // 默认最大高度限制（仅针对非并列模式）
+        let maxHeight: string | number = '500px';
 
         // 宽度: w=300 或 width=50%
         const widthMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
         if (widthMatch) {
           const val = widthMatch[2];
           imgStyle.width = isNaN(Number(val)) ? val : `${val}px`;
-          // 如果指定了宽度，通常希望取消默认的 100% 限制以展示原始比例
           imgStyle.maxWidth = '100%'; 
+          
+          if (val.includes('%')) {
+            imgStyle.display = 'inline-block';
+            imgStyle.margin = '0';
+            maxHeight = 'none'; // 并列模式下取消高度限制，由宽度决定比例
+          }
         }
 
         // 高度: h=200 或 height=150px
@@ -433,8 +453,10 @@ export const parseQuotes = (
         if (heightMatch) {
           const val = heightMatch[2];
           imgStyle.height = isNaN(Number(val)) ? val : `${val}px`;
-          imgStyle.maxHeight = 'none';
+          maxHeight = 'none';
         }
+
+        imgStyle.maxHeight = maxHeight;
 
         // 缩放: s=0.5 或 scale=0.8
         const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
@@ -452,10 +474,19 @@ export const parseQuotes = (
         }
 
         nodes.push(
-          <div key={foundIdx} style={{ margin: '12px 0', textAlign: 'center' }}>
+          <div 
+            key={foundIdx} 
+            style={{ 
+              margin: imgStyle.display === 'inline-block' ? '0' : '12px 0', 
+              textAlign: imgStyle.display === 'inline-block' ? 'left' : 'center',
+              display: imgStyle.display === 'inline-block' ? 'inline-block' : 'block',
+              width: imgStyle.display === 'inline-block' ? imgStyle.width : 'auto',
+              verticalAlign: 'top'
+            }}
+          >
             <img 
               src={url} 
-              style={imgStyle} 
+              style={{...imgStyle, width: '100%'}} 
               alt="Content" 
               referrerPolicy="no-referrer"
             />
@@ -468,7 +499,7 @@ export const parseQuotes = (
       }
     } else if (type === 'style') {
       // 5. 处理 [style color=#FF0000 size=24 b i u]内容[/style]
-      const styleStartMatch = text.substring(foundIdx).match(/^\[style([^\]]*)\]/);
+      const styleStartMatch = normalizedText.substring(foundIdx).match(/^\[style([^\]]*)\]/);
       if (!styleStartMatch) {
         nodes.push('[style]');
         currentPos = foundIdx + 7;
@@ -479,10 +510,10 @@ export const parseQuotes = (
       const startTagEnd = foundIdx + styleStartMatch[0].length;
       
       // 寻找匹配的 [/style]
-      const endTagIdx = text.indexOf('[/style]', startTagEnd);
+      const endTagIdx = normalizedText.indexOf('[/style]', startTagEnd);
       
       if (endTagIdx !== -1) {
-        const innerText = text.substring(startTagEnd, endTagIdx);
+        const innerText = normalizedText.substring(startTagEnd, endTagIdx);
         
         // 解析属性
         const style: React.CSSProperties = {};
@@ -497,6 +528,14 @@ export const parseQuotes = (
             style.fontSize = parseInt(sizeMatch[1]);
         }
         
+        // 对齐方式: align=center|left|right
+        const alignMatch = attrStr.match(/align=([^ \]]+)/);
+        if (alignMatch) {
+          style.textAlign = alignMatch[1] as any;
+          style.display = 'block';
+          style.width = '100%';
+        }
+        
         // 加粗: b
         if (attrStr.match(/\bb\b/)) style.fontWeight = 'bold';
         
@@ -508,7 +547,7 @@ export const parseQuotes = (
 
         nodes.push(
           <span key={foundIdx} style={style}>
-            {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath)}
+            {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio)}
           </span>
         );
         currentPos = endTagIdx + 8;
@@ -518,15 +557,15 @@ export const parseQuotes = (
       }
     } else if (type === 'gallery') {
       // 6. 处理 [gallery]URL1,URL2[/gallery] 或 [gallery duration=3]URL1|2,URL2[/gallery]
-      const galleryStartTagMatch = text.substring(foundIdx).match(/\[gallery([^\]]*)\]/);
+      const galleryStartTagMatch = normalizedText.substring(foundIdx).match(/\[gallery([^\]]*)\]/);
       if (galleryStartTagMatch) {
         const startTagFull = galleryStartTagMatch[0];
         const attrStr = galleryStartTagMatch[1];
         const startTagEnd = foundIdx + startTagFull.length;
-        const endTagIdx = text.indexOf('[/gallery]', startTagEnd);
+        const endTagIdx = normalizedText.indexOf('[/gallery]', startTagEnd);
 
         if (endTagIdx !== -1) {
-          const contentStr = text.substring(startTagEnd, endTagIdx);
+          const contentStr = normalizedText.substring(startTagEnd, endTagIdx);
           
           // 解析全局时长属性
           let defaultDuration = 2.5;
@@ -567,7 +606,7 @@ export const parseQuotes = (
       }
     } else if (type === 'audio') {
       // 7. 处理 [audio src="filename.mp3" start="0" volume="1.0"]
-      const audioMatch = text.substring(foundIdx).match(/^\[audio([^\]]*)\]/);
+      const audioMatch = normalizedText.substring(foundIdx).match(/^\[audio([^\]]*)\]/);
       if (audioMatch) {
         const fullTag = audioMatch[0];
         const attrStr = audioMatch[1];
@@ -575,6 +614,11 @@ export const parseQuotes = (
         const src = attrs.src || '';
         const volume = parseFloat(attrs.volume || '1.0');
         const start = parseFloat(attrs.start || '0');
+
+        if (hideAudio) {
+          currentPos = foundIdx + fullTag.length;
+          continue;
+        }
 
         nodes.push(
           <Tooltip key={foundIdx} title={`音频: ${src} (Vol: ${volume}, Start: ${start}s)`}>
@@ -620,8 +664,48 @@ export const parseQuotes = (
         nodes.push('[audio]');
         currentPos = foundIdx + 7;
       }
+    } else if (type === 'row') {
+      // 8. 处理 [row gap=10 align=center justify=between]内容[/row]
+      const rowStartMatch = normalizedText.substring(foundIdx).match(/^\[row([^\]]*)\]/);
+      if (rowStartMatch) {
+        const fullTag = rowStartMatch[0];
+        const attrStr = rowStartMatch[1];
+        const startTagEnd = foundIdx + fullTag.length;
+        const endTagIdx = normalizedText.indexOf('[/row]', startTagEnd);
+
+        if (endTagIdx !== -1) {
+          const innerText = normalizedText.substring(startTagEnd, endTagIdx);
+          const attrs = parseInlineAttrs(attrStr);
+          
+          const rowStyle: React.CSSProperties = {
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px',
+            alignItems: (attrs.align || 'center') as any,
+            justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : 
+                            (attrs.justify || 'start') === 'around' ? 'space-around' : 
+                            (attrs.justify || 'start') as any,
+            margin: '12px 0',
+            width: '100%'
+          };
+
+          nodes.push(
+            <div key={foundIdx} style={rowStyle} className="script-row">
+              {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio)}
+            </div>
+          );
+          currentPos = endTagIdx + 6;
+        } else {
+          nodes.push(fullTag);
+          currentPos = startTagEnd;
+        }
+      } else {
+        nodes.push('[row]');
+        currentPos = foundIdx + 5;
+      }
     }
   }
 
-  return nodes.length > 0 ? nodes : text;
+  return nodes.length > 0 ? nodes : normalizedText;
 };

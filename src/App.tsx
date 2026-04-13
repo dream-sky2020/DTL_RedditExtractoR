@@ -160,7 +160,7 @@ const App: React.FC = () => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: nextResult.content || nextResult.title,
+        content: `[style size=32 b]${nextResult.title}[/style]\n\n${nextResult.content || ''}`,
       }]
     };
 
@@ -305,6 +305,7 @@ const App: React.FC = () => {
         sortMode: commentSortMode,
         replyOrder: replyOrderMode,
         authorProfiles: nextProfiles,
+        imageLayoutMode: cachedVideoConfig?.imageLayoutMode,
       });
 
       setRawResult(cachedRawResult);
@@ -435,6 +436,7 @@ const App: React.FC = () => {
         sortMode: commentSortMode,
         replyOrder: replyOrderMode,
         authorProfiles: nextProfiles,
+        imageLayoutMode: videoConfig.imageLayoutMode,
       }));
       message.success('数据提取成功，已同步至视频配置');
     } catch (err) {
@@ -480,8 +482,12 @@ const App: React.FC = () => {
       sortMode,
       replyOrder,
       authorProfiles: profiles,
+      imageLayoutMode: draftConfig.imageLayoutMode,
     });
-    const nextConfig = buildVideoConfigFromResult(nextResult);
+    const nextConfig = {
+      ...buildVideoConfigFromResult(nextResult),
+      imageLayoutMode: draftConfig.imageLayoutMode,
+    };
 
     setResult(nextResult);
     setVideoConfig(nextConfig);

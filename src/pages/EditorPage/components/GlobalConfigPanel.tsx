@@ -1,6 +1,6 @@
 import React from 'react';
-import { Form, Row, Col, Input, Select, Typography } from 'antd';
-import { VideoConfig } from '../../../types';
+import { Form, Row, Col, Input, Select, Typography, Divider } from 'antd';
+import { VideoConfig, ImageLayoutMode } from '../../../types';
 import { CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
 
 const { Text } = Typography;
@@ -87,6 +87,26 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
                 options={[
                   { label: '保持回复关系（默认）', value: 'preserve' },
                   { label: '全量排序（不考虑回复关系）', value: 'global' },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+        <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item id="editor-page-image-layout-item" label={<Text style={{ color: 'var(--text-secondary)' }}>多图排列模式</Text>}>
+              <Select<ImageLayoutMode>
+                id="editor-page-image-layout-select"
+                value={draftConfig.imageLayoutMode || 'gallery'}
+                onChange={(val) => setDraftConfig({ ...draftConfig, imageLayoutMode: val })}
+                style={{ width: '100%' }}
+                styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
+                className="custom-blue-select"
+                options={[
+                  { label: '图集轮播 (Gallery)', value: 'gallery' },
+                  { label: '并列排列 (Row)', value: 'row' },
+                  { label: '单图竖排 (Single)', value: 'single' },
                 ]}
               />
             </Form.Item>

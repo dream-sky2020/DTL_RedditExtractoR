@@ -14,10 +14,13 @@ import {
   DeleteOutlined,
   EyeOutlined,
   HolderOutlined,
+  SoundOutlined,
 } from '@ant-design/icons';
 import { VideoScene } from '../types';
 import { ScriptContentRenderer } from './ScriptContentRenderer';
 import { SceneDslWarning, sceneToDsl, parseSceneDsl } from '../utils/sceneDsl';
+
+import { toast } from '../components/Toast';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -304,8 +307,52 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                 }}
               >
                 <div style={{ padding: '8px 4px' }}>
-                  <ScriptContentRenderer content={item.content} author={item.author} />
+                  <ScriptContentRenderer content={item.content} author={item.author} hideAudio={true} />
                 </div>
+                {/* 渲染隐藏的音频按钮 */}
+                {(() => {
+                  const audioMatches = Array.from(item.content.matchAll(/\[audio src="([^"]+)"(?: start="([^"]*)")?(?: volume="([^"]*)")?\]/g));
+                  if (audioMatches.length === 0) return null;
+                  return (
+                    <div style={{ 
+                      padding: '4px 8px', 
+                      borderTop: '1px solid var(--scene-item-border)',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      background: 'rgba(0,0,0,0.02)'
+                    }}>
+                      {audioMatches.map((match, i) => {
+                        const src = match[1];
+                        const start = parseFloat(match[2] || '0');
+                        const volume = parseFloat(match[3] || '1.0');
+                        return (
+                          <Button
+                            key={i}
+                            size="small"
+                            type="text"
+                            icon={<SoundOutlined />}
+                            style={{ fontSize: 12, color: '#1890ff' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const audioUrl = `/audio/shortAudio/Unassigned/${src}`;
+                              const audio = new Audio(audioUrl);
+                              audio.volume = Math.max(0, Math.min(1, volume));
+                              audio.play().catch(err => {
+                                console.error('预览播放失败:', err);
+                                new Audio(`/audio/${src}`).play().catch(() => {
+                                  toast.error(`音频文件不存在: ${src}`);
+                                });
+                              });
+                            }}
+                          >
+                            {src}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </Card>
             </div>
           ))}

@@ -14,6 +14,7 @@ export type ItemAnimationType =
   | 'zoom-out';
 
 export type SceneLayoutType = 'top' | 'center';
+export type ImageLayoutMode = 'gallery' | 'row' | 'single';
 
 export interface VideoContentItem {
   id: string;
@@ -40,4 +41,5 @@ export interface VideoConfig {
   title: string;
   subreddit: string;
   scenes: VideoScene[]; // 现在配置由画面格组成
+  imageLayoutMode?: ImageLayoutMode; // 图片排列模式
 }
