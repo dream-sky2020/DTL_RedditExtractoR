@@ -3,6 +3,7 @@ import { Card, Button, Input, Space, Typography, Empty, Row, Col, Tooltip, Spin 
 import { PlayCircleOutlined, PauseCircleOutlined, SoundOutlined, SearchOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { toast } from '../../components/Toast';
+import { dialogs } from '../../components/Dialogs';
 
 const { Title, Text } = Typography;
 
@@ -157,7 +158,13 @@ export const AudioPreviewPage: React.FC = () => {
           />
           <Button 
             icon={<ReloadOutlined />} 
-            onClick={() => fetchAudioList(false)} 
+            onClick={() => {
+              dialogs.confirm({
+                title: '确认刷新音频列表？',
+                content: '这将重新扫描服务器上的音频目录并更新本地缓存。',
+                onOk: () => fetchAudioList(false)
+              });
+            }} 
             loading={loading}
           >
             刷新列表
