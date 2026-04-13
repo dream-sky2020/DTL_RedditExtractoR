@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Button } from 'antd';
+import { App } from 'antd';
+import type { ModalFuncProps } from 'antd';
 import { 
   ExclamationCircleOutlined, 
   QuestionCircleOutlined, 
@@ -7,8 +8,6 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined 
 } from '@ant-design/icons';
-
-type DialogType = 'confirm' | 'info' | 'success' | 'error' | 'warning';
 
 interface DialogOptions {
   title: string;
@@ -22,22 +21,37 @@ interface DialogOptions {
   centered?: boolean;
 }
 
+// 这是一个单例引用，将在 App 组件初始化时被赋值
+let modal: any = null;
+
+/**
+ * DialogsInit 组件：用于在 Ant Design 的 App 组件内部获取 modal 实例
+ */
+export const DialogsInit: React.FC = () => {
+  const { modal: antdModal } = App.useApp();
+  modal = antdModal;
+  return null;
+};
+
 /**
  * 统一的 Dialogs 弹窗工具类
  * 为整个项目提供重要操作的确认、提示和反馈
  */
 export const dialogs = {
-  /**
-   * 确认弹窗：用于删除、重置等危险或重要操作
-   */
   confirm: (options: DialogOptions) => {
-    Modal.confirm({
+    if (!modal) {
+      console.error('Dialogs not initialized. Make sure <DialogsInit /> is inside <App />');
+      return;
+    }
+    modal.confirm({
       title: options.title,
       icon: <QuestionCircleOutlined style={{ color: '#1890ff' }} />,
       content: options.content,
       okText: options.okText || '确定',
       cancelText: options.cancelText || '取消',
-      okType: options.okType === 'danger' ? 'danger' : 'primary',
+      okButtonProps: {
+        danger: options.okType === 'danger'
+      },
       centered: options.centered ?? true,
       width: options.width,
       onOk: options.onOk,
@@ -45,11 +59,9 @@ export const dialogs = {
     });
   },
 
-  /**
-   * 警告弹窗：用于提示潜在风险
-   */
   warning: (options: DialogOptions) => {
-    Modal.warning({
+    if (!modal) return;
+    modal.warning({
       title: options.title,
       icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
       content: options.content,
@@ -60,11 +72,9 @@ export const dialogs = {
     });
   },
 
-  /**
-   * 成功提示弹窗
-   */
   success: (options: DialogOptions) => {
-    Modal.success({
+    if (!modal) return;
+    modal.success({
       title: options.title,
       icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
       content: options.content,
@@ -75,11 +85,9 @@ export const dialogs = {
     });
   },
 
-  /**
-   * 错误提示弹窗
-   */
   error: (options: DialogOptions) => {
-    Modal.error({
+    if (!modal) return;
+    modal.error({
       title: options.title,
       icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
       content: options.content,
@@ -90,11 +98,9 @@ export const dialogs = {
     });
   },
 
-  /**
-   * 普通信息弹窗
-   */
   info: (options: DialogOptions) => {
-    Modal.info({
+    if (!modal) return;
+    modal.info({
       title: options.title,
       icon: <InfoCircleOutlined style={{ color: '#1890ff' }} />,
       content: options.content,

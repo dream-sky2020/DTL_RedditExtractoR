@@ -6,6 +6,7 @@ import {
   Tag,
   Typography,
   message,
+  App as AntdApp,
 } from 'antd';
 import {
   AppstoreOutlined,
@@ -46,13 +47,15 @@ import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
 import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
 import { SimulationPage } from './pages/SimulationPage/index';
 import { AudioPreviewPage } from './pages/AudioPreviewPage/index';
+import { ComponentTestPage } from './pages/ComponentTestPage/index';
+import { DialogsInit } from './components/Dialogs';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation' | 'audio_preview';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
   mode: ColorArrangementMode;
@@ -392,6 +395,12 @@ const App: React.FC = () => {
           desc: '预览并测试所有音频素材。',
           button: '',
         };
+      case 'component_test':
+        return {
+          title: '组件功能测试',
+          desc: '测试 Dialogs 和 Toast 统一组件。',
+          button: '',
+        };
     }
   }, [activeTool]);
 
@@ -589,9 +598,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout className={`admin-layout ${headerHidden ? 'admin-layout--header-hidden' : ''}`}>
-      {!headerHidden && (
-      <Header className="admin-header">
+    <AntdApp>
+      <DialogsInit />
+      <Layout className={`admin-layout ${headerHidden ? 'admin-layout--header-hidden' : ''}`}>
+        {!headerHidden && (
+        <Header className="admin-header">
         <div className="header-left">
           <div className="header-title-group">
             <span className="header-title">{toolMeta.title}</span>
@@ -677,6 +688,11 @@ const App: React.FC = () => {
                 key: 'audio_preview',
                 icon: <SoundOutlined />,
                 label: '音频预览',
+              },
+              {
+                key: 'component_test',
+                icon: <AppstoreOutlined />,
+                label: '组件测试',
               },
             ]}
           />
@@ -813,10 +829,15 @@ const App: React.FC = () => {
             {activeTool === 'audio_preview' && (
               <AudioPreviewPage />
             )}
+
+            {activeTool === 'component_test' && (
+              <ComponentTestPage />
+            )}
           </Content>
         </Layout>
       </Layout>
     </Layout>
+    </AntdApp>
   );
 };
 
