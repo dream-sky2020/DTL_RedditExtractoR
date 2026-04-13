@@ -72,6 +72,37 @@ def render_video():
         print(f"💥 系统错误: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route('/list_audio', methods=['GET'])
+def list_audio():
+    """
+    遍历 public/audio 目录下的所有音频文件
+    """
+    try:
+        audio_dir = os.path.join(os.getcwd(), 'public', 'audio')
+        audio_files = []
+        
+        # 允许的音频扩展名
+        allowed_extensions = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+        
+        for root, dirs, files in os.walk(audio_dir):
+            for file in files:
+                if file.lower().endswith(allowed_extensions):
+                    # 获取相对于项目根目录的路径
+                    full_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(full_path, os.getcwd())
+                    # 统一使用正斜杠
+                    relative_path = relative_path.replace('\\', '/')
+                    audio_files.append(relative_path)
+        
+        print(f"🎵 扫描到 {len(audio_files)} 个音频文件")
+        return jsonify({
+            "success": True,
+            "files": audio_files
+        })
+    except Exception as e:
+        print(f"❌ 扫描音频失败: {str(e)}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 if __name__ == '__main__':
     print("--------------------------------------")
     print("RedditExtractor Python 后端已启动")

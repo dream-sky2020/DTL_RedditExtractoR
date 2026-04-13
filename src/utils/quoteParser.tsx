@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Typography, Button } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Typography, Button, Tooltip } from 'antd';
+import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -241,16 +241,19 @@ export const parseQuotes = (
     const nextStyle = text.indexOf('[style', currentPos);
     const nextGalleryMatch = text.substring(currentPos).match(/\[gallery[^\]]*\]/);
     const nextGallery = nextGalleryMatch ? text.indexOf(nextGalleryMatch[0], currentPos) : -1;
+    const nextAudioMatch = text.substring(currentPos).match(/\[audio[^\]]*\]/);
+    const nextAudio = nextAudioMatch ? text.indexOf(nextAudioMatch[0], currentPos) : -1;
 
     // 确定哪个标签更近
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
     if (nextGallery !== -1) indices.push({ idx: nextGallery, type: 'gallery' });
+    if (nextAudio !== -1) indices.push({ idx: nextAudio, type: 'audio' });
 
     indices.sort((a, b) => a.idx - b.idx);
 
@@ -536,6 +539,55 @@ export const parseQuotes = (
         // 理论上不会走到这里，因为 Grep 已经匹配到了 [gallery]
         nodes.push('[gallery]');
         currentPos = foundIdx + 9;
+      }
+    } else if (type === 'audio') {
+      // 7. 处理 [audio src="filename.mp3" start="0" volume="1.0"]
+      const audioMatch = text.substring(foundIdx).match(/^\[audio([^\]]*)\]/);
+      if (audioMatch) {
+        const fullTag = audioMatch[0];
+        const attrStr = audioMatch[1];
+        const attrs = parseInlineAttrs(attrStr);
+        const src = attrs.src || '';
+        const volume = parseFloat(attrs.volume || '1.0');
+        const start = parseFloat(attrs.start || '0');
+
+        nodes.push(
+          <Tooltip key={foundIdx} title={`音频: ${src} (Vol: ${volume}, Start: ${start}s)`}>
+            <span 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                backgroundColor: 'rgba(24, 144, 255, 0.1)', 
+                border: '1px solid #1890ff',
+                borderRadius: '4px',
+                padding: '0 4px',
+                margin: '0 2px',
+                cursor: 'pointer',
+                color: '#1890ff',
+                fontSize: '12px'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const audio = new Audio(`/audio/shortAudio/Unassigned/${src}`);
+                audio.volume = Math.max(0, Math.min(1, volume));
+                audio.play().catch(err => {
+                  console.error('预览播放失败:', err);
+                  // 尝试其他可能的路径
+                  new Audio(`/audio/${src}`).play().catch(() => {
+                    message.error('音频文件不存在');
+                  });
+                });
+              }}
+            >
+              <SoundOutlined style={{ marginRight: 4 }} />
+              {src}
+            </span>
+          </Tooltip>
+        );
+        currentPos = foundIdx + fullTag.length;
+      } else {
+        nodes.push('[audio]');
+        currentPos = foundIdx + 7;
       }
     }
   }

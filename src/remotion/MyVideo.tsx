@@ -1,7 +1,32 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Audio, staticFile, Sequence } from 'remotion';
 import { ItemAnimationType, VideoConfig, VideoScene } from '../types';
 import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
+
+const parseAudioTags = (content: string) => {
+  const tags: { src: string; start: number; volume: number }[] = [];
+  const regex = /\[audio\s+([^\]]+)\]/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const attrStr = match[1];
+    const attrs: Record<string, string> = {};
+    const attrRegex = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
+    let attrMatch;
+    while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
+      const key = attrMatch[1].toLowerCase();
+      const value = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
+      attrs[key] = value;
+    }
+    if (attrs.src) {
+      tags.push({
+        src: attrs.src,
+        start: parseFloat(attrs.start || '0'),
+        volume: parseFloat(attrs.volume || '1.0'),
+      });
+    }
+  }
+  return tags;
+};
 
 export interface MyVideoProps extends VideoConfig {
   focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
@@ -130,6 +155,8 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
             const exitTransform = getExitTransform(exitAnimation, exitProgress);
             if (exitTransform !== 'none') transforms.push(exitTransform);
 
+            const audioTags = parseAudioTags(item.content);
+
             return (
               <div
                 key={item.id}
@@ -144,6 +171,21 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
                   transformOrigin: 'center center',
                 }}
               >
+                {audioTags.map((tag, tagIdx) => {
+                  const audioStartFrame = enterFrame + Math.floor(tag.start * fps);
+                  // 使用 Sequence 来精确控制音频在视频时间轴上的起始位置
+                  return (
+                    <Sequence
+                      key={`${item.id}-audio-${tagIdx}`}
+                      from={audioStartFrame}
+                    >
+                      <Audio
+                        src={staticFile(`audio/shortAudio/Unassigned/${tag.src}`)}
+                        volume={tag.volume}
+                      />
+                    </Sequence>
+                  );
+                })}
                 <div style={{ padding: '8px 4px' }}>
                   <ScriptContentRenderer content={item.content} author={item.author} />
                 </div>

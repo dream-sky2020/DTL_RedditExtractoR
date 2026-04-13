@@ -19,6 +19,7 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   PlayCircleOutlined,
+  SoundOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import './style/colors.css';
@@ -44,13 +45,14 @@ import { FrameTestPage } from './pages/FrameTestPage/index';
 import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
 import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
 import { SimulationPage } from './pages/SimulationPage/index';
+import { AudioPreviewPage } from './pages/AudioPreviewPage/index';
 
 const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation' | 'audio_preview';
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
   mode: ColorArrangementMode;
@@ -384,6 +386,12 @@ const App: React.FC = () => {
           desc: '渲染物理过程并保存为一帧帧的数据。',
           button: '',
         };
+      case 'audio_preview':
+        return {
+          title: '音频素材预览',
+          desc: '预览并测试所有音频素材。',
+          button: '',
+        };
     }
   }, [activeTool]);
 
@@ -665,6 +673,11 @@ const App: React.FC = () => {
                 icon: <PlayCircleOutlined />,
                 label: '模拟程序',
               },
+              {
+                key: 'audio_preview',
+                icon: <SoundOutlined />,
+                label: '音频预览',
+              },
             ]}
           />
 
@@ -795,6 +808,10 @@ const App: React.FC = () => {
               <SimulationPage 
                 onBack={() => setActiveTool('editor')}
               />
+            )}
+
+            {activeTool === 'audio_preview' && (
+              <AudioPreviewPage />
             )}
           </Content>
         </Layout>
