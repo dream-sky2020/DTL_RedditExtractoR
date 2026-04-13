@@ -23,6 +23,7 @@ import {
   RocketOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
+import { dialogs } from '../../components/Dialogs';
 
 const { Text } = Typography;
 
@@ -145,7 +146,14 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               danger
               size="large"
               icon={<DeleteOutlined />}
-              onClick={clearStoredRawData}
+              onClick={() => {
+                dialogs.confirm({
+                  title: '确认清除本地缓存？',
+                  content: '这将删除所有已提取的 Reddit 原始数据、视频配置和作者配置。此操作不可撤销。',
+                  okType: 'danger',
+                  onOk: clearStoredRawData
+                });
+              }}
               disabled={!hasStoredRawData}
             >
               清除本地原始数据缓存
