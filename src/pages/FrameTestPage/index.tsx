@@ -1,20 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Typography, Button, Space, Alert, InputNumber, message, Modal, Divider } from 'antd';
-import {
-  ArrowLeftOutlined,
-  ToolOutlined,
-  BugOutlined,
-  VideoCameraOutlined,
-  FileImageOutlined,
-  CopyOutlined,
-  EyeOutlined
-} from '@ant-design/icons';
+import { Typography, Space, Modal } from 'antd';
 import { VideoScene, VideoConfig } from '../../types';
-import { SceneCard } from '../../components/SceneCard';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
-
-const { Title, Text } = Typography;
+import { DslGuide } from './components/DslGuide';
+import { PresetPanel } from './components/PresetPanel';
+import { EditorSection } from './components/EditorSection';
+import { Sidebar } from './components/Sidebar';
 
 interface FrameTestPageProps {
   onBack: () => void;
@@ -180,20 +171,8 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     return { ok: true, message: '场景已更新' };
   };
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(scene, null, 2));
-      message.success('画面格 JSON 已复制到剪贴板');
-    } catch (err) {
-      console.error(err);
-      message.error('复制失败');
-    }
-  };
-
   return (
     <div className="frame-test-page" style={{ position: 'relative', minHeight: '100vh', background: 'var(--test-page-bg)' }}>
-      {/* 顶部导航栏 */}
-
       <div style={{ display: 'flex', minHeight: `calc(100vh - ${FIXED_SIDEBAR_TOP_OFFSET}px)` }}>
         {/* 左侧：主编辑区 */}
         <div style={{ flex: 1, padding: '24px', marginRight: sidebarWidth }}>
@@ -204,171 +183,37 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
           </div>
 
           <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Alert
-              type="info"
-              showIcon
-              message={
-                <div id="frame-test-dsl-guide">
-                  <Text strong>DSL 语法全指南：</Text>
-                  <div style={{ marginTop: 8, fontSize: '12px' }}>
-                    <Space direction="vertical" size={0}>
-                      <div>• <Text code>[style color=#ff4500 size=24 align=center b i u]文本[/style]</Text> : 颜色、字号、对齐、加粗、斜体、下划线</div>
-                      <div>• <Text code>[quote=Author id=123 max=100]内容[/quote]</Text> : 引用块，支持嵌套、ID追踪和字数截断</div>
-                      <div>• <Text code>[image w=300 h=200 mode=cover]URL[/image]</Text> : 图片，支持宽高、缩放、填充模式</div>
-                      <div>• <Text code>[row gap=10 align=center justify=between]...[/row]</Text> : 行容器，用于图片并排</div>
-                      <div>• <Text code>[gallery]URL1,URL2[/gallery]</Text> : 自动轮播图集</div>
-                      <div>• <Text code>[audio src="file.mp3" volume=1.0 start=0]</Text> : 插入音效/背景音</div>
-                      <div>• <Text code>[\n]</Text> : 强制换行符</div>
-                    </Space>
-                  </div>
-                </div>
-              }
+            <DslGuide />
+
+            <PresetPanel
+              presets={PRESET_EXAMPLES}
+              activeSceneId={scene.id}
+              onSelect={(nextScene) => setScene(nextScene)}
             />
 
-            <Card
-              size="small"
-              variant="outlined"
-              style={{ background: 'var(--panel-bg-translucent)', borderRadius: 12 }}
-              title={<span><ToolOutlined /> 快速加载测试预设</span>}
-            >
-              <Space wrap size="small">
-                {Object.keys(PRESET_EXAMPLES).map(name => (
-                  <Button
-                    key={name}
-                    size="small"
-                    type={scene.id === PRESET_EXAMPLES[name].id ? 'primary' : 'default'}
-                    onClick={() => {
-                      setScene(PRESET_EXAMPLES[name]);
-                      message.success(`已加载“${name}”示例`);
-                    }}
-                    icon={<BugOutlined />}
-                  >
-                    {name}
-                  </Button>
-                ))}
-              </Space>
-            </Card>
-
-            <Card
-              title={<span><BugOutlined /> 画面编辑卡片</span>}
-              variant="outlined"
-              style={{ borderRadius: 12 }}
-            >
-              <DragDropContext onDragEnd={() => { }}>
-                <Droppable droppableId="test-list" type="scene">
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef}>
-                      <SceneCard
-                        scene={scene}
-                        index={0}
-                        isExpanded={isExpanded}
-                        onToggleExpand={() => setIsExpanded(!isExpanded)}
-                        onUpdateScene={updateScene}
-                        onRemoveScene={() => alert('触发删除画面格回调')}
-                        onPreviewScene={() => setIsPreviewModalVisible(true)}
-                        onReplaceScene={(next) => replaceScene('', next)}
-                        previewDisabled={false}
-                      />
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </Card>
+            <EditorSection
+              scene={scene}
+              isExpanded={isExpanded}
+              onToggleExpand={() => setIsExpanded(!isExpanded)}
+              onUpdateScene={updateScene}
+              onPreviewScene={() => setIsPreviewModalVisible(true)}
+              onReplaceScene={(next) => replaceScene('', next)}
+            />
           </Space>
         </div>
 
         {/* 右侧：固定预览面板 */}
-        <div
-          style={{
-            position: 'fixed',
-            right: 0,
-            top: FIXED_SIDEBAR_TOP_OFFSET,
-            bottom: 0,
-            width: sidebarWidth,
-            overflowY: 'auto',
-            zIndex: 20,
-            borderLeft: '1px solid var(--brand-border)',
-            background: 'var(--brand-dark)',
-          }}
-        >
-          <div
-            onMouseDown={startSidebarResize}
-            style={{
-              position: 'absolute',
-              left: -4,
-              top: 0,
-              bottom: 0,
-              width: 8,
-              cursor: 'col-resize',
-              zIndex: 21,
-              background: isSidebarResizing ? 'rgba(24,144,255,0.22)' : 'transparent',
-            }}
-          />
-
-          <div style={{ padding: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
-              <Card
-                title={<span><VideoCameraOutlined /> 实时动画预览</span>}
-                size="small"
-                variant="outlined"
-                styles={{ body: { padding: 0, background: '#000', overflow: 'hidden' } }}
-              >
-                <VideoPreviewPlayer
-                  videoConfig={previewConfig}
-                  durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
-                  compositionWidth={1280}
-                  compositionHeight={720}
-                  fps={DEFAULT_PREVIEW_FPS}
-                  style={{ width: '100%', aspectRatio: '16/9' }}
-                  focusedSceneId={scene.id}
-                  controls
-                  autoPlay
-                  key={`video-${scene.id}`}
-                />
-              </Card>
-
-              <Card
-                title={<span><FileImageOutlined /> 略缩图快照</span>}
-                size="small"
-                variant="outlined"
-                extra={
-                  <Space>
-                    <InputNumber
-                      size="small"
-                      min={0}
-                      max={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
-                      value={frameOffset}
-                      onChange={(val) => setFrameOffset(Number(val) || 0)}
-                      style={{ width: 60 }}
-                    />
-                    <Text type="secondary" style={{ fontSize: '11px' }}>帧</Text>
-                  </Space>
-                }
-              >
-                <div style={{ background: '#000', borderRadius: 4, overflow: 'hidden' }}>
-                  <VideoPreviewPlayer
-                    videoConfig={previewConfig}
-                    durationInFrames={Math.floor(scene.duration) * DEFAULT_PREVIEW_FPS}
-                    fps={DEFAULT_PREVIEW_FPS}
-                    initialFrame={frameOffset}
-                    style={{ width: '100%', aspectRatio: '16/9' }}
-                    controls={false}
-                    autoPlay={false}
-                    focusedSceneId={scene.id}
-                    key={`static-${scene.id}-${frameOffset}`}
-                  />
-                </div>
-              </Card>
-
-              <Card title="JSON 状态监控" size="small" variant="outlined">
-                <pre style={{ margin: 0, fontSize: '10px', fontFamily: 'monospace', maxHeight: '200px', overflow: 'auto', background: '#1e1e1e', color: '#d4d4d4', padding: '8px', borderRadius: '4px' }}>
-                  {JSON.stringify(scene, null, 2)}
-                </pre>
-              </Card>
-            </Space>
-          </div>
-        </div>
+        <Sidebar
+          sidebarWidth={sidebarWidth}
+          isSidebarResizing={isSidebarResizing}
+          FIXED_SIDEBAR_TOP_OFFSET={FIXED_SIDEBAR_TOP_OFFSET}
+          startSidebarResize={startSidebarResize}
+          scene={scene}
+          previewConfig={previewConfig}
+          frameOffset={frameOffset}
+          setFrameOffset={setFrameOffset}
+          isPreviewModalVisible={isPreviewModalVisible}
+        />
       </div>
 
       <Modal
@@ -395,3 +240,4 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
     </div>
   );
 };
+

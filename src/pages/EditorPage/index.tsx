@@ -44,6 +44,10 @@ interface EditorPageProps {
   allAuthors: string[];
   authorProfiles: Record<string, AuthorProfile>;
   onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
+  imageLayoutMode: ImageLayoutMode;
+  setImageLayoutMode: (mode: ImageLayoutMode) => void;
+  sceneLayout: SceneLayoutType;
+  setSceneLayout: (layout: SceneLayoutType) => void;
   onApply: () => void;
   onBack: () => void;
   toolDesc: string;
@@ -63,6 +67,10 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   allAuthors,
   authorProfiles,
   onUpdateAuthorProfile,
+  imageLayoutMode,
+  setImageLayoutMode,
+  sceneLayout,
+  setSceneLayout,
   onApply,
   onBack,
   toolDesc,
@@ -332,6 +340,10 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         setEditorSortMode={setEditorSortMode}
         editorReplyOrderMode={editorReplyOrderMode}
         setEditorReplyOrderMode={setEditorReplyOrderMode}
+        imageLayoutMode={imageLayoutMode}
+        setImageLayoutMode={setImageLayoutMode}
+        sceneLayout={sceneLayout}
+        setSceneLayout={setSceneLayout}
         canApplyCommentSort={canApplyCommentSort}
         onApplyCommentSort={onApplyCommentSort}
         allAuthors={allAuthors}

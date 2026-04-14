@@ -15,7 +15,7 @@ import {
   DeleteOutlined,
   MergeCellsOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene } from '../../../types';
+import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType } from '../../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 import { GlobalConfigPanel } from './GlobalConfigPanel';
@@ -50,6 +50,10 @@ interface SidebarProps {
   setEditorSortMode: (mode: CommentSortMode) => void;
   editorReplyOrderMode: ReplyOrderMode;
   setEditorReplyOrderMode: (mode: ReplyOrderMode) => void;
+  imageLayoutMode: ImageLayoutMode;
+  setImageLayoutMode: (mode: ImageLayoutMode) => void;
+  sceneLayout: SceneLayoutType;
+  setSceneLayout: (layout: SceneLayoutType) => void;
   canApplyCommentSort: boolean;
   onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   allAuthors: string[];
@@ -85,6 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setEditorSortMode,
   editorReplyOrderMode,
   setEditorReplyOrderMode,
+  imageLayoutMode,
+  setImageLayoutMode,
+  sceneLayout,
+  setSceneLayout,
   canApplyCommentSort,
   onApplyCommentSort,
   allAuthors,
@@ -221,6 +229,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               setEditorSortMode={setEditorSortMode}
               editorReplyOrderMode={editorReplyOrderMode}
               setEditorReplyOrderMode={setEditorReplyOrderMode}
+              imageLayoutMode={imageLayoutMode}
+              setImageLayoutMode={setImageLayoutMode}
+              sceneLayout={sceneLayout}
+              setSceneLayout={setSceneLayout}
             />
           )}
 

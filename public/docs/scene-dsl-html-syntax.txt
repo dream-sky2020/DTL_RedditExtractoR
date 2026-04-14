@@ -3,48 +3,46 @@ Scene DSL (HTML-style) 语法说明
 
 1) 根节点: <scene>
 -------------------
-一个脚本必须且只能有一个 <scene ...>...</scene> 根节点。
+每个脚本段落必须且只能有一个 <scene ...>...</scene> 根节点。
 
 必填属性:
 - id: 场景唯一 ID
-- duration: 场景时长(秒)
-- type: 只能是 "post" 或 "comments"
+- duration: 场景总时长(秒)。注意：所有 item 的时间轴应在此范围内。
+- type: 场景类型。可选值:
+  - "post": 原贴正文样式（通常包含大标题）
+  - "comments": 评论样式
 
 可选属性:
-- title: 场景标题
+- title: 场景描述标题（仅用于编辑器识别）
 - layout: 内容格垂直布局。可选值:
-  - top: 从顶部开始排列（默认）
-  - center: 垂直居中排列
+  - center: 垂直居中排列（默认，适合短内容）
+  - top: 从顶部开始排列（适合长内容或多项排列）
 
 示例:
-<scene id="scene-001" duration=8 type="comments" layout="center" title="评论段落">
+<scene id="scene-001" duration=10 type="comments" layout="center" title="热门评论区">
   ...
 </scene>
 
 
 2) 子节点: <item>
 ------------------
-<scene> 内可包含多个 <item ...>...</item>，每个 item 代表一个内容格。
+<scene> 内可包含多个 <item ...>...</item>，每个 item 代表一个独立渲染的内容格（如一条评论）。
 
 必填属性:
 - id: item 唯一 ID
-- author: 作者名
+- author: 作者名（将显示在内容头部或引用中）
 
 可选属性:
-- enterAt: 进入时间(秒)，默认 0
-- exitAt: 退出时间(秒)，默认等于 scene.duration
-- enterAnimation: 进入动画，默认 "none"
-- exitAnimation: 退出动画，默认 "none"
+- enterAt: 进入时间(秒)，默认 0。
+- exitAt: 退出时间(秒)，默认等于 scene.duration。
+- enterAnimation: 进入动画，默认 "none"。
+- exitAnimation: 退出动画，默认 "none"。
 
 动画可选值:
-- none
-- fade
-- slide-up
-- slide-down
-- slide-left
-- slide-right
-- zoom-in
-- zoom-out
+- none (无)
+- fade (淡入/淡出)
+- slide-up / slide-down / slide-left / slide-right (滑动)
+- zoom-in / zoom-out (缩放)
 
 示例:
 <item
@@ -55,61 +53,86 @@ Scene DSL (HTML-style) 语法说明
   enterAnimation="slide-up"
   exitAnimation="fade"
 >
-  [quote=OP]引用内容[/quote]
   这是正文内容。
 </item>
 
 
-3) 完整脚本示例
-----------------
-<scene id="scene-001" duration=8 type="comments" layout="top" title="示例场景">
-  <item id="item-01" author="UserA" enterAt=0 exitAt=4 enterAnimation="fade" exitAnimation="slide-down">
-    第一条内容
-  </item>
+3) item 内容体内的 [tag] 语法 (BBCode)
+--------------------------------------
+<item> 标签体里的正文支持丰富的 BBCode 风格标签，用于控制样式、媒体和结构。
 
-  <item id="item-02" author="UserB" enterAt=2 exitAt=8 enterAnimation="zoom-in" exitAnimation="none">
-    [image]https://example.com/demo.jpg[/image]
+[quote] (引用/嵌套)
+- 用法: [quote author=作者 id=可选ID max=字数限制]内容[/quote]
+- 简写: [quote=作者]内容[/quote]
+- 功能: 创建一个嵌套的引用框。支持多层嵌套（渲染器默认支持 4 层）。
+- 参数: 
+  - max: 超过该字数的内容会被自动截断并加上省略号。
+
+[style] (文字样式)
+- 用法: [style color=#ff4500 size=24 b i u align=center]内容[/style]
+- 参数:
+  - color: 颜色值 (如 #hex, red)
+  - size: 字号 (数字)
+  - b: 加粗
+  - i: 斜体
+  - u: 下划线
+  - align: 文本对齐 (left / center / right)
+
+[image] (图片)
+- 用法: [image w=300 h=200 mode=contain]图片URL[/image]
+- 参数:
+  - w / width: 宽度 (数字或百分比)
+  - h / height: 高度 (数字)
+  - s / scale: 缩放比例 (0-1)
+  - mode: 填充模式 (cover / contain / fill)
+
+[gallery] (图集轮播)
+- 用法: [gallery duration=3]url1|2.5,url2[/gallery]
+- 参数:
+  - duration: 默认每张图停留秒数。
+  - 内容: 逗号分隔的 URL。每个 URL 可用 | 分隔单独的停留秒数。
+
+[audio] (音频素材)
+- 用法: [audio src="filename.mp3" start=0 volume=1.0]
+- 功能: 在该 item 显示时触发音频播放。
+- 参数:
+  - src: 音频文件名（需存在于服务器音频库中）
+  - start: 音频起始播放位置(秒)
+  - volume: 音量 (0.0 - 1.0)
+
+[row] (并列排版)
+- 用法: [row gap=10 align=center justify=between] 内容 [/row]
+- 功能: 使内部的 [image] 或其他元素水平并列排布。
+- 参数:
+  - gap: 间距 (px)
+  - align: 垂直对齐 (start / center / end)
+  - justify: 水平分布 (start / center / end / between / around)
+
+[\n] (强制换行)
+- 在 item 正文中写入 [\n] 可强制进行物理换行。
+
+
+4) 完整脚本综合示例
+--------------------
+<scene id="scene-demo" duration=15 type="comments" layout="top" title="综合演示">
+  <item id="it-1" author="RedditUser" enterAt=0 exitAt=15 enterAnimation="fade">
+    [style size=20 b]注意看这个案例：[/style][\n]
+    [quote author=OldBot]
+      [style color=gray]这是很久以前的引用内容。[/style]
+    [/quote]
+    [row gap=15]
+      [image w=45%]https://img1.jpg[/image]
+      [image w=45%]https://img2.jpg[/image]
+    [/row]
+    [audio src="alert.mp3" volume=0.8]
+    最后是一段带有 [style color=red]红色高亮[/style] 的结论。
   </item>
 </scene>
 
 
-4) item 内容体内的 [tag] 语法
------------------------------
-说明: <item> 标签体里的正文支持 BBCode 风格标签，常用如下。
-
-[quote]
-- 基本用法: [quote=作者]内容[/quote]
-- 可选参数: max=数字，用于限制该层 quote 文本长度
-- 示例:
-  [quote=OriginalPoster]这是引用内容[/quote]
-  [quote=Alice max=120]这段引用超过 120 字会被截断[/quote]
-
-[style]
-- 用法: [style color=#ff4500 size=24 b i u]内容[/style]
-- 可选属性:
-  - color=颜色值(如 #ff4500 / red)
-  - size=字号(数字)
-  - b(加粗) i(斜体) u(下划线)
-
-[image]
-- 用法: [image w=300 h=200 mode=contain]图片URL[/image]
-- 可选属性:
-  - w 或 width
-  - h 或 height
-  - s 或 scale
-  - mode=cover/contain/fill
-
-[gallery]
-- 用法:
-  [gallery]url1,url2[/gallery]
-  [gallery duration=3]url1|2.5,url2|4[/gallery]
-- 说明:
-  - duration 是默认轮播时长
-  - 每个 URL 后可用 |单独时长 覆盖默认值
-
-
-5) 使用建议
+5) 注意事项
 -----------
-- duration / title / type 建议只在 <scene> 属性中维护
-- 进入退出时间与动画建议只在 <item> 属性中维护
-- 修改完脚本后，通过“应用脚本”生效
+- 字符规范: 程序会自动将智能引号（“”‘’）和特殊省略号（…）标准化为标准 ASCII 字符，以保证渲染一致性。
+- 时间轴: 请确保 <item> 的 enterAt 和 exitAt 在父级 <scene> 的 duration 范围内。
+- 嵌套限制: [quote] 标签支持深层嵌套，但为了 UI 美观，建议不要超过 4 层。
+- 自动保存: 在 DSL 编辑器中开启“自动保存”可实时预览修改后的 DSL 结构。

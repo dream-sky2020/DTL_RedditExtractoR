@@ -55,6 +55,7 @@ const { Header, Sider, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
+const GLOBAL_CONFIG_STORAGE_KEY = 'reddit-extractor.global-config.v1';
 
 type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
 type ColorArrangementMode = 'uniform' | 'randomized';
@@ -67,6 +68,20 @@ interface ColorArrangementSettings {
   seed: number;
 }
 
+interface GlobalSettings {
+  commentSortMode: CommentSortMode;
+  replyOrderMode: ReplyOrderMode;
+  imageLayoutMode: 'gallery' | 'row' | 'single';
+  sceneLayout: 'top' | 'center';
+}
+
+const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  commentSortMode: 'best',
+  replyOrderMode: 'preserve',
+  imageLayoutMode: 'gallery',
+  sceneLayout: 'center',
+};
+
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -77,8 +92,10 @@ const App: React.FC = () => {
   const [rawResult, setRawResult] = useState<any>(null);
   const [error, setError] = useState('');
   const [errorDebug, setErrorDebug] = useState('');
-  const [commentSortMode, setCommentSortMode] = useState<CommentSortMode>('best');
-  const [replyOrderMode, setReplyOrderMode] = useState<ReplyOrderMode>('preserve');
+  const [commentSortMode, setCommentSortMode] = useState<CommentSortMode>(DEFAULT_GLOBAL_SETTINGS.commentSortMode);
+  const [replyOrderMode, setReplyOrderMode] = useState<ReplyOrderMode>(DEFAULT_GLOBAL_SETTINGS.replyOrderMode);
+  const [imageLayoutMode, setImageLayoutMode] = useState<'gallery' | 'row' | 'single'>(DEFAULT_GLOBAL_SETTINGS.imageLayoutMode);
+  const [sceneLayout, setSceneLayout] = useState<'top' | 'center'>(DEFAULT_GLOBAL_SETTINGS.sceneLayout);
   const [allAuthors, setAllAuthors] = useState<string[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
   const [colorArrangement, setColorArrangement] = useState<ColorArrangementSettings>({
@@ -156,6 +173,7 @@ const App: React.FC = () => {
       id: 'scene-post-' + Date.now(),
       type: 'post',
       title: '贴子正文',
+      layout: 'top',
       duration: 5,
       items: [{
         id: 'post-content',
@@ -168,6 +186,7 @@ const App: React.FC = () => {
       id: 'scene-' + c.id,
       type: 'comments',
       title: `评论 u/${c.author}`,
+      layout: 'center',
       duration: 3,
       items: [{
         id: c.id,
@@ -209,6 +228,14 @@ const App: React.FC = () => {
     }
   };
 
+  const persistGlobalConfig = (settings: GlobalSettings) => {
+    try {
+      localStorage.setItem(GLOBAL_CONFIG_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {
+      console.warn('保存全局配置到 localStorage 失败:', err);
+    }
+  };
+
   const restoreRawRedditData = () => {
     try {
       const cached = localStorage.getItem(RAW_REDDIT_DATA_STORAGE_KEY);
@@ -242,11 +269,23 @@ const App: React.FC = () => {
     }
   };
 
+  const restoreGlobalConfig = (): GlobalSettings => {
+    try {
+      const cached = localStorage.getItem(GLOBAL_CONFIG_STORAGE_KEY);
+      if (!cached) return DEFAULT_GLOBAL_SETTINGS;
+      return { ...DEFAULT_GLOBAL_SETTINGS, ...JSON.parse(cached) };
+    } catch (err) {
+      console.warn('读取 localStorage 中的全局配置失败:', err);
+      return DEFAULT_GLOBAL_SETTINGS;
+    }
+  };
+
   const clearPersistedRawRedditData = () => {
     try {
       localStorage.removeItem(RAW_REDDIT_DATA_STORAGE_KEY);
       localStorage.removeItem(VIDEO_CONFIG_STORAGE_KEY);
       localStorage.removeItem(AUTHOR_PROFILES_STORAGE_KEY);
+      localStorage.removeItem(GLOBAL_CONFIG_STORAGE_KEY);
       setHasStoredRawData(false);
       message.success('已清除本地缓存的所有数据');
     } catch (err) {
@@ -284,9 +323,17 @@ const App: React.FC = () => {
     const cachedRawResult = restoreRawRedditData();
     const cachedVideoConfig = restoreVideoConfig();
     const cachedAuthorProfiles = restoreAuthorProfiles();
+    const cachedGlobalConfig = restoreGlobalConfig();
 
     if (cachedAuthorProfiles) {
       setAuthorProfiles(cachedAuthorProfiles);
+    }
+
+    if (cachedGlobalConfig) {
+      setCommentSortMode(cachedGlobalConfig.commentSortMode);
+      setReplyOrderMode(cachedGlobalConfig.replyOrderMode);
+      setImageLayoutMode(cachedGlobalConfig.imageLayoutMode);
+      setSceneLayout(cachedGlobalConfig.sceneLayout);
     }
 
     if (cachedVideoConfig) {
@@ -302,10 +349,10 @@ const App: React.FC = () => {
         : buildProfilesForAuthors(nextAuthors, {}, colorArrangement);
       
       const nextResult = transformRedditJson(cachedRawResult, {
-        sortMode: commentSortMode,
-        replyOrder: replyOrderMode,
+        sortMode: cachedGlobalConfig.commentSortMode,
+        replyOrder: cachedGlobalConfig.replyOrderMode,
         authorProfiles: nextProfiles,
-        imageLayoutMode: cachedVideoConfig?.imageLayoutMode,
+        imageLayoutMode: cachedVideoConfig?.imageLayoutMode || cachedGlobalConfig.imageLayoutMode,
       });
 
       setRawResult(cachedRawResult);
@@ -324,10 +371,26 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // 监听全局配置变化并持久化
+  useEffect(() => {
+    persistGlobalConfig({
+      commentSortMode,
+      replyOrderMode,
+      imageLayoutMode,
+      sceneLayout,
+    });
+  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout]);
+
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
     if (result) {
-      const newConfig: VideoConfig = buildVideoConfigFromResult(result);
+      const newConfig: VideoConfig = {
+        ...buildVideoConfigFromResult(result),
+        imageLayoutMode: imageLayoutMode, // 使用当前全局设置
+      };
+      
+      // 统一应用当前场景布局
+      newConfig.scenes = newConfig.scenes.map(s => ({ ...s, layout: sceneLayout }));
       
       setVideoConfig(newConfig);
       setDraftConfig(newConfig);
@@ -496,6 +559,8 @@ const App: React.FC = () => {
   };
 
   const applyCommentSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
     rebuildFromRaw(sortMode, replyOrder, authorProfiles, '评论排序已应用并重排脚本');
   };
 
@@ -521,12 +586,16 @@ const App: React.FC = () => {
   };
 
   const randomizeAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
     const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles);
     setAuthorProfiles(nextProfiles);
     rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已随机生成代号并重建脚本');
   };
 
   const clearAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
     const nextProfiles: Record<string, AuthorProfile> = { ...authorProfiles };
     allAuthors.forEach((author) => {
       const existing = nextProfiles[author] || {};
@@ -544,6 +613,8 @@ const App: React.FC = () => {
     replyOrder: ReplyOrderMode,
     nextSettings: ColorArrangementSettings,
   ) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
     const normalizedSettings = {
       ...nextSettings,
       saturation: Math.max(20, Math.min(90, nextSettings.saturation)),
@@ -767,6 +838,23 @@ const App: React.FC = () => {
                 allAuthors={allAuthors}
                 authorProfiles={authorProfiles}
                 onUpdateAuthorProfile={updateAuthorProfile}
+                imageLayoutMode={imageLayoutMode}
+                setImageLayoutMode={(mode) => {
+                  setImageLayoutMode(mode);
+                  const newConfig = { ...draftConfig, imageLayoutMode: mode };
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                sceneLayout={sceneLayout}
+                setSceneLayout={(layout) => {
+                  setSceneLayout(layout);
+                  const newScenes = draftConfig.scenes.map(s => ({ ...s, layout }));
+                  const newConfig = { ...draftConfig, scenes: newScenes };
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
                 onApply={() => {
                   setVideoConfig(draftConfig);
                   persistVideoConfig(draftConfig);
