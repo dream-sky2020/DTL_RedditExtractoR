@@ -57,21 +57,39 @@ async function main() {
     'src/remotion/index.tsx',
     'MyVideo',
     'out/video.mp4',
-    `--props=${JSON.stringify(props)}`,
+    '--props=video-config.json', // 关键修改：直接传递文件名，避免命令行过长
   ];
 
   console.log(`执行命令: npx ${args.join(' ')}`);
 
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const renderProcess = spawn(npx, args, { stdio: 'inherit' });
+  
+  // 必须包装成 Promise 并等待进程结束，否则脚本会立即退出并返回 0
+  await new Promise((resolvePromise, reject) => {
+    const renderProcess = spawn(npx, args, { 
+      stdio: 'inherit',
+      shell: process.platform === 'win32'
+    });
 
-  renderProcess.on('close', (code) => {
-    if (code === 0) {
-      console.log('\n✅ 渲染完成！视频已生成在: out/video.mp4');
-    } else {
-      console.error(`\n❌ 渲染失败，退出码: ${code}`);
-    }
+    renderProcess.on('close', (code) => {
+      if (code === 0) {
+        const fullPath = resolve(process.cwd(), 'out/video.mp4');
+        console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
+        resolvePromise(true);
+      } else {
+        console.error(`\n❌ 渲染失败，退出码: ${code}`);
+        process.exit(code || 1);
+      }
+    });
+
+    renderProcess.on('error', (err) => {
+      console.error('无法启动渲染进程:', err);
+      reject(err);
+    });
   });
 }
 
-main();
+main().catch(err => {
+  console.error('渲染脚本执行异常:', err);
+  process.exit(1);
+});

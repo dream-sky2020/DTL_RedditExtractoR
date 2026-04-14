@@ -5,3 +5,6 @@ dist
 .vscode
 .cursor
 .git
+video-config.json
+out/
+*.mp4

@@ -80,17 +80,17 @@ Scene DSL (HTML-style) 语法说明
 
 [image] (图片)
 - 用法: [image w=300 h=200 mode=contain]图片URL[/image]
+- 多图用法: [image]url1,url2,url3[/image]
+- 兼容扩展: 每个 URL 后可用 |秒数 指定单张停留时长，例如 [image]url1|2.5,url2|4[/image]
 - 参数:
   - w / width: 宽度 (数字或百分比)
   - h / height: 高度 (数字)
   - s / scale: 缩放比例 (0-1)
   - mode: 填充模式 (cover / contain / fill)
-
-[gallery] (图集轮播)
-- 用法: [gallery duration=3]url1|2.5,url2[/gallery]
-- 参数:
-  - duration: 默认每张图停留秒数。
-  - 内容: 逗号分隔的 URL。每个 URL 可用 | 分隔单独的停留秒数。
+- 功能:
+  - 写 1 个 URL 时按单图渲染
+  - 写多个 URL 时自动按轮播图集渲染
+  - 在非视频 UI 预览中会额外显示左右切换按钮和当前位置页码，方便检查每一张图
 
 [audio] (音频素材)
 - 用法: [audio src="filename.mp3" start=0 volume=1.0]

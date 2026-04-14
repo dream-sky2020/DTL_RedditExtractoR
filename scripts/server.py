@@ -45,27 +45,46 @@ def render_video():
         
         print("🎬 正在启动渲染引擎...")
         
-        # 在 Windows 上需要处理 shell=True
-        result = subprocess.run(
-            ['node', script_path], 
-            capture_output=True, 
-            text=True, 
-            shell=(platform.system() == 'Windows')
-        )
+        # 彻底修复编码问题：
+        # 1. 强制使用二进制模式读取 (不设置 text=True)
+        # 2. 显式设置环境变量
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["NODE_SKIP_PLATFORM_CHECK"] = "1"
 
-        if result.returncode == 0:
-            print("✅ 渲染成功！")
+        process = subprocess.Popen(
+            ['node', script_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=(platform.system() == 'Windows'),
+            env=env,
+            bufsize=0 # 禁用缓冲，直接读取原始字节
+        )
+        
+        # 使用 communicate 读取原始二进制数据，不让 subprocess 内部线程尝试解码
+        stdout_bin, stderr_bin = process.communicate()
+        
+        # 无论 stdout 还是 stderr，都用 utf-8 强制解码，非法字符直接替换
+        stdout_text = stdout_bin.decode('utf-8', errors='replace') if stdout_bin else ""
+        stderr_text = stderr_bin.decode('utf-8', errors='replace') if stderr_bin else ""
+
+        if process.returncode == 0:
+            # 获取绝对路径
+            abs_output_path = os.path.abspath(os.path.join(os.getcwd(), 'out', 'video.mp4'))
+            print(f"✅ 渲染成功！视频文件位于: {abs_output_path}")
+            
             return jsonify({
                 "success": True, 
-                "message": "视频渲染成功！文件位于 out/video.mp4",
-                "log": result.stdout
+                "message": f"视频渲染成功！",
+                "path": abs_output_path,
+                "log": stdout_text
             })
         else:
-            print(f"❌ 渲染失败: {result.stderr}")
+            print(f"❌ 渲染失败: {stderr_text}")
             return jsonify({
                 "success": False, 
                 "message": "渲染失败", 
-                "error": result.stderr
+                "error": stderr_text or stdout_text
             }), 500
 
     except Exception as e:

@@ -41,6 +41,64 @@
   color: var(--text-light-blue) !important;
 }
 
+/* --- 用户隐私与身份映射专用的暗色表格样式 --- */
+.dark-data-table.ant-table-wrapper .ant-table {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-table-thead > tr > th {
+  background: var(--panel-bg-darker) !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--brand-border) !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--brand-border) !important;
+  background: transparent !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: var(--panel-bg-darker) !important;
+}
+
+/* 强制重写分页按钮样式，解决“突兀白色”问题 */
+.dark-data-table.ant-table-wrapper .ant-pagination-item,
+.dark-data-table.ant-table-wrapper .ant-pagination-prev .ant-pagination-item-link,
+.dark-data-table.ant-table-wrapper .ant-pagination-next .ant-pagination-item-link {
+  background: var(--panel-bg-darker) !important;
+  border-color: var(--brand-border) !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-pagination-item a,
+.dark-data-table.ant-table-wrapper .ant-pagination-prev .ant-pagination-item-link,
+.dark-data-table.ant-table-wrapper .ant-pagination-next .ant-pagination-item-link {
+  color: var(--text-secondary) !important;
+}
+
+/* 悬停状态 */
+.dark-data-table.ant-table-wrapper .ant-pagination-item:hover,
+.dark-data-table.ant-table-wrapper .ant-pagination-prev:hover .ant-pagination-item-link,
+.dark-data-table.ant-table-wrapper .ant-pagination-next:hover .ant-pagination-item-link {
+  border-color: var(--btn-primary-border) !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-pagination-item:hover a,
+.dark-data-table.ant-table-wrapper .ant-pagination-prev:hover .ant-pagination-item-link,
+.dark-data-table.ant-table-wrapper .ant-pagination-next:hover .ant-pagination-item-link {
+  color: var(--text-light-blue) !important;
+}
+
+/* 激活分页按钮 - 使用用户要求的 #0050b3 (var(--btn-primary-bg)) */
+.dark-data-table.ant-table-wrapper .ant-pagination-item-active {
+  background: var(--btn-primary-bg) !important;
+  border-color: var(--btn-primary-border) !important;
+}
+
+.dark-data-table.ant-table-wrapper .ant-pagination-item-active a {
+  color: #fff !important;
+}
+
 /* 确保主内容区的分页器使用深色文字（针对浅色背景） */
 #editor-page-pagination-wrapper .ant-pagination-item a,
 #editor-page-pagination-wrapper .ant-pagination-prev .ant-pagination-item-link,

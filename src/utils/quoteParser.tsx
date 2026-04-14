@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Typography, Button, Tooltip } from 'antd';
 import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
 import { toast } from '../components/Toast';
@@ -75,132 +75,239 @@ const parseQuoteStartTag = (
   return { fullTag, author, maxLimit, itemId };
 };
 
-/**
- * 内部组件：图集轮播
- */
-const Gallery: React.FC<{ 
-  urls: string[];
-}> = ({ urls }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const next = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % urls.length);
+const DEFAULT_MEDIA_DURATION = 2.5;
+
+interface ParsedMediaItem {
+  url: string;
+  duration: number;
+}
+
+const parseMediaSequence = (source: string, defaultDuration: number = DEFAULT_MEDIA_DURATION): ParsedMediaItem[] =>
+  source
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+    .map((item) => {
+      const [rawUrl, rawDuration] = item.split('|');
+      return {
+        url: (rawUrl || '').trim(),
+        duration: Number(rawDuration) > 0 ? Number(rawDuration) : defaultDuration,
+      };
+    })
+    .filter((item) => item.url !== '');
+
+const resolvePlaybackIndex = (items: ParsedMediaItem[], playbackSeconds: number): number => {
+  if (items.length <= 1) return 0;
+  const totalDuration = items.reduce((sum, item) => sum + Math.max(item.duration, 0.1), 0);
+  if (!Number.isFinite(totalDuration) || totalDuration <= 0) return 0;
+
+  let cursor = ((playbackSeconds % totalDuration) + totalDuration) % totalDuration;
+  for (let i = 0; i < items.length; i += 1) {
+    const itemDuration = Math.max(items[i].duration, 0.1);
+    if (cursor < itemDuration) return i;
+    cursor -= itemDuration;
+  }
+  return 0;
+};
+
+const buildMediaStyles = (attrStr: string) => {
+  const mediaStyle: React.CSSProperties = {
+    maxWidth: '100%',
+    borderRadius: '4px',
+    border: '1px solid var(--image-border)',
+    display: 'block',
+    margin: '0 auto',
+    height: 'auto',
+    objectFit: 'contain',
   };
-  const prev = (e: React.MouseEvent) => {
+
+  let maxHeight: string | number = '500px';
+
+  const widthMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
+  if (widthMatch) {
+    const val = widthMatch[2];
+    mediaStyle.width = isNaN(Number(val)) ? val : `${val}px`;
+    mediaStyle.maxWidth = '100%';
+
+    if (val.includes('%')) {
+      mediaStyle.display = 'inline-block';
+      mediaStyle.margin = '0';
+      maxHeight = 'none';
+    }
+  }
+
+  const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
+  if (heightMatch) {
+    const val = heightMatch[2];
+    mediaStyle.height = isNaN(Number(val)) ? val : `${val}px`;
+    maxHeight = 'none';
+  }
+
+  mediaStyle.maxHeight = maxHeight;
+
+  const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
+  if (scaleMatch) {
+    const scale = parseFloat(scaleMatch[2]);
+    if (!isNaN(scale)) {
+      mediaStyle.width = `${scale * 100}%`;
+    }
+  }
+
+  const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
+  if (modeMatch) {
+    mediaStyle.objectFit = modeMatch[1] as any;
+  }
+
+  const wrapperStyle: React.CSSProperties = {
+    margin: mediaStyle.display === 'inline-block' ? '0' : '12px 0',
+    textAlign: mediaStyle.display === 'inline-block' ? 'left' : 'center',
+    display: mediaStyle.display === 'inline-block' ? 'inline-block' : 'block',
+    width: mediaStyle.display === 'inline-block' ? mediaStyle.width : 'auto',
+    verticalAlign: 'top',
+    position: 'relative',
+  };
+
+  return { mediaStyle, wrapperStyle };
+};
+
+const MediaContent: React.FC<{
+  mediaItems: ParsedMediaItem[];
+  attrStr: string;
+  showControls: boolean;
+  playbackFrame?: number;
+  fps?: number;
+}> = ({ mediaItems, attrStr, showControls, playbackFrame, fps }) => {
+  const [manualIndex, setManualIndex] = useState(0);
+  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setManualIndex(0);
+    // 预加载所有图片
+    mediaItems.forEach(item => {
+      const img = new Image();
+      img.src = item.url;
+      img.onload = () => {
+        setLoadedUrls(prev => new Set(prev).add(item.url));
+      };
+    });
+  }, [mediaItems.map((item) => `${item.url}|${item.duration}`).join(',')]);
+
+  const playbackSeconds = playbackFrame != null && fps ? playbackFrame / fps : 0;
+  const autoIndex = useMemo(
+    () => resolvePlaybackIndex(mediaItems, playbackSeconds),
+    [mediaItems, playbackSeconds]
+  );
+  const currentIndex = mediaItems.length <= 1 ? 0 : (showControls ? manualIndex : autoIndex);
+  const currentItem = mediaItems[currentIndex] || mediaItems[0];
+  const { mediaStyle, wrapperStyle } = buildMediaStyles(attrStr);
+  const navButtonStyle: React.CSSProperties = {
+    width: 36,
+    height: 36,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    border: '1px solid rgba(255,255,255,0.22)',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s, transform 0.2s',
+    zIndex: 3,
+    boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+    backdropFilter: 'blur(6px)',
+  };
+
+  if (!currentItem) return null;
+
+  const goPrev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + urls.length) % urls.length);
+    setManualIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
+  };
+
+  const goNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setManualIndex((prev) => (prev + 1) % mediaItems.length);
   };
 
   return (
-    <div 
-      className="gallery-group"
-      style={{ 
-        position: 'relative', 
-        marginTop: 10, 
-        width: '100%', 
-        height: 240, 
-        borderRadius: 8, 
-        overflow: 'hidden', 
-        backgroundColor: 'var(--gallery-bg)', 
-        border: '1px solid var(--gallery-border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-    >
-      <img 
-        src={urls[currentIndex]} 
-        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-        alt={`Gallery ${currentIndex}`} 
-        referrerPolicy="no-referrer" 
-      />
-      
-      {/* 左右导航按钮 */}
-      {urls.length > 1 && (
+    <div key={currentItem.url} style={wrapperStyle}>
+      {/* 预渲染所有已加载的图片，但只显示当前的，以利用浏览器缓存和减少闪烁 */}
+      <div style={{ position: 'relative', width: '100%', ...mediaStyle }}>
+        {mediaItems.map((item, index) => (
+          <img
+            key={item.url}
+            src={item.url}
+            style={{
+              ...mediaStyle,
+              width: '100%',
+              display: index === currentIndex ? 'block' : 'none',
+              // 如果是当前图片但还没加载完，可以加个占位或者保持透明
+              visibility: index === currentIndex && !loadedUrls.has(item.url) ? 'hidden' : 'visible'
+            }}
+            alt="Content"
+            referrerPolicy="no-referrer"
+          />
+        ))}
+      </div>
+
+      {showControls && mediaItems.length > 1 && (
         <>
-          <div 
-            onClick={prev}
+          <div
+            onClick={goPrev}
             style={{
               position: 'absolute',
               left: 8,
               top: '50%',
               transform: 'translateY(-50%)',
-              width: 32,
-              height: 32,
-              backgroundColor: 'var(--gallery-nav-bg)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              zIndex: 2
+              ...navButtonStyle,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg)'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.88)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.72)';
+              e.currentTarget.style.transform = 'translateY(-50%)';
+            }}
           >
             <LeftOutlined style={{ color: 'white', fontSize: 16 }} />
           </div>
-          <div 
-            onClick={next}
+          <div
+            onClick={goNext}
             style={{
               position: 'absolute',
               right: 8,
               top: '50%',
               transform: 'translateY(-50%)',
-              width: 32,
-              height: 32,
-              backgroundColor: 'var(--gallery-nav-bg)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              zIndex: 2
+              ...navButtonStyle,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--gallery-nav-bg)'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.88)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.72)';
+              e.currentTarget.style.transform = 'translateY(-50%)';
+            }}
           >
             <RightOutlined style={{ color: 'white', fontSize: 16 }} />
           </div>
+          <div
+            style={{
+              position: 'absolute',
+              right: 8,
+              bottom: 8,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              padding: '2px 8px',
+              borderRadius: 10,
+              fontSize: 11,
+              zIndex: 2,
+            }}
+          >
+            {currentIndex + 1} / {mediaItems.length}
+          </div>
         </>
       )}
-
-      {/* 底部指示圆点 (胶囊容器) */}
-      {urls.length > 1 && (
-        <div style={{
-          position: 'absolute',
-          bottom: 12,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: 6,
-          zIndex: 2,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          padding: '4px 8px',
-          borderRadius: '12px',
-          backdropFilter: 'blur(4px)' // 加上磨砂玻璃效果，更有质感
-        }}>
-          {urls.map((_, idx) => (
-            <div 
-              key={idx}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                backgroundColor: currentIndex === idx ? 'white' : 'var(--gallery-dot-bg)',
-                transition: 'all 0.3s'
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* 右下角页码 */}
-      <div style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: 10, fontSize: 11, zIndex: 2 }}>
-        {currentIndex + 1} / {urls.length}
-      </div>
     </div>
   );
 };
@@ -217,7 +324,10 @@ export const parseQuotes = (
   currentDepth: number = 0,
   maxQuoteDepth: number = 4,
   authorPath: string[] = [],
-  hideAudio: boolean = false
+  hideAudio: boolean = false,
+  showMediaControls: boolean = true,
+  playbackFrame?: number,
+  fps?: number
 ): React.ReactNode => {
   if (!text) return null;
 
@@ -394,7 +504,17 @@ export const parseQuotes = (
           >
             <div style={{ color: 'inherit' }}>
               {/* 递归调用：每个 quote 独立计算自己的限制，且不会破坏标签结构 */}
-              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio)}
+              {parseQuotes(
+                innerText,
+                maxAttr,
+                currentDepth + 1,
+                maxQuoteDepth,
+                [...authorPath, author],
+                hideAudio,
+                showMediaControls,
+                playbackFrame,
+                fps
+              )}
             </div>
           </div>
         );
@@ -418,80 +538,21 @@ export const parseQuotes = (
       const endTagIdx = normalizedText.indexOf('[/image]', startTagEnd);
       
       if (endTagIdx !== -1) {
-        const url = normalizedText.substring(startTagEnd, endTagIdx);
-        
-        // 解析图像属性
-        const imgStyle: React.CSSProperties = { 
-          maxWidth: '100%', 
-          borderRadius: '4px', 
-          border: '1px solid var(--image-border)',
-          display: 'block',
-          margin: '0 auto',
-          height: 'auto', // 强制高度自动，保持比例
-          objectFit: 'contain' // 默认包含模式，不裁剪
-        };
+        const contentStr = normalizedText.substring(startTagEnd, endTagIdx);
+        const mediaItems = parseMediaSequence(contentStr);
 
-        // 默认最大高度限制（仅针对非并列模式）
-        let maxHeight: string | number = '500px';
-
-        // 宽度: w=300 或 width=50%
-        const widthMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
-        if (widthMatch) {
-          const val = widthMatch[2];
-          imgStyle.width = isNaN(Number(val)) ? val : `${val}px`;
-          imgStyle.maxWidth = '100%'; 
-          
-          if (val.includes('%')) {
-            imgStyle.display = 'inline-block';
-            imgStyle.margin = '0';
-            maxHeight = 'none'; // 并列模式下取消高度限制，由宽度决定比例
-          }
-        }
-
-        // 高度: h=200 或 height=150px
-        const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
-        if (heightMatch) {
-          const val = heightMatch[2];
-          imgStyle.height = isNaN(Number(val)) ? val : `${val}px`;
-          maxHeight = 'none';
-        }
-
-        imgStyle.maxHeight = maxHeight;
-
-        // 缩放: s=0.5 或 scale=0.8
-        const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
-        if (scaleMatch) {
-          const scale = parseFloat(scaleMatch[2]);
-          if (!isNaN(scale)) {
-            imgStyle.width = `${scale * 100}%`;
-          }
-        }
-
-        // 模式: mode=cover/contain/fill
-        const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
-        if (modeMatch) {
-          imgStyle.objectFit = modeMatch[1] as any;
-        }
-
-        nodes.push(
-          <div 
-            key={foundIdx} 
-            style={{ 
-              margin: imgStyle.display === 'inline-block' ? '0' : '12px 0', 
-              textAlign: imgStyle.display === 'inline-block' ? 'left' : 'center',
-              display: imgStyle.display === 'inline-block' ? 'inline-block' : 'block',
-              width: imgStyle.display === 'inline-block' ? imgStyle.width : 'auto',
-              verticalAlign: 'top'
-            }}
-          >
-            <img 
-              src={url} 
-              style={{...imgStyle, width: '100%'}} 
-              alt="Content" 
-              referrerPolicy="no-referrer"
+        if (mediaItems.length > 0) {
+          nodes.push(
+            <MediaContent
+              key={foundIdx}
+              mediaItems={mediaItems}
+              attrStr={attrStr}
+              showControls={showMediaControls}
+              playbackFrame={playbackFrame}
+              fps={fps}
             />
-          </div>
-        );
+          );
+        }
         currentPos = endTagIdx + 8;
       } else {
         nodes.push(imgStartMatch[0]);
@@ -547,7 +608,17 @@ export const parseQuotes = (
 
         nodes.push(
           <span key={foundIdx} style={style}>
-            {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio)}
+            {parseQuotes(
+              innerText,
+              parentMaxLimit,
+              currentDepth,
+              maxQuoteDepth,
+              authorPath,
+              hideAudio,
+              showMediaControls,
+              playbackFrame,
+              fps
+            )}
           </span>
         );
         currentPos = endTagIdx + 8;
@@ -574,24 +645,18 @@ export const parseQuotes = (
             defaultDuration = parseFloat(durationMatch[1]);
           }
 
-          const rawItems = contentStr.split(',').map(u => u.trim()).filter(u => u !== '');
-          const urls: string[] = [];
-          const durations: number[] = [];
+          const mediaItems = parseMediaSequence(contentStr, defaultDuration);
 
-          rawItems.forEach(item => {
-            if (item.includes('|')) {
-              const [url, dur] = item.split('|');
-              urls.push(url.trim());
-              durations.push(parseFloat(dur) || defaultDuration);
-            } else {
-              urls.push(item);
-              durations.push(defaultDuration);
-            }
-          });
-
-          if (urls.length > 0) {
+          if (mediaItems.length > 0) {
             nodes.push(
-              <Gallery key={foundIdx} urls={urls} />
+              <MediaContent
+                key={foundIdx}
+                mediaItems={mediaItems}
+                attrStr=""
+                showControls={showMediaControls}
+                playbackFrame={playbackFrame}
+                fps={fps}
+              />
             );
           }
           currentPos = endTagIdx + 10;
@@ -692,7 +757,17 @@ export const parseQuotes = (
 
           nodes.push(
             <div key={foundIdx} style={rowStyle} className="script-row">
-              {parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio)}
+              {parseQuotes(
+                innerText,
+                parentMaxLimit,
+                currentDepth,
+                maxQuoteDepth,
+                authorPath,
+                hideAudio,
+                showMediaControls,
+                playbackFrame,
+                fps
+              )}
             </div>
           );
           currentPos = endTagIdx + 6;

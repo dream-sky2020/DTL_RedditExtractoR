@@ -347,7 +347,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         return flatList;
     };
 
-    // 核心改进：多途径提取贴子主图及图集 (使用 [gallery] 标签)
+    // 核心改进：多途径提取贴子主图及图集 (统一使用 [image] 标签)
     let postImg = '';
     let postImages: string[] = [];
     
@@ -389,7 +389,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         postImages = [bodyImg];
     }
 
-    // 组装最终正文：将图集包装为 [gallery] 或 [row] 标签追加到末尾
+    // 组装最终正文：将多图包装为 [image] 或 [row] 标签追加到末尾
     if (postImages.length > 1) {
         let multiImageTag = '';
         if (mergedOptions.imageLayoutMode === 'row') {
@@ -401,11 +401,11 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             // 如果是 single 模式，逐个排布
             multiImageTag = `\n${postImages.map(url => `[image]${url}[/image]`).join('\n')}`;
         } else {
-            // 默认 gallery 模式
-            multiImageTag = `\n[gallery]${postImages.join(',')}[/gallery]`;
+            // 默认轮播模式：多个 URL 写进同一个 [image]
+            multiImageTag = `\n[image]${postImages.join(',')}[/image]`;
         }
 
-        if (!postText.includes('[gallery]') && !postText.includes('[row]')) {
+        if (!postText.includes('[row]')) {
             postText = `${postText}${multiImageTag}`;
         }
     } else if (postImages.length === 1) {

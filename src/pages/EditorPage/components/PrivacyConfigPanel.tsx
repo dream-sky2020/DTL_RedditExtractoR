@@ -111,6 +111,7 @@ export const PrivacyConfigPanel: React.FC<PrivacyConfigPanelProps> = ({
 
       <Table<AuthorIdentityRow>
         id="editor-page-author-table"
+        className="dark-data-table"
         rowKey={(record) => record.author}
         size="small"
         pagination={{ pageSize: 10, size: 'small' }}

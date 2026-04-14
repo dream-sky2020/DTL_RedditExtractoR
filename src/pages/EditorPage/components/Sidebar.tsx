@@ -15,7 +15,7 @@ import {
   DeleteOutlined,
   MergeCellsOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType } from '../../../types';
+import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 import { GlobalConfigPanel } from './GlobalConfigPanel';
@@ -54,6 +54,8 @@ interface SidebarProps {
   setImageLayoutMode: (mode: ImageLayoutMode) => void;
   sceneLayout: SceneLayoutType;
   setSceneLayout: (layout: SceneLayoutType) => void;
+  titleAlignment: TitleAlignmentType;
+  setTitleAlignment: (alignment: TitleAlignmentType) => void;
   canApplyCommentSort: boolean;
   onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   allAuthors: string[];
@@ -93,6 +95,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setImageLayoutMode,
   sceneLayout,
   setSceneLayout,
+  titleAlignment,
+  setTitleAlignment,
   canApplyCommentSort,
   onApplyCommentSort,
   allAuthors,
@@ -233,6 +237,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               setImageLayoutMode={setImageLayoutMode}
               sceneLayout={sceneLayout}
               setSceneLayout={setSceneLayout}
+              titleAlignment={titleAlignment}
+              setTitleAlignment={setTitleAlignment}
             />
           )}
 

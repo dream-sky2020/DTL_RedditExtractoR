@@ -89,15 +89,15 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
         content: '1. 强制宽高并裁切填满 (w=200 h=100 mode=cover):\n[image w=200 h=100 mode=cover]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n\n2. 强制宽高并包含显示 (w=200 h=100 mode=contain):\n[image w=200 h=100 mode=contain]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]\n\n3. 强制拉伸填满 (w=200 h=100 mode=fill):\n[image w=200 h=100 mode=fill]https://i.redd.it/vfxlybaze6tg1.jpeg[/image]',
       }]
     },
-    '轮播图集': {
+    '多图轮播': {
       id: 'gallery-demo',
       type: 'comments',
-      title: '轮播图集演示',
+      title: '多图轮播演示',
       duration: 10,
       items: [{
         id: 'item-gallery',
         author: 'MediaExpert',
-        content: '自动轮播图集 (gallery)：\n[gallery]https://preview.redd.it/jujnstfkj8tg1.jpg?width=774&format=pjpg&auto=webp&s=a30b5e0cf23eed1ed12fe82e9e09b0f0d4a058a6,https://preview.redd.it/nv4b0ufkj8tg1.jpg?width=763&format=pjpg&auto=webp&s=1543bea7205d1615b44142ae485b55b9787f64e3[/gallery]',
+        content: '多图轮播 ([image] 内写多个 URL)：\n[image]https://preview.redd.it/jujnstfkj8tg1.jpg?width=774&format=pjpg&auto=webp&s=a30b5e0cf23eed1ed12fe82e9e09b0f0d4a058a6,https://preview.redd.it/nv4b0ufkj8tg1.jpg?width=763&format=pjpg&auto=webp&s=1543bea7205d1615b44142ae485b55b9787f64e3[/image]',
       }]
     },
     '音频音效': {

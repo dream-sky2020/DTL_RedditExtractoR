@@ -14,6 +14,7 @@ export type ItemAnimationType =
   | 'zoom-out';
 
 export type SceneLayoutType = 'top' | 'center';
+export type TitleAlignmentType = 'left' | 'right' | 'center';
 export type ImageLayoutMode = 'gallery' | 'row' | 'single';
 
 export interface VideoContentItem {
@@ -42,4 +43,5 @@ export interface VideoConfig {
   subreddit: string;
   scenes: VideoScene[]; // 现在配置由画面格组成
   imageLayoutMode?: ImageLayoutMode; // 图片排列模式
+  titleAlignment?: TitleAlignmentType; // 标题对齐方式
 }

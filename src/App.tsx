@@ -34,7 +34,7 @@ import {
   extractAuthorsFromRawData,
 } from './utils/redditTransformer';
 import { generateRandomAliasProfiles } from './utils/aliasGenerator';
-import { VideoConfig, VideoScene } from './types';
+import { VideoConfig, VideoScene, TitleAlignmentType } from './types';
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage/index';
@@ -73,6 +73,7 @@ interface GlobalSettings {
   replyOrderMode: ReplyOrderMode;
   imageLayoutMode: 'gallery' | 'row' | 'single';
   sceneLayout: 'top' | 'center';
+  titleAlignment: TitleAlignmentType;
 }
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -80,6 +81,7 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   replyOrderMode: 'preserve',
   imageLayoutMode: 'gallery',
   sceneLayout: 'center',
+  titleAlignment: 'center',
 };
 
 const App: React.FC = () => {
@@ -96,6 +98,7 @@ const App: React.FC = () => {
   const [replyOrderMode, setReplyOrderMode] = useState<ReplyOrderMode>(DEFAULT_GLOBAL_SETTINGS.replyOrderMode);
   const [imageLayoutMode, setImageLayoutMode] = useState<'gallery' | 'row' | 'single'>(DEFAULT_GLOBAL_SETTINGS.imageLayoutMode);
   const [sceneLayout, setSceneLayout] = useState<'top' | 'center'>(DEFAULT_GLOBAL_SETTINGS.sceneLayout);
+  const [titleAlignment, setTitleAlignment] = useState<TitleAlignmentType>(DEFAULT_GLOBAL_SETTINGS.titleAlignment);
   const [allAuthors, setAllAuthors] = useState<string[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
   const [colorArrangement, setColorArrangement] = useState<ColorArrangementSettings>({
@@ -168,7 +171,7 @@ const App: React.FC = () => {
     return nextProfiles;
   };
 
-  const buildVideoConfigFromResult = (nextResult: any): VideoConfig => {
+  const buildVideoConfigFromResult = (nextResult: any, alignment: TitleAlignmentType = 'center'): VideoConfig => {
     const postScene: VideoScene = {
       id: 'scene-post-' + Date.now(),
       type: 'post',
@@ -178,7 +181,7 @@ const App: React.FC = () => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: `[style size=32 b]${nextResult.title}[/style]\n\n${nextResult.content || ''}`,
+        content: `[style size=32 b align=${alignment}]${nextResult.title}[/style]\n\n${nextResult.content || ''}`,
       }]
     };
 
@@ -334,6 +337,9 @@ const App: React.FC = () => {
       setReplyOrderMode(cachedGlobalConfig.replyOrderMode);
       setImageLayoutMode(cachedGlobalConfig.imageLayoutMode);
       setSceneLayout(cachedGlobalConfig.sceneLayout);
+      if (cachedGlobalConfig.titleAlignment) {
+        setTitleAlignment(cachedGlobalConfig.titleAlignment);
+      }
     }
 
     if (cachedVideoConfig) {
@@ -362,7 +368,7 @@ const App: React.FC = () => {
       
       // 如果没有缓存的视频配置，则根据提取结果生成
       if (!cachedVideoConfig) {
-        const nextConfig = buildVideoConfigFromResult(nextResult);
+        const nextConfig = buildVideoConfigFromResult(nextResult, cachedGlobalConfig.titleAlignment || 'center');
         setVideoConfig(nextConfig);
         setDraftConfig(nextConfig);
       }
@@ -378,15 +384,17 @@ const App: React.FC = () => {
       replyOrderMode,
       imageLayoutMode,
       sceneLayout,
+      titleAlignment,
     });
-  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout]);
+  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment]);
 
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
     if (result) {
       const newConfig: VideoConfig = {
-        ...buildVideoConfigFromResult(result),
+        ...buildVideoConfigFromResult(result, titleAlignment),
         imageLayoutMode: imageLayoutMode, // 使用当前全局设置
+        titleAlignment: titleAlignment, // 使用当前全局设置
       };
       
       // 统一应用当前场景布局
@@ -548,7 +556,7 @@ const App: React.FC = () => {
       imageLayoutMode: draftConfig.imageLayoutMode,
     });
     const nextConfig = {
-      ...buildVideoConfigFromResult(nextResult),
+      ...buildVideoConfigFromResult(nextResult, titleAlignment),
       imageLayoutMode: draftConfig.imageLayoutMode,
     };
 
@@ -658,7 +666,12 @@ const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' }
       });
       if (response.data.success) {
-        setAutoRenderStatus({ type: 'success', message: '视频导出成功！视频已保存在 out/video.mp4' });
+        // 使用后端返回的完整绝对路径，如果不存在则退回到默认相对路径
+        const fullPath = response.data.path || 'out/video.mp4';
+        setAutoRenderStatus({ 
+          type: 'success', 
+          message: `视频导出成功！位置：${fullPath}` 
+        });
         message.success('渲染成功！');
       } else {
         setAutoRenderStatus({ type: 'error', message: response.data.message });
@@ -851,6 +864,36 @@ const App: React.FC = () => {
                   setSceneLayout(layout);
                   const newScenes = draftConfig.scenes.map(s => ({ ...s, layout }));
                   const newConfig = { ...draftConfig, scenes: newScenes };
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                titleAlignment={titleAlignment}
+                setTitleAlignment={(alignment) => {
+                  setTitleAlignment(alignment);
+                  
+                  // 同时更新所有 post 类型场景中标题的 align 属性
+                  const newScenes = draftConfig.scenes.map(scene => {
+                    if (scene.type === 'post' && scene.items.length > 0) {
+                      const newItems = scene.items.map(item => {
+                        // 寻找 [style ... size=32 ...] 标签并替换 align
+                        // 这里的正则匹配 [style ... size=32 ... b ...] 结构
+                        let newContent = item.content;
+                        if (newContent.includes('size=32')) {
+                          if (newContent.includes('align=')) {
+                            newContent = newContent.replace(/align=[^ \]]+/, `align=${alignment}`);
+                          } else {
+                            newContent = newContent.replace(/\[style ([^\]]*size=32[^\]]*)\]/, `[style $1 align=${alignment}]`);
+                          }
+                        }
+                        return { ...item, content: newContent };
+                      });
+                      return { ...scene, items: newItems };
+                    }
+                    return scene;
+                  });
+
+                  const newConfig = { ...draftConfig, scenes: newScenes, titleAlignment: alignment };
                   setDraftConfig(newConfig);
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);

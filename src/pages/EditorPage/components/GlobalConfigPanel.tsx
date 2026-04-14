@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Row, Col, Input, Select, Typography, Divider } from 'antd';
-import { VideoConfig, ImageLayoutMode, SceneLayoutType } from '../../../types';
+import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
 import { CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
 
 const { Text } = Typography;
@@ -16,6 +16,8 @@ interface GlobalConfigPanelProps {
   setImageLayoutMode: (mode: ImageLayoutMode) => void;
   sceneLayout: SceneLayoutType;
   setSceneLayout: (layout: SceneLayoutType) => void;
+  titleAlignment: TitleAlignmentType;
+  setTitleAlignment: (alignment: TitleAlignmentType) => void;
 }
 
 export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
@@ -29,6 +31,8 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
   setImageLayoutMode,
   sceneLayout,
   setSceneLayout,
+  titleAlignment,
+  setTitleAlignment,
 }) => {
   return (
     <div id="editor-page-global-config-panel" style={{ 
@@ -100,6 +104,25 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
                     </Form.Item>
                   </Col>
                 </Row>
+                <Row gutter={16}>
+                  <Col span={24}>
+                    <Form.Item id="editor-page-title-alignment-item" label={<Text style={{ color: 'var(--text-secondary)' }}>标题对齐方式</Text>}>
+                      <Select<TitleAlignmentType>
+                        id="editor-page-title-alignment-select"
+                        value={titleAlignment}
+                        onChange={setTitleAlignment}
+                        style={{ width: '100%' }}
+                        styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
+                        className="custom-blue-select"
+                        options={[
+                          { label: '居中对齐', value: 'center' },
+                          { label: '靠左对齐', value: 'left' },
+                          { label: '靠右对齐', value: 'right' },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
                 <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
                 <Row gutter={16}>
                   <Col span={24}>
@@ -112,7 +135,7 @@ export const GlobalConfigPanel: React.FC<GlobalConfigPanelProps> = ({
                         styles={{ popup: { root: { background: 'var(--brand-border)' } } }}
                         className="custom-blue-select"
                         options={[
-                          { label: '图集轮播 (Gallery)', value: 'gallery' },
+                          { label: '多图轮播', value: 'gallery' },
                           { label: '并列排列 (Row)', value: 'row' },
                           { label: '单图竖排 (Single)', value: 'single' },
                         ]}

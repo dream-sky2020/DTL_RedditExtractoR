@@ -9,7 +9,7 @@ import {
 import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene } from '../../types';
+import { VideoConfig, VideoScene, TitleAlignmentType } from '../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
@@ -48,6 +48,8 @@ interface EditorPageProps {
   setImageLayoutMode: (mode: ImageLayoutMode) => void;
   sceneLayout: SceneLayoutType;
   setSceneLayout: (layout: SceneLayoutType) => void;
+  titleAlignment: TitleAlignmentType;
+  setTitleAlignment: (alignment: TitleAlignmentType) => void;
   onApply: () => void;
   onBack: () => void;
   toolDesc: string;
@@ -71,6 +73,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   setImageLayoutMode,
   sceneLayout,
   setSceneLayout,
+  titleAlignment,
+  setTitleAlignment,
   onApply,
   onBack,
   toolDesc,
@@ -344,6 +348,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         setImageLayoutMode={setImageLayoutMode}
         sceneLayout={sceneLayout}
         setSceneLayout={setSceneLayout}
+        titleAlignment={titleAlignment}
+        setTitleAlignment={setTitleAlignment}
         canApplyCommentSort={canApplyCommentSort}
         onApplyCommentSort={onApplyCommentSort}
         allAuthors={allAuthors}
