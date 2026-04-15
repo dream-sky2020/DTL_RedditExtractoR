@@ -112,6 +112,7 @@ const App: React.FC = () => {
   const [isExportModalVisible, setIsExportModalVisible] = useState(false);
   const [isAutoRendering, setIsAutoRendering] = useState(false);
   const [autoRenderStatus, setAutoRenderStatus] = useState<any>(null);
+  const [renderProgress, setRenderProgress] = useState<{ percent: number, task: string, detail?: string } | null>(null);
   const [hasStoredRawData, setHasStoredRawData] = useState(false);
 
   const hslToHex = (h: number, s: number, l: number) => {
@@ -661,24 +662,72 @@ const App: React.FC = () => {
   const startAutoRender = async () => {
     setIsAutoRendering(true);
     setAutoRenderStatus(null);
+    setRenderProgress({ percent: 0, task: '🚀 正在初始化渲染...' });
+    
     try {
-      const response = await axios.post('http://localhost:5000/render', videoConfig, {
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch('http://localhost:5000/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(videoConfig)
       });
-      if (response.data.success) {
-        // 使用后端返回的完整绝对路径，如果不存在则退回到默认相对路径
-        const fullPath = response.data.path || 'out/video.mp4';
-        setAutoRenderStatus({ 
-          type: 'success', 
-          message: `视频导出成功！位置：${fullPath}` 
-        });
-        message.success('渲染成功！');
-      } else {
-        setAutoRenderStatus({ type: 'error', message: response.data.message });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: '服务器响应异常' }));
+        throw new Error(errorData.message || `HTTP 错误: ${response.status}`);
       }
-    } catch (err) {
+
+      if (!response.body) {
+        throw new Error('无法建立数据流连接');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // 按照换行符分割 JSON 行
+        const lines = buffer.split('\n');
+        // 最后一行如果不完整，留在 buffer 里
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.type === 'progress') {
+              setRenderProgress({
+                percent: data.percent,
+                task: data.task,
+                detail: data.detail
+              });
+            } else if (data.type === 'success') {
+              setRenderProgress({ percent: 100, task: '✅ 渲染完成！' });
+              setAutoRenderStatus({ 
+                type: 'success', 
+                message: `视频导出成功！位置：${data.path}` 
+              });
+              message.success('渲染成功！');
+            } else if (data.type === 'error') {
+              setAutoRenderStatus({ type: 'error', message: data.message });
+              message.error(data.message);
+            }
+          } catch (e) {
+            console.warn('解析 JSON 行失败:', line);
+          }
+        }
+      }
+    } catch (err: any) {
       console.error(err);
-      setAutoRenderStatus({ type: 'error', message: '连接本地 Python 服务失败。请确保 scripts/server.py 正在运行。' });
+      setAutoRenderStatus({ 
+        type: 'error', 
+        message: `错误: ${err.message || '连接本地 Python 服务失败。'}` 
+      });
     } finally {
       setIsAutoRendering(false);
     }
@@ -910,13 +959,14 @@ const App: React.FC = () => {
             )}
 
             {activeTool === 'preview' && (
-              <VideoPreviewPage 
+              <VideoPreviewPage
                 videoConfig={videoConfig}
                 onBackToEditor={() => setActiveTool('editor')}
                 isExportModalVisible={isExportModalVisible}
                 setIsExportModalVisible={setIsExportModalVisible}
                 isAutoRendering={isAutoRendering}
                 autoRenderStatus={autoRenderStatus}
+                renderProgress={renderProgress}
                 startAutoRender={startAutoRender}
                 downloadVideoConfig={downloadVideoConfig}
               />

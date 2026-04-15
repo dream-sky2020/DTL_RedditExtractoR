@@ -9,6 +9,7 @@ import {
   Divider,
   Modal,
   Alert,
+  Progress,
 } from 'antd';
 import {
   EditOutlined,
@@ -28,6 +29,7 @@ interface VideoPreviewPageProps {
   setIsExportModalVisible: (visible: boolean) => void;
   isAutoRendering: boolean;
   autoRenderStatus: any;
+  renderProgress: { percent: number, task: string, detail?: string } | null;
   startAutoRender: () => void;
   downloadVideoConfig: () => void;
 }
@@ -39,6 +41,7 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
   setIsExportModalVisible,
   isAutoRendering,
   autoRenderStatus,
+  renderProgress,
   startAutoRender,
   downloadVideoConfig,
 }) => {
@@ -120,6 +123,27 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
                   >
                     立即在本地生成 MP4
                   </Button>
+                  {renderProgress && (
+                    <div style={{ marginTop: 15 }}>
+                      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                        <Text strong>{renderProgress.task}</Text>
+                        <Text type="secondary">{renderProgress.percent}%</Text>
+                      </div>
+                      <Progress 
+                        percent={renderProgress.percent} 
+                        status={isAutoRendering ? "active" : "success"}
+                        strokeColor={{
+                          '0%': '#108ee9',
+                          '100%': '#87d068',
+                        }}
+                      />
+                      {renderProgress.detail && (
+                        <div style={{ marginTop: 4 }}>
+                          <Text type="secondary" size="small">{renderProgress.detail}</Text>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {autoRenderStatus && (
                     <Alert 
                       type={autoRenderStatus.type} 

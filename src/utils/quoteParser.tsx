@@ -1,10 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Typography, Button, Tooltip } from 'antd';
 import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
 import { toast } from '../components/Toast';
 import axios from 'axios';
 
 const { Text } = Typography;
+
+// 新增：用于在渲染树中共享播放进度的上下文，避免整个树重复解析
+export const PlaybackContext = createContext<{
+  playbackFrame?: number;
+  fps?: number;
+}>({});
+
+export const usePlaybackContext = () => useContext(PlaybackContext);
 
 const AUDIO_ITEMS_STORAGE_KEY = 'reddit-extractor.audio-items.v1';
 
@@ -174,9 +182,8 @@ const MediaContent: React.FC<{
   mediaItems: ParsedMediaItem[];
   attrStr: string;
   showControls: boolean;
-  playbackFrame?: number;
-  fps?: number;
-}> = ({ mediaItems, attrStr, showControls, playbackFrame, fps }) => {
+}> = ({ mediaItems, attrStr, showControls }) => {
+  const { playbackFrame, fps } = usePlaybackContext();
   const [manualIndex, setManualIndex] = useState(0);
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
 
@@ -326,8 +333,6 @@ export const parseQuotes = (
   authorPath: string[] = [],
   hideAudio: boolean = false,
   showMediaControls: boolean = true,
-  playbackFrame?: number,
-  fps?: number
 ): React.ReactNode => {
   if (!text) return null;
 
@@ -442,12 +447,8 @@ export const parseQuotes = (
     }
 
     if (type === 'quote') {
-      // 3. 处理 [quote ...]，支持属性无序 + 两种 author 写法：
-      // - [quote=Alice id=odu5u6a max=120]
-      // - [quote author=Alice max=120 id=odu5u6a]
       const parsedStartTag = parseQuoteStartTag(normalizedText.substring(foundIdx), DEFAULT_MAX_LIMIT);
       if (!parsedStartTag) {
-        // 匹配失败，跳过 [quote=
         nodes.push('[quote=');
         currentPos = foundIdx + 7;
         continue;
@@ -458,37 +459,27 @@ export const parseQuotes = (
       const quotedItemId = parsedStartTag.itemId;
       const startTagEnd = foundIdx + parsedStartTag.fullTag.length;
       
-      // 寻找匹配的 [/quote]，需要考虑嵌套深度
       let depth = 1;
       let searchPos = startTagEnd;
       let endTagIdx = -1;
       
       while (depth > 0 && searchPos < normalizedText.length) {
         const nextStartMatch = normalizedText.substring(searchPos).match(QUOTE_OPEN_TAG_RE);
-        const nextStart =
-          nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
+        const nextStart = nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
         const nextEnd = normalizedText.indexOf('[/quote]', searchPos);
-        
         if (nextEnd === -1) break; 
-        
         if (nextStart !== -1 && nextStart < nextEnd) {
           depth++;
           searchPos = nextStart + 7;
         } else {
           depth--;
-          if (depth === 0) {
-            endTagIdx = nextEnd;
-          } else {
-            searchPos = nextEnd + 8;
-          }
+          if (depth === 0) endTagIdx = nextEnd;
+          else searchPos = nextEnd + 8;
         }
       }
       
       if (endTagIdx !== -1) {
         const innerText = normalizedText.substring(startTagEnd, endTagIdx);
-        // 渲染 quote 容器。注意：即便父级已经 limitReached，我们也应该渲染嵌套的 quote，
-        // 除非逻辑要求父级截断后直接丢弃所有后续节点。但根据您的需求“不影响内部 quote”，
-        // 这里我们选择始终渲染嵌套的 quote。
         nodes.push(
           <div 
             key={foundIdx}
@@ -503,55 +494,30 @@ export const parseQuotes = (
             }}
           >
             <div style={{ color: 'inherit' }}>
-              {/* 递归调用：每个 quote 独立计算自己的限制，且不会破坏标签结构 */}
-              {parseQuotes(
-                innerText,
-                maxAttr,
-                currentDepth + 1,
-                maxQuoteDepth,
-                [...authorPath, author],
-                hideAudio,
-                showMediaControls,
-                playbackFrame,
-                fps
-              )}
+              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio, showMediaControls)}
             </div>
           </div>
         );
         currentPos = endTagIdx + 8;
       } else {
-        // 未闭合标签
         nodes.push(parsedStartTag.fullTag);
         currentPos = startTagEnd;
       }
     } else if (type === 'image') {
-      // 4. 处理 [image w=300 h=200 mode=contain]URL[/image]
       const imgStartMatch = normalizedText.substring(foundIdx).match(/^\[image([^\]]*)\]/);
       if (!imgStartMatch) {
         nodes.push('[image]');
         currentPos = foundIdx + 7;
         continue;
       }
-
       const attrStr = imgStartMatch[1];
       const startTagEnd = foundIdx + imgStartMatch[0].length;
       const endTagIdx = normalizedText.indexOf('[/image]', startTagEnd);
-      
       if (endTagIdx !== -1) {
         const contentStr = normalizedText.substring(startTagEnd, endTagIdx);
         const mediaItems = parseMediaSequence(contentStr);
-
         if (mediaItems.length > 0) {
-          nodes.push(
-            <MediaContent
-              key={foundIdx}
-              mediaItems={mediaItems}
-              attrStr={attrStr}
-              showControls={showMediaControls}
-              playbackFrame={playbackFrame}
-              fps={fps}
-            />
-          );
+          nodes.push(<MediaContent key={foundIdx} mediaItems={mediaItems} attrStr={attrStr} showControls={showMediaControls} />);
         }
         currentPos = endTagIdx + 8;
       } else {
@@ -559,105 +525,52 @@ export const parseQuotes = (
         currentPos = startTagEnd;
       }
     } else if (type === 'style') {
-      // 5. 处理 [style color=#FF0000 size=24 b i u]内容[/style]
       const styleStartMatch = normalizedText.substring(foundIdx).match(/^\[style([^\]]*)\]/);
       if (!styleStartMatch) {
         nodes.push('[style]');
         currentPos = foundIdx + 7;
         continue;
       }
-
       const attrStr = styleStartMatch[1];
       const startTagEnd = foundIdx + styleStartMatch[0].length;
-      
-      // 寻找匹配的 [/style]
       const endTagIdx = normalizedText.indexOf('[/style]', startTagEnd);
-      
       if (endTagIdx !== -1) {
         const innerText = normalizedText.substring(startTagEnd, endTagIdx);
-        
-        // 解析属性
         const style: React.CSSProperties = {};
-        
-        // 颜色: color=#FF0000 或 color=red
         const colorMatch = attrStr.match(/color=([^ \]]+)/);
         if (colorMatch) style.color = colorMatch[1];
-        
-        // 大小: size=24
         const sizeMatch = attrStr.match(/size=(\d+)/);
-        if (sizeMatch) {
-            style.fontSize = parseInt(sizeMatch[1]);
-        }
-        
-        // 对齐方式: align=center|left|right
+        if (sizeMatch) style.fontSize = parseInt(sizeMatch[1]);
         const alignMatch = attrStr.match(/align=([^ \]]+)/);
         if (alignMatch) {
           style.textAlign = alignMatch[1] as any;
           style.display = 'block';
           style.width = '100%';
         }
-        
-        // 加粗: b
         if (attrStr.match(/\bb\b/)) style.fontWeight = 'bold';
-        
-        // 斜体: i
         if (attrStr.match(/\bi\b/)) style.fontStyle = 'italic';
-        
-        // 下划线: u
         if (attrStr.match(/\bu\b/)) style.textDecoration = 'underline';
-
-        nodes.push(
-          <span key={foundIdx} style={style}>
-            {parseQuotes(
-              innerText,
-              parentMaxLimit,
-              currentDepth,
-              maxQuoteDepth,
-              authorPath,
-              hideAudio,
-              showMediaControls,
-              playbackFrame,
-              fps
-            )}
-          </span>
-        );
+        nodes.push(<span key={foundIdx} style={style}>{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls)}</span>);
         currentPos = endTagIdx + 8;
       } else {
         nodes.push(styleStartMatch[0]);
         currentPos = startTagEnd;
       }
     } else if (type === 'gallery') {
-      // 6. 处理 [gallery]URL1,URL2[/gallery] 或 [gallery duration=3]URL1|2,URL2[/gallery]
       const galleryStartTagMatch = normalizedText.substring(foundIdx).match(/\[gallery([^\]]*)\]/);
       if (galleryStartTagMatch) {
         const startTagFull = galleryStartTagMatch[0];
         const attrStr = galleryStartTagMatch[1];
         const startTagEnd = foundIdx + startTagFull.length;
         const endTagIdx = normalizedText.indexOf('[/gallery]', startTagEnd);
-
         if (endTagIdx !== -1) {
           const contentStr = normalizedText.substring(startTagEnd, endTagIdx);
-          
-          // 解析全局时长属性
           let defaultDuration = 2.5;
           const durationMatch = attrStr.match(/duration=([\d.]+)/);
-          if (durationMatch) {
-            defaultDuration = parseFloat(durationMatch[1]);
-          }
-
+          if (durationMatch) defaultDuration = parseFloat(durationMatch[1]);
           const mediaItems = parseMediaSequence(contentStr, defaultDuration);
-
           if (mediaItems.length > 0) {
-            nodes.push(
-              <MediaContent
-                key={foundIdx}
-                mediaItems={mediaItems}
-                attrStr=""
-                showControls={showMediaControls}
-                playbackFrame={playbackFrame}
-                fps={fps}
-              />
-            );
+            nodes.push(<MediaContent key={foundIdx} mediaItems={mediaItems} attrStr="" showControls={showMediaControls} />);
           }
           currentPos = endTagIdx + 10;
         } else {
@@ -665,12 +578,10 @@ export const parseQuotes = (
           currentPos = startTagEnd;
         }
       } else {
-        // 理论上不会走到这里，因为 Grep 已经匹配到了 [gallery]
         nodes.push('[gallery]');
         currentPos = foundIdx + 9;
       }
     } else if (type === 'audio') {
-      // 7. 处理 [audio src="filename.mp3" start="0" volume="1.0"]
       const audioMatch = normalizedText.substring(foundIdx).match(/^\[audio([^\]]*)\]/);
       if (audioMatch) {
         const fullTag = audioMatch[0];
@@ -679,41 +590,22 @@ export const parseQuotes = (
         const src = attrs.src || '';
         const volume = parseFloat(attrs.volume || '1.0');
         const start = parseFloat(attrs.start || '0');
-
         if (hideAudio) {
           currentPos = foundIdx + fullTag.length;
           continue;
         }
-
         nodes.push(
           <Tooltip key={foundIdx} title={`音频: ${src} (Vol: ${volume}, Start: ${start}s)`}>
             <span 
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                backgroundColor: 'rgba(24, 144, 255, 0.1)', 
-                border: '1px solid #1890ff',
-                borderRadius: '4px',
-                padding: '0 4px',
-                margin: '0 2px',
-                cursor: 'pointer',
-                color: '#1890ff',
-                fontSize: '12px'
-              }}
+              style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(24, 144, 255, 0.1)', border: '1px solid #1890ff', borderRadius: '4px', padding: '0 4px', margin: '0 2px', cursor: 'pointer', color: '#1890ff', fontSize: '12px' }}
               onClick={(e) => {
                 e.stopPropagation();
                 const audioUrl = `/audio/shortAudio/Unassigned/${src}`;
                 const audio = new Audio(audioUrl);
                 audio.volume = Math.max(0, Math.min(1, volume));
-                audio.play().catch(err => {
-                  console.error('预览播放失败:', err);
-                  // 尝试备用路径
+                audio.play().catch(() => {
                   new Audio(`/audio/${src}`).play().catch(() => {
-                    toast.error(`音频文件不存在: ${src}`, {
-                      description: '正在尝试自动刷新音频缓存，请稍后重试。',
-                      duration: 5
-                    });
-                    // 触发后台刷新
+                    toast.error(`音频文件不存在: ${src}`);
                     refreshAudioCache();
                   });
                 });
@@ -730,46 +622,19 @@ export const parseQuotes = (
         currentPos = foundIdx + 7;
       }
     } else if (type === 'row') {
-      // 8. 处理 [row gap=10 align=center justify=between]内容[/row]
       const rowStartMatch = normalizedText.substring(foundIdx).match(/^\[row([^\]]*)\]/);
       if (rowStartMatch) {
         const fullTag = rowStartMatch[0];
         const attrStr = rowStartMatch[1];
         const startTagEnd = foundIdx + fullTag.length;
         const endTagIdx = normalizedText.indexOf('[/row]', startTagEnd);
-
         if (endTagIdx !== -1) {
           const innerText = normalizedText.substring(startTagEnd, endTagIdx);
           const attrs = parseInlineAttrs(attrStr);
-          
           const rowStyle: React.CSSProperties = {
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px',
-            alignItems: (attrs.align || 'center') as any,
-            justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : 
-                            (attrs.justify || 'start') === 'around' ? 'space-around' : 
-                            (attrs.justify || 'start') as any,
-            margin: '12px 0',
-            width: '100%'
+            display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px', alignItems: (attrs.align || 'center') as any, justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : (attrs.justify || 'start') === 'around' ? 'space-around' : (attrs.justify || 'start') as any, margin: '12px 0', width: '100%'
           };
-
-          nodes.push(
-            <div key={foundIdx} style={rowStyle} className="script-row">
-              {parseQuotes(
-                innerText,
-                parentMaxLimit,
-                currentDepth,
-                maxQuoteDepth,
-                authorPath,
-                hideAudio,
-                showMediaControls,
-                playbackFrame,
-                fps
-              )}
-            </div>
-          );
+          nodes.push(<div key={foundIdx} style={rowStyle} className="script-row">{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls)}</div>);
           currentPos = endTagIdx + 6;
         } else {
           nodes.push(fullTag);
