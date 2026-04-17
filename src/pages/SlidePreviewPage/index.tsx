@@ -27,6 +27,7 @@ import {
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
 import { VideoConfig } from '../../types';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
 
 const { Text, Title } = Typography;
 
@@ -46,6 +47,8 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
   const [galleryPageSize, setGalleryPageSize] = useState(12);
   const FILMSTRIP_WINDOW = 3;
   const fps = DEFAULT_PREVIEW_FPS;
+  const activeCanvas = getActiveVideoCanvasSize(videoConfig);
+  const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
 
   const scenes = videoConfig.scenes;
   const hasScenes = scenes && scenes.length > 0;
@@ -61,7 +64,10 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
 
   const totalFrames = getTotalFrames(videoConfig, fps);
 
+  const isPortrait = activeCanvas.height > activeCanvas.width;
+
   const galleryStartIndex = (galleryPage - 1) * galleryPageSize;
+  // ...
   const visibleGalleryScenes = useMemo(
     () =>
       scenes
@@ -72,6 +78,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
         })),
     [scenes, galleryStartIndex, galleryPageSize]
   );
+  // ... (下方的 Col 逻辑)
 
   const visibleFilmstripScenes = useMemo(() => {
     if (!hasScenes) return [];
@@ -130,7 +137,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
         key={`scene-frame-${idx}-${frameOffset}`}
         style={{
           width: '100%',
-          aspectRatio: '16 / 9',
+          aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
         }}
         controls={false}
         autoPlay={false}
@@ -146,7 +153,7 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
             title={
               <Space>
                 <FileImageOutlined />
-                <span>画面预览 ({viewMode === 'gallery' ? '图库模式' : '幻灯片模式'})</span>
+                <span>画面预览 ({viewMode === 'gallery' ? '图库模式' : '幻灯片模式'} · {activeAspectRatioLabel})</span>
               </Space>
             }
             className="panel-card"
@@ -180,7 +187,15 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
               <div style={{ padding: '20px 0' }}>
                 <Row gutter={[16, 16]}>
                   {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
-                    <Col xs={24} sm={12} md={8} lg={6} xl={4} key={scene.id}>
+                    <Col 
+                      xs={24} 
+                      sm={isPortrait ? 12 : 12} 
+                      md={isPortrait ? 12 : 8} 
+                      lg={isPortrait ? 8 : 6} 
+                      xl={isPortrait ? 6 : 4} 
+                      xxl={isPortrait ? 4 : 3}
+                      key={scene.id}
+                    >
                       <div className="gallery-item-wrap">
                         <FramePlayer idx={sceneIdx} isThumbnail />
                         <div style={{ marginTop: 8, textAlign: 'center' }}>

@@ -16,6 +16,20 @@ export type ItemAnimationType =
 export type SceneLayoutType = 'top' | 'center';
 export type TitleAlignmentType = 'left' | 'right' | 'center';
 export type ImageLayoutMode = 'gallery' | 'row' | 'single';
+export type VideoCanvasPreset = 'landscape' | 'portrait';
+
+export interface VideoCanvasPresetSize {
+  width: number;
+  height: number;
+}
+
+export interface VideoCanvasConfig {
+  activePreset: VideoCanvasPreset;
+  presets: {
+    landscape: VideoCanvasPresetSize;
+    portrait: VideoCanvasPresetSize;
+  };
+}
 
 export interface VideoContentItem {
   id: string;
@@ -44,4 +58,5 @@ export interface VideoConfig {
   scenes: VideoScene[]; // 现在配置由画面格组成
   imageLayoutMode?: ImageLayoutMode; // 图片排列模式
   titleAlignment?: TitleAlignmentType; // 标题对齐方式
+  canvas?: VideoCanvasConfig; // 画布尺寸配置（横版/竖版）
 }

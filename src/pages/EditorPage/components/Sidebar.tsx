@@ -14,7 +14,9 @@ import {
   SelectOutlined,
   DeleteOutlined,
   MergeCellsOutlined,
+  LayoutOutlined,
 } from '@ant-design/icons';
+import { Radio, Slider } from 'antd';
 import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
@@ -73,6 +75,10 @@ interface SidebarProps {
   selectedSceneIds: string[];
   setSelectedSceneIds: (ids: string[]) => void;
   onRemoveSelectedScenes: () => void;
+  layoutMode: 'list' | 'grid';
+  setLayoutMode: (mode: 'list' | 'grid') => void;
+  cardScale: number;
+  setCardScale: (scale: number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -114,6 +120,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedSceneIds,
   setSelectedSceneIds,
   onRemoveSelectedScenes,
+  layoutMode,
+  setLayoutMode,
+  cardScale,
+  setCardScale,
 }) => {
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
   const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
@@ -211,6 +221,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Space>
           </div>
           
+          <div id="editor-page-view-config-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Space size="small">
+              <LayoutOutlined style={{ color: 'var(--text-primary)' }} />
+              <Text strong style={{ color: 'var(--text-primary)' }}>视图显示配置</Text>
+            </Space>
+          </div>
+          <div
+            id="editor-page-view-config-panel"
+            style={{
+              padding: 12,
+              borderRadius: 8,
+              border: '1px solid var(--brand-border)',
+              background: 'var(--panel-bg-translucent)',
+              marginBottom: 16
+            }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <div>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>排列模式</Text>
+                <Radio.Group 
+                  value={layoutMode} 
+                  onChange={e => setLayoutMode(e.target.value)}
+                  optionType="button"
+                  buttonStyle="solid"
+                  size="small"
+                >
+                  <Radio.Button value="list">列表布局</Radio.Button>
+                  <Radio.Button value="grid">网格布局</Radio.Button>
+                </Radio.Group>
+              </div>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>卡片预览缩放比例 ({Math.round(cardScale * 100)}%)</Text>
+                <Slider 
+                  min={0.3} 
+                  max={1.2} 
+                  step={0.05} 
+                  value={cardScale} 
+                  onChange={setCardScale}
+                  tooltip={{ formatter: val => `${Math.round((val || 0) * 100)}%` }}
+                />
+              </div>
+            </Space>
+          </div>
+
           <div id="editor-page-global-config-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text strong style={{ color: 'var(--text-primary)' }}>整体配置</Text>
             <Button

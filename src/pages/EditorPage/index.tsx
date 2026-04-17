@@ -15,6 +15,7 @@ import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoP
 import { DropResult } from '@hello-pangea/dnd';
 import { Sidebar } from './components/Sidebar';
 import { SceneFlow } from './components/SceneFlow';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
 
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
@@ -102,6 +103,11 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [editorColorArrangement, setEditorColorArrangement] = useState<ColorArrangementSettings>(colorArrangement);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
+  const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>('list');
+  const [cardScale, setCardScale] = useState(0.8);
+  const activeCanvas = getActiveVideoCanvasSize(draftConfig);
+  const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
+  const previewModalWidth = activeCanvas.width >= activeCanvas.height ? 800 : 560;
 
   React.useEffect(() => {
     setEditorSortMode(commentSortMode);
@@ -294,6 +300,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     <div id="editor-page-root" className="editor-page-container" style={{ position: 'relative' }}>
       <div id="editor-page-main-content" style={{ paddingRight: sidebarWidth + 24 }}>
         <SceneFlow
+          videoConfig={draftConfig}
           pagedScenes={pagedScenes}
           currentPage={currentPage}
           pageSize={pageSize}
@@ -317,6 +324,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
             );
           }}
+          layoutMode={layoutMode}
+          cardScale={cardScale}
         />
 
         <div id="editor-page-bottom-divider-wrapper">
@@ -367,14 +376,18 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         selectedSceneIds={selectedSceneIds}
         setSelectedSceneIds={setSelectedSceneIds}
         onRemoveSelectedScenes={removeSelectedScenes}
+        layoutMode={layoutMode}
+        setLayoutMode={setLayoutMode}
+        cardScale={cardScale}
+        setCardScale={setCardScale}
       />
 
       <Modal
-        title="单画面实时预览"
+        title={`单画面实时预览（${activeAspectRatioLabel}）`}
         open={!!previewSceneId}
         onCancel={() => setPreviewSceneId(null)}
         footer={null}
-        width={800}
+        width={previewModalWidth}
         styles={{ body: { padding: 0, background: '#000' } }}
         destroyOnHidden
         afterClose={() => {
@@ -386,10 +399,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
             <VideoPreviewPlayer
               videoConfig={draftConfig}
               durationInFrames={(draftConfig.scenes.find(s => s.id === previewSceneId)?.duration || 5) * DEFAULT_PREVIEW_FPS}
-              compositionWidth={1280}
-              compositionHeight={720}
               fps={DEFAULT_PREVIEW_FPS}
-              style={{ width: '100%', aspectRatio: '16/9' }}
+              style={{ width: '100%', aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}` }}
               focusedSceneId={previewSceneId}
               controls
               autoPlay

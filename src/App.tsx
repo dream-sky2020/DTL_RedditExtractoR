@@ -35,6 +35,7 @@ import {
 } from './utils/redditTransformer';
 import { generateRandomAliasProfiles } from './utils/aliasGenerator';
 import { VideoConfig, VideoScene, TitleAlignmentType } from './types';
+import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './utils/videoCanvas';
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage/index';
@@ -46,6 +47,7 @@ import { FrameTestPage } from './pages/FrameTestPage/index';
 import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
 import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
 import { SimulationPage } from './pages/SimulationPage/index';
+import { StudioPage } from './pages/StudioPage/index';
 import { AudioPreviewPage } from './pages/AudioPreviewPage/index';
 import { ComponentTestPage } from './pages/ComponentTestPage/index';
 import { DialogsInit } from './components/Dialogs';
@@ -57,7 +59,7 @@ const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 const GLOBAL_CONFIG_STORAGE_KEY = 'reddit-extractor.global-config.v1';
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
+type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'studio' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
   mode: ColorArrangementMode;
@@ -172,7 +174,11 @@ const App: React.FC = () => {
     return nextProfiles;
   };
 
-  const buildVideoConfigFromResult = (nextResult: any, alignment: TitleAlignmentType = 'center'): VideoConfig => {
+  const buildVideoConfigFromResult = (
+    nextResult: any,
+    alignment: TitleAlignmentType = 'center',
+    canvas = createDefaultVideoCanvasConfig()
+  ): VideoConfig => {
     const postScene: VideoScene = {
       id: 'scene-post-' + Date.now(),
       type: 'post',
@@ -203,7 +209,8 @@ const App: React.FC = () => {
     return {
       title: nextResult.title,
       subreddit: nextResult.subreddit,
-      scenes: [postScene, ...commentScenes]
+      scenes: [postScene, ...commentScenes],
+      canvas,
     };
   };
 
@@ -255,7 +262,7 @@ const App: React.FC = () => {
     try {
       const cached = localStorage.getItem(VIDEO_CONFIG_STORAGE_KEY);
       if (!cached) return null;
-      return JSON.parse(cached);
+      return normalizeVideoConfig(JSON.parse(cached));
     } catch (err) {
       console.warn('读取 localStorage 中的视频配置失败:', err);
       return null;
@@ -302,6 +309,7 @@ const App: React.FC = () => {
   const [videoConfig, setVideoConfig] = useState<VideoConfig>({
     title: '你的精彩标题',
     subreddit: 'interestingasfuck',
+    canvas: createDefaultVideoCanvasConfig(),
     scenes: [
       {
         id: 'scene-main',
@@ -369,7 +377,11 @@ const App: React.FC = () => {
       
       // 如果没有缓存的视频配置，则根据提取结果生成
       if (!cachedVideoConfig) {
-        const nextConfig = buildVideoConfigFromResult(nextResult, cachedGlobalConfig.titleAlignment || 'center');
+        const nextConfig = buildVideoConfigFromResult(
+          nextResult,
+          cachedGlobalConfig.titleAlignment || 'center',
+          createDefaultVideoCanvasConfig()
+        );
         setVideoConfig(nextConfig);
         setDraftConfig(nextConfig);
       }
@@ -393,7 +405,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (result) {
       const newConfig: VideoConfig = {
-        ...buildVideoConfigFromResult(result, titleAlignment),
+        ...buildVideoConfigFromResult(result, titleAlignment, draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()),
         imageLayoutMode: imageLayoutMode, // 使用当前全局设置
         titleAlignment: titleAlignment, // 使用当前全局设置
       };
@@ -431,6 +443,12 @@ const App: React.FC = () => {
         return {
           title: '画面预览 (PPT Mode)',
           desc: '像幻灯片一样逐帧确认画面内容。',
+          button: '',
+        };
+      case 'studio':
+        return {
+          title: '视频编辑页面',
+          desc: '更现代、更高效率的画面预览与整理画板。',
           button: '',
         };
       case 'filtered_data':
@@ -557,7 +575,11 @@ const App: React.FC = () => {
       imageLayoutMode: draftConfig.imageLayoutMode,
     });
     const nextConfig = {
-      ...buildVideoConfigFromResult(nextResult, titleAlignment),
+      ...buildVideoConfigFromResult(
+        nextResult,
+        titleAlignment,
+        draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
+      ),
       imageLayoutMode: draftConfig.imageLayoutMode,
     };
 
@@ -801,6 +823,11 @@ const App: React.FC = () => {
                 label: '画面预览 (PPT)',
               },
               {
+                key: 'studio',
+                icon: <AppstoreOutlined />,
+                label: '视频编辑页面',
+              },
+              {
                 key: 'filtered_data',
                 icon: <CodeOutlined />,
                 label: '过滤后 Reddit JSON',
@@ -885,9 +912,10 @@ const App: React.FC = () => {
               <EditorPage 
                 draftConfig={draftConfig}
                 setDraftConfig={(cfg) => {
-                  setDraftConfig(cfg);
-                  setVideoConfig(cfg); // 同时更新主配置，确保其他页面实时可见
-                  persistVideoConfig(cfg); // 持久化
+                  const normalizedConfig = normalizeVideoConfig(cfg);
+                  setDraftConfig(normalizedConfig);
+                  setVideoConfig(normalizedConfig); // 同时更新主配置，确保其他页面实时可见
+                  persistVideoConfig(normalizedConfig); // 持久化
                 }}
                 commentSortMode={commentSortMode}
                 replyOrderMode={replyOrderMode}
@@ -903,7 +931,7 @@ const App: React.FC = () => {
                 imageLayoutMode={imageLayoutMode}
                 setImageLayoutMode={(mode) => {
                   setImageLayoutMode(mode);
-                  const newConfig = { ...draftConfig, imageLayoutMode: mode };
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, imageLayoutMode: mode });
                   setDraftConfig(newConfig);
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);
@@ -912,7 +940,7 @@ const App: React.FC = () => {
                 setSceneLayout={(layout) => {
                   setSceneLayout(layout);
                   const newScenes = draftConfig.scenes.map(s => ({ ...s, layout }));
-                  const newConfig = { ...draftConfig, scenes: newScenes };
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes });
                   setDraftConfig(newConfig);
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);
@@ -942,14 +970,15 @@ const App: React.FC = () => {
                     return scene;
                   });
 
-                  const newConfig = { ...draftConfig, scenes: newScenes, titleAlignment: alignment };
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleAlignment: alignment });
                   setDraftConfig(newConfig);
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);
                 }}
                 onApply={() => {
-                  setVideoConfig(draftConfig);
-                  persistVideoConfig(draftConfig);
+                  const normalizedConfig = normalizeVideoConfig(draftConfig);
+                  setVideoConfig(normalizedConfig);
+                  persistVideoConfig(normalizedConfig);
                   setActiveTool('preview');
                   message.success('配置已保存并跳转到预览');
                 }}
@@ -976,6 +1005,98 @@ const App: React.FC = () => {
               <SlidePreviewPage 
                 videoConfig={videoConfig}
                 onBackToEditor={() => setActiveTool('editor')}
+              />
+            )}
+            
+            {activeTool === 'studio' && (
+              <StudioPage 
+                videoConfig={videoConfig}
+                setVideoConfig={(cfg) => {
+                  const normalizedConfig = normalizeVideoConfig(cfg);
+                  setVideoConfig(normalizedConfig);
+                  setDraftConfig(normalizedConfig);
+                  persistVideoConfig(normalizedConfig);
+                }}
+                onBackToEditor={() => setActiveTool('editor')}
+                commentSortMode={commentSortMode}
+                replyOrderMode={replyOrderMode}
+                onApplyCommentSort={applyIdentityAndSortInEditor}
+                onRandomizeAliasesAndApply={randomizeAliasesAndApplyInEditor}
+                onClearAliasesAndApply={clearAliasesAndApplyInEditor}
+                colorArrangement={colorArrangement}
+                onRearrangeColorsAndApply={rearrangeColorsAndApplyInEditor}
+                canApplyCommentSort={!!rawResult}
+                allAuthors={allAuthors}
+                authorProfiles={authorProfiles}
+                onUpdateAuthorProfile={updateAuthorProfile}
+                imageLayoutMode={imageLayoutMode}
+                setImageLayoutMode={(mode) => {
+                  setImageLayoutMode(mode);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, imageLayoutMode: mode });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                sceneLayout={sceneLayout}
+                setSceneLayout={(layout) => {
+                  setSceneLayout(layout);
+                  const newScenes = videoConfig.scenes.map(s => ({ ...s, layout }));
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                titleAlignment={titleAlignment}
+                setTitleAlignment={(alignment) => {
+                  setTitleAlignment(alignment);
+                  const newScenes = videoConfig.scenes.map(scene => {
+                    if (scene.type === 'post' && scene.items.length > 0) {
+                      const newItems = scene.items.map(item => {
+                        let newContent = item.content;
+                        if (newContent.includes('size=32')) {
+                          if (newContent.includes('align=')) {
+                            newContent = newContent.replace(/align=[^ \]]+/, `align=${alignment}`);
+                          } else {
+                            newContent = newContent.replace(/\[style ([^\]]*size=32[^\]]*)\]/, `[style $1 align=${alignment}]`);
+                          }
+                        }
+                        return { ...item, content: newContent };
+                      });
+                      return { ...scene, items: newItems };
+                    }
+                    return scene;
+                  });
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                setAllSceneLayouts={(layout) => {
+                  const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                  message.success(`已将全部画面格布局设为 ${layout}`);
+                }}
+                addScene={() => {
+                  const newScene: VideoScene = {
+                    id: 'scene-' + Date.now(),
+                    type: 'comments',
+                    title: '新建画面格',
+                    layout: 'top',
+                    duration: 5,
+                    items: [{
+                      id: 'item-' + Date.now(),
+                      author: 'NewUser',
+                      content: '',
+                    }]
+                  };
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
               />
             )}
 

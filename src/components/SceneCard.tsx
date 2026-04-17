@@ -16,19 +16,20 @@ import {
   HolderOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
-import { VideoScene } from '../types';
+import { VideoConfig, VideoScene } from '../types';
 import { ScriptContentRenderer } from './ScriptContentRenderer';
 import { SceneDslWarning, sceneToDsl, parseSceneDsl } from '../utils/sceneDsl';
+import { getActiveVideoCanvasSize, getAspectRatioLabel, getVideoAspectRatio } from '../utils/videoCanvas';
 
 import { toast } from '../components/Toast';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
-const SCENE_PREVIEW_ASPECT_RATIO = 16 / 9;
 const SCENE_PREVIEW_PADDING = 12;
 
 interface SceneCardProps {
+  videoConfig: VideoConfig;
   scene: VideoScene;
   index: number;
   isExpanded: boolean;
@@ -46,9 +47,11 @@ interface SceneCardProps {
   isMultiSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  onPreviewScale?: number;
 }
 
 export const SceneCard: React.FC<SceneCardProps> = ({
+  videoConfig,
   scene,
   index,
   isExpanded,
@@ -65,6 +68,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   isMultiSelectMode = false,
   isSelected = false,
   onToggleSelection,
+  onPreviewScale = 1.0,
 }) => {
   const [isSceneEditorVisible, setIsSceneEditorVisible] = useState(false);
   const [sceneEditorText, setSceneEditorText] = useState('');
@@ -208,7 +212,10 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   }, [scene.id, scene.layout, scene.items]);
 
   const previewLayout = scene.layout === 'center' ? 'center' : 'top';
-  const previewViewportHeight = previewWidth > 0 ? Math.round(previewWidth / SCENE_PREVIEW_ASPECT_RATIO) : 0;
+  const activeCanvas = getActiveVideoCanvasSize(videoConfig);
+  const previewAspectRatio = getVideoAspectRatio(videoConfig);
+  const previewAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
+  const previewViewportHeight = previewWidth > 0 ? Math.round(previewWidth / previewAspectRatio) : 0;
   const previewSurfaceHeight =
     previewViewportHeight > 0 ? Math.max(previewViewportHeight, previewContentHeight) : 0;
   const hasPreviewOverflow = previewViewportHeight > 0 && previewContentHeight - previewViewportHeight > 1;
@@ -227,13 +234,13 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   const previewHintText = useMemo(() => {
     if (hasPreviewOverflow) {
       return previewLayout === 'center'
-        ? '超出 16:9 的上下区域会以淡红色标出'
-        : '超出 16:9 的底部区域会以淡红色标出';
+        ? `超出 ${previewAspectRatioLabel} 的上下区域会以淡红色标出`
+        : `超出 ${previewAspectRatioLabel} 的底部区域会以淡红色标出`;
     }
     return previewLayout === 'center'
-      ? '内容不足时按 center 在 16:9 视口内垂直居中'
-      : '内容不足时按 top 在 16:9 视口内从顶部开始排布';
-  }, [hasPreviewOverflow, previewLayout]);
+      ? `内容不足时按 center 在 ${previewAspectRatioLabel} 视口内垂直居中`
+      : `内容不足时按 top 在 ${previewAspectRatioLabel} 视口内从顶部开始排布`;
+  }, [hasPreviewOverflow, previewAspectRatioLabel, previewLayout]);
 
   return (
     <div
@@ -384,33 +391,54 @@ export const SceneCard: React.FC<SceneCardProps> = ({
             }}
           >
             <Text type="secondary" style={{ fontSize: 12 }}>
-              画面卡片预览视口固定为 16:9，scene.layout={previewLayout}
+              画面卡片预览视口固定为 {previewAspectRatioLabel}（{activeCanvas.width} x {activeCanvas.height}），scene.layout={previewLayout}
             </Text>
             <Text type={hasPreviewOverflow ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
               {previewHintText}
             </Text>
           </div>
 
-          <div ref={previewShellRef} style={{ width: '100%' }}>
+          <div ref={previewShellRef} style={{ 
+            width: '100%', 
+            height: previewSurfaceHeight > 0 ? previewSurfaceHeight * onPreviewScale : undefined,
+            maxHeight: activeCanvas.height > activeCanvas.width ? 600 : 'none', 
+            overflowY: (activeCanvas.height > activeCanvas.width || (previewSurfaceHeight * onPreviewScale > 600)) ? 'auto' : 'visible',
+            borderRadius: 12,
+            border: (activeCanvas.height > activeCanvas.width || onPreviewScale < 1) ? '1px solid var(--scene-item-border)' : 'none',
+            padding: (activeCanvas.height > activeCanvas.width || onPreviewScale < 1) ? '4px' : '0',
+            position: 'relative',
+          }}>
             <div
               style={{
-                position: 'relative',
-                width: '100%',
+                width: `${100 / onPreviewScale}%`,
                 height: previewSurfaceHeight > 0 ? previewSurfaceHeight : undefined,
                 minHeight: previewViewportHeight > 0 ? previewViewportHeight : undefined,
-                aspectRatio: previewSurfaceHeight > 0 ? undefined : '16 / 9',
-                borderRadius: 12,
-                overflow: 'hidden',
-                border: hasPreviewOverflow
-                  ? '1px solid rgba(255,77,79,0.45)'
-                  : '1px solid var(--scene-item-border)',
-                background:
-                  scene.type === 'post'
-                    ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98))'
-                    : 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98))',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35)',
+                transform: `scale(${onPreviewScale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
               }}
             >
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: previewSurfaceHeight > 0 ? previewSurfaceHeight : undefined,
+                  minHeight: previewViewportHeight > 0 ? previewViewportHeight : undefined,
+                  aspectRatio: previewSurfaceHeight > 0 ? undefined : `${activeCanvas.width} / ${activeCanvas.height}`,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  border: hasPreviewOverflow
+                    ? '1px solid rgba(255,77,79,0.45)'
+                    : '1px solid var(--scene-item-border)',
+                  background:
+                    scene.type === 'post'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98))'
+                      : 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98))',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35)',
+                }}
+              >
               <div
                 style={{
                   position: 'absolute',
@@ -532,7 +560,8 @@ export const SceneCard: React.FC<SceneCardProps> = ({
             </div>
           </div>
         </div>
-      </Card>
+      </div>
+    </Card>
 
       <Modal
         title="场景格式错误"

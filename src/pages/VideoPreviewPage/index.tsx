@@ -17,6 +17,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { VideoPreviewPlayer, getTotalFrames } from '../../components/VideoPreviewPlayer';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
 
 const { Text } = Typography;
 
@@ -46,12 +47,14 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
   downloadVideoConfig,
 }) => {
   const totalFrames = getTotalFrames(videoConfig);
+  const activeCanvas = getActiveVideoCanvasSize(videoConfig);
+  const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
 
   return (
     <Row gutter={24}>
       <Col span={24}>
         <Card
-          title="视频动画预览 (Dynamic Video)"
+          title={`视频动画预览 (Dynamic Video) · ${activeAspectRatioLabel}`}
           className="panel-card"
           bordered={false}
           extra={
@@ -68,7 +71,7 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
               width: '100%',
               maxWidth: '100%',
               maxHeight: 'calc(100vh - 300px)',
-              aspectRatio: '16 / 9',
+              aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
               margin: '0 auto',
             }}
             loop
@@ -139,7 +142,7 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
                       />
                       {renderProgress.detail && (
                         <div style={{ marginTop: 4 }}>
-                          <Text type="secondary" size="small">{renderProgress.detail}</Text>
+                          <Text type="secondary">{renderProgress.detail}</Text>
                         </div>
                       )}
                     </div>
