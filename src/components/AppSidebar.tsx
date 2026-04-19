@@ -75,11 +75,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '视频预览与导出',
           },
           {
-            key: 'static_preview',
-            icon: <FileImageOutlined />,
-            label: '画面预览 (PPT)',
-          },
-          {
             key: 'studio',
             icon: <AppstoreOutlined />,
             label: '视频编辑画板',

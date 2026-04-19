@@ -50,6 +50,7 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
   const PREVIEW_MIN_HEIGHT = 280;
   const PREVIEW_MAX_HEIGHT_MARGIN = 180;
   const PREVIEW_DEFAULT_HEIGHT = 480;
+  const PREVIEW_HEIGHT_STORAGE_KEY = 'redditextractor.studio-scene.preview-height.v1';
 
   const getPreviewMaxHeight = () => Math.max(PREVIEW_MIN_HEIGHT + 40, window.innerHeight - PREVIEW_MAX_HEIGHT_MARGIN);
   const clampPreviewHeight = (height: number) => {
@@ -63,7 +64,18 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
   const [lastSavedDsl, setLastSavedDsl] = useState('');
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
-  const [previewHeight, setPreviewHeight] = useState(() => clampPreviewHeight(PREVIEW_DEFAULT_HEIGHT));
+  const [previewHeight, setPreviewHeight] = useState(() => {
+    try {
+      const cached = window.localStorage.getItem(PREVIEW_HEIGHT_STORAGE_KEY);
+      if (!cached) return clampPreviewHeight(PREVIEW_DEFAULT_HEIGHT);
+      const parsed = Number(cached);
+      if (!Number.isFinite(parsed)) return clampPreviewHeight(PREVIEW_DEFAULT_HEIGHT);
+      return clampPreviewHeight(parsed);
+    } catch (err) {
+      console.warn('读取主预览高度缓存失败:', err);
+      return clampPreviewHeight(PREVIEW_DEFAULT_HEIGHT);
+    }
+  });
   const [isPreviewResizing, setIsPreviewResizing] = useState(false);
   const previewResizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -200,6 +212,14 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
     window.addEventListener('resize', handleWindowResize);
     return () => window.removeEventListener('resize', handleWindowResize);
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PREVIEW_HEIGHT_STORAGE_KEY, String(previewHeight));
+    } catch (err) {
+      console.warn('保存主预览高度缓存失败:', err);
+    }
+  }, [previewHeight]);
 
   const checkUnsavedAndContinue = (action: () => void) => {
     if (hasUnsavedChanges) {

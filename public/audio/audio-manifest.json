@@ -1,251 +1,300 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-19T16:31:12",
+  "updatedAt": "2026-04-19T19:13:33",
   "items": {
     "public/audio/shortAudio/Unassigned/999-social-credit-siren.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/a-few-moments-later-sponge-bob-sfx-fun.mp3": {
-      "alias": "海绵宝宝",
+      "alias": "海绵宝宝的一分钟之后",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/among-us-role-reveal-sound.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.4
     },
     "public/audio/shortAudio/Unassigned/anime-ahh.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/anime-wow-sound-effect.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/applepay.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/baby-laughing-meme.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/chicken-on-tree-screaming.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/deg-deg_4M6Cojn.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/dexter-meme.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/ding-sound-effect_2.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/discord-notification.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/downer_noise.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/dry-fart.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/dun-dun-dun-sound-effect-brass_8nFBccR.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/emotional-damage-meme.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/error_CDOxCYm.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/faaah.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/fahhhhhhhhhhhhhh.mp3": {
-      "alias": "",
+      "alias": "Fuck爆破",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.15
     },
     "public/audio/shortAudio/Unassigned/fbi-open-up_dwLhIFf.mp3": {
-      "alias": "",
+      "alias": "FBI开门",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/galaxy-meme.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/gunshotjbudden.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/hub-intro-sound.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/huh_37bAoRo.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/kids-saying-yay-sound-effect_3.mp3": {
-      "alias": "",
+      "alias": "小孩欢呼",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/let-me-know.mp3": {
-      "alias": "",
+      "alias": "让我知道之歌",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/man-snoring-meme_ctrllNn.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/maro-jump-sound-effect_1.mp3": {
-      "alias": "",
+      "alias": "马里奥跳跃",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/meme-de-creditos-finales.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/metal-pipe-clang.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/movie_1.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/musica-elevador-short.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/prowler-sound-effect_6bXErot.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/punch-gaming-sound-effect-hd_RzlG1GE.mp3": {
-      "alias": "",
+      "alias": "拳击击倒",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/re-zero-return-by-death.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/rizz-sound-effect.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/roblox-death-sound_1.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/romanceeeeeeeeeeeeee.mp3": {
-      "alias": "",
+      "alias": "罗曼蒂克之歌",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/sad-meow-song.mp3": {
       "alias": "喵喵之歌",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/shocked-sound-effect.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/spiderman-meme-song.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/spongebob-fail.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/taco-bell-bong-sfx.mp3": {
-      "alias": "",
+      "alias": "归于死亡钟声",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/tf_nemesis.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/tuco-get-out.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/undertakers-bell_2UwFCIe.mp3": {
-      "alias": "",
+      "alias": "审判钟声",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/vine-boom.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/wrong-answer-sound-effect.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     },
     "public/audio/shortAudio/Unassigned/yeah-boiii-i-i-i.mp3": {
       "alias": "",
       "tags": [],
-      "category": ""
+      "category": "",
+      "previewVolume": 0.5
     }
   }
 }

@@ -75,7 +75,20 @@ def normalize_manifest_item(item):
         "alias": alias.strip(),
         "tags": cleaned_tags,
         "category": category.strip(),
+        "previewVolume": normalize_preview_volume(item.get('previewVolume', 0.5)),
     }
+
+
+def normalize_preview_volume(value):
+    try:
+        volume = float(value)
+    except (TypeError, ValueError):
+        return 0.5
+    if volume < 0:
+        return 0.0
+    if volume > 1:
+        return 1.0
+    return round(volume, 3)
 
 
 def load_audio_manifest():
@@ -296,6 +309,7 @@ def list_audio():
                 "alias": metadata.get('alias', ''),
                 "tags": metadata.get('tags', []),
                 "category": metadata.get('category', ''),
+                "previewVolume": normalize_preview_volume(metadata.get('previewVolume', 0.5)),
                 "exists": True,
             })
 
@@ -307,6 +321,7 @@ def list_audio():
                     "alias": metadata.get('alias', ''),
                     "tags": metadata.get('tags', []),
                     "category": metadata.get('category', ''),
+                    "previewVolume": normalize_preview_volume(metadata.get('previewVolume', 0.5)),
                     "exists": False,
                 })
 

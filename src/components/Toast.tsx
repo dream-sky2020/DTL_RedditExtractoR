@@ -9,6 +9,7 @@ interface ToastOptions {
 // 单例引用
 let messageApi: any = null;
 let notificationApi: any = null;
+const NOTIFICATION_CLASSNAME = 'app-notification';
 
 /**
  * ToastInit 组件：用于在 Ant Design 的 App 组件内部获取 message 和 notification 实例
@@ -32,6 +33,7 @@ export const toast = {
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
+        className: NOTIFICATION_CLASSNAME,
       });
     } else {
       messageApi?.success(content, options?.duration);
@@ -45,6 +47,7 @@ export const toast = {
         description: options.description,
         duration: options.duration || 0,
         placement: options.placement || 'topRight',
+        className: NOTIFICATION_CLASSNAME,
       });
     } else {
       messageApi?.error(content, options?.duration || 4);
@@ -58,6 +61,7 @@ export const toast = {
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
+        className: NOTIFICATION_CLASSNAME,
       });
     } else {
       messageApi?.info(content, options?.duration);
@@ -71,6 +75,7 @@ export const toast = {
         description: options.description,
         duration: options.duration,
         placement: options.placement || 'topRight',
+        className: NOTIFICATION_CLASSNAME,
       });
     } else {
       messageApi?.warning(content, options?.duration);

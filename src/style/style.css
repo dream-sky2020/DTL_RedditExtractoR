@@ -223,6 +223,20 @@ body {
   color: #374151;
 }
 
+/* Windows 下通知浮层文本可能出现发糊，单独指定更清晰的字体渲染 */
+.app-notification.ant-notification-notice {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.app-notification .ant-notification-notice-message,
+.app-notification .ant-notification-notice-description {
+  font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+}
+
 @media (max-width: 768px) {
   .admin-header {
     padding: 0 12px;
