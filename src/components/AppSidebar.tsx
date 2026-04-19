@@ -90,6 +90,33 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '组件测试',
           },
           {
+            key: 'audio_preview',
+            icon: <SoundOutlined />,
+            label: '音频预览',
+          },
+          {
+            key: 'data_view',
+            label: '数据查看',
+            icon: <CodeOutlined />,
+            children: [
+              {
+                key: 'filtered_data',
+                icon: <CodeOutlined />,
+                label: '过滤后 JSON',
+              },
+              {
+                key: 'raw_data',
+                icon: <CodeOutlined />,
+                label: '未处理 JSON',
+              },
+              {
+                key: 'script_data',
+                icon: <CodeOutlined />,
+                label: '视频脚本 JSON',
+              },
+            ],
+          },
+          {
             key: 'deprecated',
             label: '废弃页面',
             icon: <EyeInvisibleOutlined />,
@@ -115,33 +142,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 label: '模拟程序',
               },
             ],
-          },
-          {
-            key: 'data_view',
-            label: '数据查看',
-            icon: <CodeOutlined />,
-            children: [
-              {
-                key: 'filtered_data',
-                icon: <CodeOutlined />,
-                label: '过滤后 JSON',
-              },
-              {
-                key: 'raw_data',
-                icon: <CodeOutlined />,
-                label: '未处理 JSON',
-              },
-              {
-                key: 'script_data',
-                icon: <CodeOutlined />,
-                label: '视频脚本 JSON',
-              },
-            ],
-          },
-          {
-            key: 'audio_preview',
-            icon: <SoundOutlined />,
-            label: '音频预览',
           },
         ]}
       />
