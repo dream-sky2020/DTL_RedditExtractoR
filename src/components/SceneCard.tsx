@@ -18,8 +18,8 @@ import {
 } from '@ant-design/icons';
 import { VideoConfig, VideoScene } from '../types';
 import { ScriptContentRenderer } from './ScriptContentRenderer';
-import { SceneDslWarning, sceneToDsl, parseSceneDsl } from '../utils/sceneDsl';
-import { getActiveVideoCanvasSize, getAspectRatioLabel, getVideoAspectRatio } from '../utils/videoCanvas';
+import { SceneDslWarning, sceneToDsl, parseSceneDsl } from '../rendering/sceneDsl';
+import { getActiveVideoCanvasSize, getAspectRatioLabel, getVideoAspectRatio } from '../rendering/videoCanvas';
 
 import { toast } from '../components/Toast';
 

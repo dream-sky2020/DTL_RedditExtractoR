@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { parseQuotes, PlaybackContext } from '../utils/quoteParser';
+import { parseQuotes, PlaybackContext } from '../rendering/quoteParser';
 
 interface ScriptContentRendererProps {
   content: string;

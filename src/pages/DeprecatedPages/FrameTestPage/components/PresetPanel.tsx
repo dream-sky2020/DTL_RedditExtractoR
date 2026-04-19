@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Space, Button, message } from 'antd';
 import { ToolOutlined, BugOutlined } from '@ant-design/icons';
-import { VideoScene } from '../../../types';
+import { VideoScene } from '../../../../types';
 
 interface PresetPanelProps {
   presets: Record<string, VideoScene>;

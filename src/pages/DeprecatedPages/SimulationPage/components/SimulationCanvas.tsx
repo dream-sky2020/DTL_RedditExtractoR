@@ -1,5 +1,5 @@
 import React from 'react';
-import { PhysicalDataCompressor, FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
+import { PhysicalDataCompressor, FrameData } from '../../../../utils/simulationEngine/physicsEngine/index';
 
 interface SimulationCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;

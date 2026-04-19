@@ -93,3 +93,4 @@ export const getVideoAspectRatio = (input?: Pick<VideoConfig, 'canvas'> | VideoC
   const active = getActiveVideoCanvasSize(input);
   return active.width / active.height;
 };
+

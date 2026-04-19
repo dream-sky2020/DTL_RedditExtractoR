@@ -4,11 +4,129 @@ import os
 import platform
 import requests
 import re
+from datetime import datetime
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
+
+ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+MANIFEST_FILENAME = 'audio-manifest.json'
+
+
+def get_audio_dir():
+    return os.path.join(os.getcwd(), 'public', 'audio')
+
+
+def get_audio_manifest_path():
+    return os.path.join(get_audio_dir(), MANIFEST_FILENAME)
+
+
+def normalize_path(path):
+    return path.replace('\\', '/')
+
+
+def is_valid_audio_path(path):
+    normalized = normalize_path(path)
+    if '..' in normalized:
+        return False
+    if not normalized.startswith('public/audio/'):
+        return False
+    return normalized.lower().endswith(ALLOWED_AUDIO_EXTENSIONS)
+
+
+def scan_audio_files():
+    audio_dir = get_audio_dir()
+    if not os.path.exists(audio_dir):
+        return []
+
+    audio_files = []
+    for root, dirs, files in os.walk(audio_dir):
+        _ = dirs  # 明确保留目录遍历行为
+        for file in files:
+            if file.lower().endswith(ALLOWED_AUDIO_EXTENSIONS):
+                full_path = os.path.join(root, file)
+                relative_path = os.path.relpath(full_path, os.getcwd())
+                audio_files.append(normalize_path(relative_path))
+
+    return sorted(audio_files)
+
+
+def normalize_manifest_item(item):
+    alias = item.get('alias', '')
+    category = item.get('category', '')
+    tags = item.get('tags', [])
+
+    if not isinstance(alias, str):
+        alias = str(alias)
+    if not isinstance(category, str):
+        category = str(category)
+    if not isinstance(tags, list):
+        tags = [str(tags)]
+
+    cleaned_tags = []
+    for tag in tags:
+        tag_text = str(tag).strip()
+        if tag_text:
+            cleaned_tags.append(tag_text)
+
+    return {
+        "alias": alias.strip(),
+        "tags": cleaned_tags,
+        "category": category.strip(),
+    }
+
+
+def load_audio_manifest():
+    manifest_path = get_audio_manifest_path()
+    if not os.path.exists(manifest_path):
+        return {"version": 1, "items": {}}
+
+    try:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        return {"version": 1, "items": {}}
+
+    if not isinstance(data, dict):
+        return {"version": 1, "items": {}}
+
+    raw_items = data.get('items', {})
+    if not isinstance(raw_items, dict):
+        raw_items = {}
+
+    normalized_items = {}
+    for path, item in raw_items.items():
+        if not isinstance(path, str) or not isinstance(item, dict):
+            continue
+        normalized_path = normalize_path(path)
+        if not is_valid_audio_path(normalized_path):
+            continue
+        normalized_items[normalized_path] = normalize_manifest_item(item)
+
+    return {
+        "version": int(data.get('version', 1)),
+        "updatedAt": data.get('updatedAt'),
+        "items": dict(sorted(normalized_items.items(), key=lambda x: x[0])),
+    }
+
+
+def save_audio_manifest(manifest):
+    manifest_path = get_audio_manifest_path()
+    os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+
+    cleaned_manifest = {
+        "version": int(manifest.get('version', 1)),
+        "updatedAt": datetime.now().isoformat(timespec='seconds'),
+        "items": dict(sorted(manifest.get('items', {}).items(), key=lambda x: x[0])),
+    }
+
+    temp_manifest_path = f"{manifest_path}.tmp"
+    with open(temp_manifest_path, 'w', encoding='utf-8') as f:
+        json.dump(cleaned_manifest, f, ensure_ascii=False, indent=2)
+    os.replace(temp_manifest_path, manifest_path)
+    return cleaned_manifest
 
 @app.route('/fetch_reddit', methods=['GET'])
 def fetch_reddit():
@@ -166,22 +284,100 @@ def render_video():
 @app.route('/list_audio', methods=['GET'])
 def list_audio():
     try:
-        audio_dir = os.path.join(os.getcwd(), 'public', 'audio')
-        if not os.path.exists(audio_dir):
-            return jsonify({"success": True, "files": []})
-            
-        audio_files = []
-        allowed_extensions = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
-        
-        for root, dirs, files in os.walk(audio_dir):
-            for file in files:
-                if file.lower().endswith(allowed_extensions):
-                    full_path = os.path.join(root, file)
-                    relative_path = os.path.relpath(full_path, os.getcwd())
-                    relative_path = relative_path.replace('\\', '/')
-                    audio_files.append(relative_path)
-        
-        return jsonify({"success": True, "files": audio_files})
+        audio_files = scan_audio_files()
+        manifest = load_audio_manifest()
+        manifest_items = manifest.get('items', {})
+
+        merged_items = []
+        for path in audio_files:
+            metadata = manifest_items.get(path, {})
+            merged_items.append({
+                "path": path,
+                "alias": metadata.get('alias', ''),
+                "tags": metadata.get('tags', []),
+                "category": metadata.get('category', ''),
+                "exists": True,
+            })
+
+        stale_items = []
+        for path, metadata in manifest_items.items():
+            if path not in audio_files:
+                stale_items.append({
+                    "path": path,
+                    "alias": metadata.get('alias', ''),
+                    "tags": metadata.get('tags', []),
+                    "category": metadata.get('category', ''),
+                    "exists": False,
+                })
+
+        return jsonify({
+            "success": True,
+            "files": audio_files,
+            "items": merged_items,
+            "staleItems": stale_items,
+            "manifest": manifest,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/audio_manifest', methods=['POST'])
+def update_audio_manifest():
+    try:
+        body = request.json or {}
+        if not isinstance(body, dict):
+            return jsonify({"success": False, "message": "请求体必须是 JSON 对象"}), 400
+
+        incoming_items = body.get('items')
+        if incoming_items is None:
+            return jsonify({"success": False, "message": "缺少 items 字段"}), 400
+        if not isinstance(incoming_items, dict):
+            return jsonify({"success": False, "message": "items 必须是对象"}), 400
+
+        current_manifest = load_audio_manifest()
+        merged_items = dict(current_manifest.get('items', {}))
+
+        invalid_paths = []
+        for raw_path, raw_metadata in incoming_items.items():
+            if not isinstance(raw_path, str):
+                invalid_paths.append(str(raw_path))
+                continue
+
+            path = normalize_path(raw_path)
+            if not is_valid_audio_path(path):
+                invalid_paths.append(path)
+                continue
+
+            if raw_metadata is None:
+                merged_items.pop(path, None)
+                continue
+
+            if not isinstance(raw_metadata, dict):
+                return jsonify({"success": False, "message": f"音频 {path} 的 metadata 必须是对象或 null"}), 400
+
+            merged_items[path] = normalize_manifest_item(raw_metadata)
+
+        if invalid_paths:
+            return jsonify({
+                "success": False,
+                "message": "存在非法音频路径，仅允许 public/audio 下的音频文件",
+                "invalidPaths": invalid_paths,
+            }), 400
+
+        if body.get('pruneMissingFiles') is True:
+            disk_paths = set(scan_audio_files())
+            merged_items = {path: meta for path, meta in merged_items.items() if path in disk_paths}
+
+        saved_manifest = save_audio_manifest({
+            "version": current_manifest.get('version', 1),
+            "items": merged_items,
+        })
+
+        return jsonify({
+            "success": True,
+            "message": "音频 manifest 已保存",
+            "manifest": saved_manifest,
+        })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 

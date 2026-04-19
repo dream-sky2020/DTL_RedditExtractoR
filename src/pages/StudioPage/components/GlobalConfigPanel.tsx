@@ -7,7 +7,7 @@ import {
   getActiveVideoCanvasSize,
   getAspectRatioLabel,
   normalizeVideoCanvasConfig,
-} from '../../../utils/videoCanvas';
+} from '../../../rendering/videoCanvas';
 
 const { Text } = Typography;
 

@@ -11,12 +11,17 @@ import {
 } from '@ant-design/icons';
 import { dialogs } from '../../components/Dialogs';
 import { toast } from '../../components/Toast';
+import { DslEditor } from '../../components/DslEditor';
+import { AudioTagsEditorModal } from '../../components';
 
 const { Title, Text, Paragraph } = Typography;
 
 export const ComponentTestPage: React.FC = () => {
   const [dialogStatus, setDialogStatus] = useState<string>('等待操作...');
   const [toastText, setToastText] = useState<string>('这是一条测试消息');
+  const [dslValue, setDslValue] = useState<string>('[style size=32 b align=center]欢迎使用 DSL 编辑器[/style]\n\n在这里你可以直接编辑脚本内容。');
+  const [tagModalOpen, setTagModalOpen] = useState(false);
+  const [testTags, setTestTags] = useState<string[]>(['片头', '舒缓']);
 
   const handleConfirm = () => {
     dialogs.confirm({
@@ -49,8 +54,30 @@ export const ComponentTestPage: React.FC = () => {
     <div style={{ padding: '24px' }}>
       <Title level={2}>组件功能测试</Title>
       <Paragraph>用于验证 <code>Dialogs</code> 和 <code>Toast</code> 统一组件的交互效果。</Paragraph>
-
       <Row gutter={[24, 24]}>
+        {/* DSL Editor 测试 */}
+        <Col span={24}>
+          <Card title="DSL 编辑器 (DslEditor) 测试" bordered={false} className="panel-card">
+            <Title level={5}>编辑器交互</Title>
+            <DslEditor 
+              value={dslValue} 
+              onChange={setDslValue} 
+              rows={8} 
+            />
+          </Card>
+        </Col>
+
+        <Col span={24}>
+          <Card title="标签编辑弹框 (AudioTagsEditorModal) 测试" bordered={false} className="panel-card">
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Text type="secondary">当前测试标签：{testTags.length ? testTags.join('，') : '（空）'}</Text>
+              <Button type="primary" onClick={() => setTagModalOpen(true)}>
+                打开标签编辑弹框
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+
         {/* Dialogs 测试 */}
         <Col span={12}>
           <Card title="Dialogs (确认弹窗) 测试" bordered={false} className="panel-card">
@@ -69,6 +96,7 @@ export const ComponentTestPage: React.FC = () => {
                 </Button>
               </Space>
 
+              
               <Divider plain>其他类型</Divider>
               
               <Space wrap>
@@ -129,6 +157,17 @@ export const ComponentTestPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
+      <AudioTagsEditorModal
+        open={tagModalOpen}
+        audioName="测试音频 sample_audio.mp3"
+        initialTags={testTags}
+        onCancel={() => setTagModalOpen(false)}
+        onSave={async (tags) => {
+          setTestTags(tags);
+          setTagModalOpen(false);
+          toast.success('测试标签已更新');
+        }}
+      />
     </div>
   );
 };

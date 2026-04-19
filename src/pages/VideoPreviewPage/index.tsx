@@ -17,7 +17,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { VideoPreviewPlayer, getTotalFrames } from '../../components/VideoPreviewPlayer';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 
 const { Text } = Typography;
 
@@ -81,9 +81,9 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
       <Col span={24}>
         <Card className="panel-card" bordered={false}>
           <Space size="middle">
-            <Button 
-              type="primary" 
-              size="large" 
+            <Button
+              type="primary"
+              size="large"
               icon={<DownloadOutlined />}
               onClick={() => setIsExportModalVisible(true)}
             >
@@ -99,8 +99,8 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
         open={isExportModalVisible}
         onCancel={() => !isAutoRendering && setIsExportModalVisible(false)}
         footer={[
-          <Button 
-            key="close" 
+          <Button
+            key="close"
             onClick={() => setIsExportModalVisible(false)}
             disabled={isAutoRendering}
           >
@@ -117,10 +117,10 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
               <div>
                 <p>如果你已经开启了 Python 后端，可以直接点击下方按钮全自动生成视频。</p>
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button 
-                    type="primary" 
-                    size="large" 
-                    icon={<VideoCameraOutlined />} 
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<VideoCameraOutlined />}
                     loading={isAutoRendering}
                     onClick={startAutoRender}
                   >
@@ -132,8 +132,8 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
                         <Text strong>{renderProgress.task}</Text>
                         <Text type="secondary">{renderProgress.percent}%</Text>
                       </div>
-                      <Progress 
-                        percent={renderProgress.percent} 
+                      <Progress
+                        percent={renderProgress.percent}
                         status={isAutoRendering ? "active" : "success"}
                         strokeColor={{
                           '0%': '#108ee9',
@@ -148,10 +148,10 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
                     </div>
                   )}
                   {autoRenderStatus && (
-                    <Alert 
-                      type={autoRenderStatus.type} 
-                      message={autoRenderStatus.message} 
-                      showIcon 
+                    <Alert
+                      type={autoRenderStatus.type}
+                      message={autoRenderStatus.message}
+                      showIcon
                     />
                   )}
                 </Space>

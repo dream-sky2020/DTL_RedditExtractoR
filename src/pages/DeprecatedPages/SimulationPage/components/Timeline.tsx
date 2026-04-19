@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, Tag } from 'antd';
-import { FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
+import { FrameData } from '../../../../utils/simulationEngine/physicsEngine/index';
 
 const { Text } = Typography;
 

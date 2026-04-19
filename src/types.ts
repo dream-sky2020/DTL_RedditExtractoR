@@ -1,3 +1,5 @@
+export type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
+
 export interface ReplyInfo {
   author: string;
   content: string; // 包含内容，用于预览回复路径

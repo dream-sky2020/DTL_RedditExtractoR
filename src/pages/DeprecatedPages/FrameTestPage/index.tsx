@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Typography, Space, Modal } from 'antd';
-import { VideoScene, VideoConfig } from '../../types';
-import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
+import { VideoScene, VideoConfig } from '../../../types';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../../components/VideoPreviewPlayer';
 import { DslGuide } from './components/DslGuide';
 import { PresetPanel } from './components/PresetPanel';
 import { EditorSection } from './components/EditorSection';

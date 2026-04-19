@@ -24,7 +24,7 @@ const refreshAudioCache = async () => {
       const files: string[] = response.data.files;
       const items = files.map((path: string) => {
         const fileName = path.split('/').pop() || path;
-        const name = fileName.replace(/\.[^/.]+$/, "");
+        const name = fileName.replace(/\.[^/.]+$/, '');
         const url = '/' + path.replace(/^public\//, '');
         return { name, path, url };
       });
@@ -190,11 +190,11 @@ const MediaContent: React.FC<{
   useEffect(() => {
     setManualIndex(0);
     // 预加载所有图片
-    mediaItems.forEach(item => {
+    mediaItems.forEach((item) => {
       const img = new Image();
       img.src = item.url;
       img.onload = () => {
-        setLoadedUrls(prev => new Set(prev).add(item.url));
+        setLoadedUrls((prev) => new Set(prev).add(item.url));
       };
     });
   }, [mediaItems.map((item) => `${item.url}|${item.duration}`).join(',')]);
@@ -321,12 +321,12 @@ const MediaContent: React.FC<{
 
 /**
  * 递归解析嵌套的 [quote] 和 [image] 标签
- * 
+ *
  * @param text 待解析文本
  * @param parentMaxLimit 父级 quote 设定的最大文本长度限制，-1 表示不限制
  */
 export const parseQuotes = (
-  text: string, 
+  text: string,
   parentMaxLimit: number = -1,
   currentDepth: number = 0,
   maxQuoteDepth: number = 4,
@@ -339,15 +339,15 @@ export const parseQuotes = (
   // 规范化特殊字符，解决 UI 和视频渲染不一致的问题
   // 将智能引号、特殊省略号等统一转换为标准 ASCII 字符
   const normalizedText = text
-    .replace(/[‘’]/g, "'")  // 统一单引号
-    .replace(/[“”]/g, '"')  // 统一双引号
+    .replace(/[‘’]/g, "'") // 统一单引号
+    .replace(/[“”]/g, '"') // 统一双引号
     .replace(/…/g, '...'); // 统一省略号
 
   const nodes: React.ReactNode[] = [];
   let currentPos = 0;
   let currentLevelChars = 0; // 当前层级已经积累的纯文本字符数
   const DEFAULT_MAX_LIMIT = 150;
-  
+
   // 只有当 parentMaxLimit > 0 时才启用截断逻辑
   const hasLimit = parentMaxLimit > 0;
   let limitReached = false;
@@ -356,7 +356,7 @@ export const parseQuotes = (
   if (currentDepth >= maxQuoteDepth) {
     // 完整路径：已经经过的作者路径 + 当前文本中剩余的所有 [quote] 作者
     const fullChain = [...authorPath];
-    
+
     // 使用正则提取剩余文本中的所有 quote 开标签，并解析 author（属性顺序无关）
     const quoteRegex = new RegExp(QUOTE_OPEN_TAG_GLOBAL_RE);
     let match;
@@ -366,16 +366,16 @@ export const parseQuotes = (
         fullChain.push(parsed.author);
       }
     }
-    
+
     if (fullChain.length > 0) {
-      const authorChain = fullChain.map(a => `u/${a}:...`).join('->');
+      const authorChain = fullChain.map((a) => `u/${a}:...`).join('->');
       return (
         <Text type="secondary" italic style={{ fontSize: '11px' }}>
           {authorChain} (已达到最大嵌套层级)
         </Text>
       );
     }
-    
+
     return <Text type="secondary" italic style={{ fontSize: '11px' }}>... (已达到最大嵌套层级)</Text>;
   }
 
@@ -453,21 +453,21 @@ export const parseQuotes = (
         currentPos = foundIdx + 7;
         continue;
       }
-      
+
       const author = parsedStartTag.author;
       const maxAttr = parsedStartTag.maxLimit;
       const quotedItemId = parsedStartTag.itemId;
       const startTagEnd = foundIdx + parsedStartTag.fullTag.length;
-      
+
       let depth = 1;
       let searchPos = startTagEnd;
       let endTagIdx = -1;
-      
+
       while (depth > 0 && searchPos < normalizedText.length) {
         const nextStartMatch = normalizedText.substring(searchPos).match(QUOTE_OPEN_TAG_RE);
         const nextStart = nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
         const nextEnd = normalizedText.indexOf('[/quote]', searchPos);
-        if (nextEnd === -1) break; 
+        if (nextEnd === -1) break;
         if (nextStart !== -1 && nextStart < nextEnd) {
           depth++;
           searchPos = nextStart + 7;
@@ -477,11 +477,11 @@ export const parseQuotes = (
           else searchPos = nextEnd + 8;
         }
       }
-      
+
       if (endTagIdx !== -1) {
         const innerText = normalizedText.substring(startTagEnd, endTagIdx);
         nodes.push(
-          <div 
+          <div
             key={foundIdx}
             data-quote-id={quotedItemId || undefined}
             style={{
@@ -596,7 +596,7 @@ export const parseQuotes = (
         }
         nodes.push(
           <Tooltip key={foundIdx} title={`音频: ${src} (Vol: ${volume}, Start: ${start}s)`}>
-            <span 
+            <span
               style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(24, 144, 255, 0.1)', border: '1px solid #1890ff', borderRadius: '4px', padding: '0 4px', margin: '0 2px', cursor: 'pointer', color: '#1890ff', fontSize: '12px' }}
               onClick={(e) => {
                 e.stopPropagation();
@@ -649,3 +649,4 @@ export const parseQuotes = (
 
   return nodes.length > 0 ? nodes : normalizedText;
 };
+

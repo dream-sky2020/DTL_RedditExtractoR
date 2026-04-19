@@ -2,8 +2,8 @@ import React from 'react';
 import { Card } from 'antd';
 import { BugOutlined } from '@ant-design/icons';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { SceneCard } from '../../../components/SceneCard';
-import { VideoScene } from '../../../types';
+import { SceneCard } from '../../../../components/SceneCard';
+import { VideoScene } from '../../../../types';
 
 interface EditorSectionProps {
   scene: VideoScene;

@@ -2,7 +2,7 @@ import React from 'react';
 import { registerRoot, Composition } from 'remotion';
 import { MyVideo } from './MyVideo';
 import { VideoConfig } from '../types';
-import { createDefaultVideoCanvasConfig, getActiveVideoCanvasSize, normalizeVideoConfig } from '../utils/videoCanvas';
+import { createDefaultVideoCanvasConfig, getActiveVideoCanvasSize, normalizeVideoConfig } from '../rendering/videoCanvas';
 
 registerRoot(() => {
   return (

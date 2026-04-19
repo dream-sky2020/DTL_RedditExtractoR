@@ -17,9 +17,9 @@ import {
   LayoutOutlined,
 } from '@ant-design/icons';
 import { Radio, Slider } from 'antd';
-import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
-import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
+import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../../types';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../../utils/redditTransformer';
+import { mergeSelectedScenes } from '../../../../utils/sceneMergeEngine';
 import { GlobalConfigPanel } from './GlobalConfigPanel';
 import { PrivacyConfigPanel } from './PrivacyConfigPanel';
 import { QuickActions } from './QuickActions';

@@ -10,17 +10,6 @@ import {
 } from 'antd';
 import {
   AppstoreOutlined,
-  LinkOutlined,
-  CodeOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  VideoCameraOutlined,
-  EditOutlined,
-  FileImageOutlined,
-  EyeInvisibleOutlined,
-  EyeOutlined,
-  PlayCircleOutlined,
-  SoundOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import './style/colors.css';
@@ -34,32 +23,33 @@ import {
   extractAuthorsFromRawData,
 } from './utils/redditTransformer';
 import { generateRandomAliasProfiles } from './utils/aliasGenerator';
-import { VideoConfig, VideoScene, TitleAlignmentType } from './types';
-import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './utils/videoCanvas';
+import { VideoConfig, VideoScene, TitleAlignmentType, ToolKey } from './types';
+import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './rendering/videoCanvas';
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage/index';
-import { EditorPage } from './pages/EditorPage/index';
+import { EditorPage } from './pages/DeprecatedPages/EditorPage/index';
 import { VideoPreviewPage } from './pages/VideoPreviewPage/index';
 import { FilteredJsonPage } from './pages/FilteredJsonPage/index';
 import { RawJsonPage } from './pages/RawJsonPage/index';
-import { FrameTestPage } from './pages/FrameTestPage/index';
+import { FrameTestPage } from './pages/DeprecatedPages/FrameTestPage/index';
 import { ScriptJsonPage } from './pages/ScriptJsonPage/index';
-import { SlidePreviewPage } from './pages/SlidePreviewPage/index';
-import { SimulationPage } from './pages/SimulationPage/index';
+import { SlidePreviewPage } from './pages/DeprecatedPages/SlidePreviewPage/index';
+import { SimulationPage } from './pages/DeprecatedPages/SimulationPage/index';
 import { StudioPage } from './pages/StudioPage/index';
 import { AudioPreviewPage } from './pages/AudioPreviewPage/index';
 import { ComponentTestPage } from './pages/ComponentTestPage/index';
+import { StudioScenePage } from './pages/StudioScenePage/index';
+import { AppSidebar } from './components/AppSidebar';
 import { DialogsInit } from './components/Dialogs';
 import { ToastInit } from './components/Toast';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Content } = Layout;
 const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 const GLOBAL_CONFIG_STORAGE_KEY = 'reddit-extractor.global-config.v1';
 
-type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'studio' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
   mode: ColorArrangementMode;
@@ -116,6 +106,7 @@ const App: React.FC = () => {
   const [autoRenderStatus, setAutoRenderStatus] = useState<any>(null);
   const [renderProgress, setRenderProgress] = useState<{ percent: number, task: string, detail?: string } | null>(null);
   const [hasStoredRawData, setHasStoredRawData] = useState(false);
+  const [selectedSceneIdx, setSelectedSceneIdx] = useState<number>(0);
 
   const hslToHex = (h: number, s: number, l: number) => {
     const c = (1 - Math.abs(2 * l - 1)) * s;
@@ -451,6 +442,12 @@ const App: React.FC = () => {
           desc: '更现代、更高效率的画面预览与整理画板。',
           button: '',
         };
+      case 'studio_scene':
+        return {
+          title: '场景切片详情',
+          desc: '查看单个场景的详细画面与切片。',
+          button: '',
+        };
       case 'filtered_data':
         return {
           title: '过滤后 Reddit JSON 数据',
@@ -779,111 +776,14 @@ const App: React.FC = () => {
       )}
 
       <Layout className="workspace-layout">
-        <Sider
+        <AppSidebar
           collapsed={collapsed}
-          collapsible
-          trigger={null}
-          width={240}
-          className="admin-sider"
-        >
-          <div className="brand-wrap">
-            {!collapsed && (
-              <div className="brand-text">
-                <div className="brand-title">RedditExtractor</div>
-                <div className="brand-subtitle">Video Creator</div>
-              </div>
-            )}
-          </div>
-
-          <Menu
-            theme="dark"
-            mode="inline"
-            className="sider-menu"
-            selectedKeys={[activeTool]}
-            onSelect={(item) => onMenuSelect({ key: item.key })}
-            items={[
-              {
-                key: 'extract',
-                icon: <LinkOutlined />,
-                label: 'Reddit 链接提取',
-              },
-              {
-                key: 'editor',
-                icon: <EditOutlined />,
-                label: '视频脚本编辑',
-              },
-              {
-                key: 'preview',
-                icon: <VideoCameraOutlined />,
-                label: '视频预览与导出',
-              },
-              {
-                key: 'static_preview',
-                icon: <FileImageOutlined />,
-                label: '画面预览 (PPT)',
-              },
-              {
-                key: 'studio',
-                icon: <AppstoreOutlined />,
-                label: '视频编辑页面',
-              },
-              {
-                key: 'filtered_data',
-                icon: <CodeOutlined />,
-                label: '过滤后 Reddit JSON',
-              },
-              {
-                key: 'raw_data',
-                icon: <CodeOutlined />,
-                label: '未处理 Reddit JSON',
-              },
-              {
-                key: 'script_data',
-                icon: <CodeOutlined />,
-                label: '视频脚本 JSON',
-              },
-              {
-                key: 'frame_test',
-                icon: <CodeOutlined />,
-                label: '画面格测试',
-              },
-              {
-                key: 'simulation',
-                icon: <PlayCircleOutlined />,
-                label: '模拟程序',
-              },
-              {
-                key: 'audio_preview',
-                icon: <SoundOutlined />,
-                label: '音频预览',
-              },
-              {
-                key: 'component_test',
-                icon: <AppstoreOutlined />,
-                label: '组件测试',
-              },
-            ]}
-          />
-
-          <div className="sider-trigger-wrap">
-            <Button
-              type="text"
-              className="sider-trigger-btn"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              {!collapsed && <span className="sider-trigger-text">收起导航</span>}
-            </Button>
-            <Button
-              type="text"
-              className="sider-trigger-btn"
-              onClick={() => setHeaderHidden((prev) => !prev)}
-            >
-              {headerHidden ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-              {!collapsed && <span className="sider-trigger-text">{headerHidden ? '显示顶栏' : '隐藏顶栏'}</span>}
-            </Button>
-          </div>
-        </Sider>
+          setCollapsed={setCollapsed}
+          activeTool={activeTool}
+          onMenuSelect={onMenuSelect}
+          headerHidden={headerHidden}
+          setHeaderHidden={setHeaderHidden}
+        />
 
         <Layout>
           <Content className="admin-content">
@@ -1017,7 +917,10 @@ const App: React.FC = () => {
                   setDraftConfig(normalizedConfig);
                   persistVideoConfig(normalizedConfig);
                 }}
-                onBackToEditor={() => setActiveTool('editor')}
+                onViewScene={(idx) => {
+                  setSelectedSceneIdx(idx);
+                  setActiveTool('studio_scene');
+                }}
                 commentSortMode={commentSortMode}
                 replyOrderMode={replyOrderMode}
                 onApplyCommentSort={applyIdentityAndSortInEditor}
@@ -1097,6 +1000,20 @@ const App: React.FC = () => {
                   setDraftConfig(newConfig);
                   persistVideoConfig(newConfig);
                 }}
+              />
+            )}
+
+            {activeTool === 'studio_scene' && (
+              <StudioScenePage
+                videoConfig={videoConfig}
+                setVideoConfig={(cfg) => {
+                  const normalizedConfig = normalizeVideoConfig(cfg);
+                  setVideoConfig(normalizedConfig);
+                  setDraftConfig(normalizedConfig);
+                  persistVideoConfig(normalizedConfig);
+                }}
+                initialSceneIdx={selectedSceneIdx}
+                onBack={() => setActiveTool('studio')}
               />
             )}
 

@@ -15,7 +15,6 @@ import {
 } from 'antd';
 import {
   FileImageOutlined,
-  EditOutlined,
 } from '@ant-design/icons';
 import {
   VideoPreviewPlayer,
@@ -24,7 +23,7 @@ import {
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
 import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { Sidebar } from './components/Sidebar';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
 
@@ -44,7 +43,7 @@ interface ColorArrangementSettings {
 interface StudioPageProps {
   videoConfig: VideoConfig;
   setVideoConfig: (config: VideoConfig) => void;
-  onBackToEditor: () => void;
+  onViewScene?: (idx: number) => void;
   
   // From App.tsx (shared with EditorPage)
   commentSortMode: CommentSortMode;
@@ -75,7 +74,7 @@ interface StudioPageProps {
 export const StudioPage: React.FC<StudioPageProps> = ({
   videoConfig,
   setVideoConfig,
-  onBackToEditor,
+  onViewScene,
   commentSortMode,
   replyOrderMode,
   onApplyCommentSort,
@@ -206,15 +205,19 @@ export const StudioPage: React.FC<StudioPageProps> = ({
 
   // 渲染单张画面的播放器组件
   const FramePlayer = ({ idx }: { idx: number }) => (
-    <div style={{ 
-      background: 'var(--brand-dark)', 
-      borderRadius: 8, 
-      overflow: 'hidden',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}>
+    <div 
+      style={{ 
+        background: 'var(--brand-dark)', 
+        borderRadius: 8, 
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        cursor: onViewScene ? 'pointer' : 'default',
+      }}
+      onClick={() => onViewScene?.(idx)}
+    >
       <VideoPreviewPlayer
         videoConfig={videoConfig}
         durationInFrames={totalFrames}
@@ -260,9 +263,6 @@ export const StudioPage: React.FC<StudioPageProps> = ({
                     />
                   </Space>
                   <Divider type="vertical" />
-                  <Button onClick={onBackToEditor} icon={<EditOutlined />}>
-                    返回修改
-                  </Button>
                 </Space>
               }
             >

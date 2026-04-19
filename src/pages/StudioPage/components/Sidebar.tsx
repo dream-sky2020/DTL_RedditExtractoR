@@ -15,9 +15,9 @@ import {
 import { Radio, Slider } from 'antd';
 import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
-import { GlobalConfigPanel } from '../../EditorPage/components/GlobalConfigPanel';
-import { PrivacyConfigPanel } from '../../EditorPage/components/PrivacyConfigPanel';
-import { QuickActions } from '../../EditorPage/components/QuickActions';
+import { GlobalConfigPanel } from '../../DeprecatedPages/EditorPage/components/GlobalConfigPanel';
+import { PrivacyConfigPanel } from '../../DeprecatedPages/EditorPage/components/PrivacyConfigPanel';
+import { QuickActions } from '../../DeprecatedPages/EditorPage/components/QuickActions';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';

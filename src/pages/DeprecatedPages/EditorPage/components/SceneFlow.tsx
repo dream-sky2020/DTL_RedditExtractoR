@@ -1,8 +1,8 @@
 import React from 'react';
 import { Space, Typography, Pagination } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { SceneCard } from '../../../components/SceneCard';
-import { VideoConfig, VideoScene } from '../../../types';
+import { SceneCard } from '../../../../components/SceneCard';
+import { VideoConfig, VideoScene } from '../../../../types';
 
 interface SceneFlowProps {
   videoConfig: VideoConfig;

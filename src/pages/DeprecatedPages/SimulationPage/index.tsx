@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Row, Col, message } from 'antd';
-import { PhysicsEngine, RigidBody, createRect, createRegularPolygon, createCircle, PhysicalDataCompressor, Vector2, FrameData } from '../../utils/simulationEngine/physicsEngine/index';
+import { PhysicsEngine, RigidBody, createRect, createRegularPolygon, createCircle, PhysicalDataCompressor, Vector2, FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
 
 // 组件拆分
 import { HeaderActions } from './components/HeaderActions';

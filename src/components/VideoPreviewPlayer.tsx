@@ -1,8 +1,9 @@
 import React from 'react';
 import { Player } from '@remotion/player';
+import type { PlayerRef } from '@remotion/player';
 import { MyVideo, MyVideoProps } from '../remotion/MyVideo';
 import { VideoConfig } from '../types';
-import { getActiveVideoCanvasSize } from '../utils/videoCanvas';
+import { getActiveVideoCanvasSize } from '../rendering/videoCanvas';
 
 export const DEFAULT_PREVIEW_FPS = 30;
 
@@ -38,7 +39,7 @@ interface VideoPreviewPlayerProps {
   playerKey?: string;
 }
 
-export const VideoPreviewPlayer: React.FC<VideoPreviewPlayerProps> = ({
+export const VideoPreviewPlayer = React.forwardRef<PlayerRef, VideoPreviewPlayerProps>(({
   videoConfig,
   focusedSceneId,
   durationInFrames,
@@ -51,7 +52,7 @@ export const VideoPreviewPlayer: React.FC<VideoPreviewPlayerProps> = ({
   autoPlay = false,
   style,
   playerKey,
-}) => {
+}, ref) => {
   const resolvedDuration = durationInFrames ?? getTotalFrames(videoConfig, fps);
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const resolvedCompositionWidth = compositionWidth ?? activeCanvas.width;
@@ -60,6 +61,7 @@ export const VideoPreviewPlayer: React.FC<VideoPreviewPlayerProps> = ({
 
   return (
     <Player
+      ref={ref}
       component={MyVideo as React.FC<any>}
       durationInFrames={resolvedDuration}
       compositionWidth={resolvedCompositionWidth}
@@ -74,4 +76,6 @@ export const VideoPreviewPlayer: React.FC<VideoPreviewPlayerProps> = ({
       key={playerKey}
     />
   );
-};
+});
+
+VideoPreviewPlayer.displayName = 'VideoPreviewPlayer';

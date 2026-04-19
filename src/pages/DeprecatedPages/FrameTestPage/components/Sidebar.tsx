@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Space, Typography, InputNumber } from 'antd';
 import { VideoCameraOutlined, FileImageOutlined } from '@ant-design/icons';
-import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../../components/VideoPreviewPlayer';
-import { VideoScene, VideoConfig } from '../../../types';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../../../components/VideoPreviewPlayer';
+import { VideoScene, VideoConfig } from '../../../../types';
 
 const { Text } = Typography;
 

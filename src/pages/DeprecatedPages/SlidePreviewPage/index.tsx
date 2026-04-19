@@ -25,9 +25,9 @@ import {
   DEFAULT_PREVIEW_FPS,
   getTotalFrames,
   getSceneStartFrame,
-} from '../../components/VideoPreviewPlayer';
-import { VideoConfig } from '../../types';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
+} from '../../../components/VideoPreviewPlayer';
+import { VideoConfig } from '../../../types';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../../rendering/videoCanvas';
 
 const { Text, Title } = Typography;
 
@@ -112,9 +112,9 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
 
   // 渲染单张画面的播放器组件（复用）
   const FramePlayer = ({ idx, isThumbnail = false }: { idx: number, isThumbnail?: boolean }) => (
-    <div style={{ 
-      background: 'var(--brand-dark)', 
-      borderRadius: isThumbnail ? 8 : 12, 
+    <div style={{
+      background: 'var(--brand-dark)',
+      borderRadius: isThumbnail ? 8 : 12,
       overflow: 'hidden',
       boxShadow: isThumbnail ? '0 2px 8px rgba(0,0,0,0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
       display: 'flex',
@@ -123,12 +123,12 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
       cursor: isThumbnail ? 'pointer' : 'default',
       border: isThumbnail && currentSceneIdx === idx ? '3px solid var(--slide-thumbnail-border)' : 'none'
     }}
-    onClick={() => {
-      if (isThumbnail) {
-        setCurrentSceneIdx(idx);
-        setViewMode('detail');
-      }
-    }}>
+      onClick={() => {
+        if (isThumbnail) {
+          setCurrentSceneIdx(idx);
+          setViewMode('detail');
+        }
+      }}>
       <VideoPreviewPlayer
         videoConfig={videoConfig}
         durationInFrames={totalFrames}
@@ -165,12 +165,12 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                 )}
                 <Space>
                   <Text type="secondary">预览帧偏移</Text>
-                  <InputNumber 
-                    size="small" 
-                    min={0} 
-                    max={300} 
-                    value={frameOffset} 
-                    onChange={(val) => setFrameOffset(val || 0)} 
+                  <InputNumber
+                    size="small"
+                    min={0}
+                    max={300}
+                    value={frameOffset}
+                    onChange={(val) => setFrameOffset(val || 0)}
                     addonAfter="帧"
                     style={{ width: 100 }}
                   />
@@ -187,12 +187,12 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
               <div style={{ padding: '20px 0' }}>
                 <Row gutter={[16, 16]}>
                   {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
-                    <Col 
-                      xs={24} 
-                      sm={isPortrait ? 12 : 12} 
-                      md={isPortrait ? 12 : 8} 
-                      lg={isPortrait ? 8 : 6} 
-                      xl={isPortrait ? 6 : 4} 
+                    <Col
+                      xs={24}
+                      sm={isPortrait ? 12 : 12}
+                      md={isPortrait ? 12 : 8}
+                      lg={isPortrait ? 8 : 6}
+                      xl={isPortrait ? 6 : 4}
                       xxl={isPortrait ? 4 : 3}
                       key={scene.id}
                     >
@@ -236,12 +236,12 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                       {currentScene ? `${currentScene.type === 'post' ? '原贴正文' : '评论内容'} • 时长 ${currentScene.duration}s` : ''}
                     </Text>
                   </div>
-                  
+
                   <Space>
                     <Tooltip title="快捷键: ←">
-                      <Button 
-                        icon={<LeftOutlined />} 
-                        disabled={currentSceneIdx === 0} 
+                      <Button
+                        icon={<LeftOutlined />}
+                        disabled={currentSceneIdx === 0}
                         onClick={prevScene}
                       >
                         上一个
@@ -249,9 +249,9 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                     </Tooltip>
                     <span style={{ fontWeight: 'bold', minWidth: 60, textAlign: 'center' }}>{currentSceneIdx + 1} / {scenes.length}</span>
                     <Tooltip title="快捷键: →">
-                      <Button 
-                        icon={<RightOutlined />} 
-                        disabled={currentSceneIdx === scenes.length - 1} 
+                      <Button
+                        icon={<RightOutlined />}
+                        disabled={currentSceneIdx === scenes.length - 1}
                         onClick={nextScene}
                       >
                         下一个
@@ -270,20 +270,20 @@ export const SlidePreviewPage: React.FC<SlidePreviewPageProps> = ({
                 <Divider orientation="left" plain style={{ marginTop: 40 }}>
                   <Text type="secondary">所有画面 (点击快速跳转)</Text>
                 </Divider>
-                <div style={{ 
-                  display: 'flex', 
-                  overflowX: 'auto', 
-                  gap: 12, 
+                <div style={{
+                  display: 'flex',
+                  overflowX: 'auto',
+                  gap: 12,
                   padding: '10px 5px',
                   backgroundColor: 'var(--slide-filmstrip-bg)',
                   borderRadius: 12,
                   marginBottom: 20
                 }}>
                   {visibleFilmstripScenes.map(({ scene, sceneIdx: idx }) => (
-                    <div 
-                      key={`filmstrip-${scene.id}`} 
-                      style={{ 
-                        flex: '0 0 160px', 
+                    <div
+                      key={`filmstrip-${scene.id}`}
+                      style={{
+                        flex: '0 0 160px',
                         opacity: currentSceneIdx === idx ? 1 : 0.6,
                         transition: 'all 0.3s'
                       }}

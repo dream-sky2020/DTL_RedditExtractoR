@@ -1,13 +1,13 @@
 import React from 'react';
 import { Form, Row, Col, Input, Select, Typography, Divider, InputNumber, Radio, Space, Button } from 'antd';
-import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType, VideoCanvasPreset } from '../../../types';
-import { CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType, VideoCanvasPreset } from '../../../../types';
+import { CommentSortMode, ReplyOrderMode } from '../../../../utils/redditTransformer';
 import {
   DEFAULT_VIDEO_CANVAS_PRESETS,
   getActiveVideoCanvasSize,
   getAspectRatioLabel,
   normalizeVideoCanvasConfig,
-} from '../../../utils/videoCanvas';
+} from '../../../../rendering/videoCanvas';
 
 const { Text } = Typography;
 

@@ -9,13 +9,13 @@ import {
 import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene, TitleAlignmentType } from '../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
-import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
+import { VideoConfig, VideoScene, TitleAlignmentType } from '../../../types';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { Sidebar } from './components/Sidebar';
 import { SceneFlow } from './components/SceneFlow';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../utils/videoCanvas';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../../rendering/videoCanvas';
 
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
