@@ -22,6 +22,7 @@ import { LayoutSection } from '../../../components/DashboardSettings/LayoutSecti
 import { CanvasConfigSection } from '../../../components/DashboardSettings/CanvasConfigSection';
 import { TypographySection } from '../../../components/DashboardSettings/TypographySection';
 import { DefaultColorsSection } from '../../../components/DashboardSettings/DefaultColorsSection';
+import { QuoteStyleSection } from '../../../components/DashboardSettings/QuoteStyleSection';
 import { PrivacyConfigPanel } from '../../../components/DashboardSettings/PrivacyConfigPanel';
 import { QuickActions } from '../../../components/DashboardSettings/QuickActions';
 
@@ -71,6 +72,10 @@ interface SidebarProps {
   setSceneBackgroundColor: (color: string) => void;
   itemBackgroundColor: string;
   setItemBackgroundColor: (color: string) => void;
+  quoteBackgroundColor: string;
+  setQuoteBackgroundColor: (color: string) => void;
+  quoteBorderColor: string;
+  setQuoteBorderColor: (color: string) => void;
   canApplyCommentSort: boolean;
   onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   allAuthors: string[];
@@ -129,6 +134,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setSceneBackgroundColor,
   itemBackgroundColor,
   setItemBackgroundColor,
+  quoteBackgroundColor,
+  setQuoteBackgroundColor,
+  quoteBorderColor,
+  setQuoteBorderColor,
   canApplyCommentSort,
   onApplyCommentSort,
   allAuthors,
@@ -389,6 +398,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setSceneBackgroundColor={setSceneBackgroundColor}
                   itemBackgroundColor={itemBackgroundColor}
                   setItemBackgroundColor={setItemBackgroundColor}
+                />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <QuoteStyleSection
+                  quoteBackgroundColor={quoteBackgroundColor}
+                  setQuoteBackgroundColor={setQuoteBackgroundColor}
+                  quoteBorderColor={quoteBorderColor}
+                  setQuoteBorderColor={setQuoteBorderColor}
                 />
               </Form>
             </div>

@@ -88,6 +88,7 @@ const parseQuoteStartTag = (
   }
   if (attrs.color) customStyle.color = attrs.color;
   if (attrs.bg) customStyle.backgroundColor = attrs.bg;
+  if (attrs.bc || attrs.bordercolor) customStyle.borderColor = attrs.bc || attrs.bordercolor;
   if (attrs.bold === 'true' || attrs.bold === '') customStyle.fontWeight = 'bold';
   if (attrs.italic === 'true' || attrs.italic === '') customStyle.fontStyle = 'italic';
 
@@ -347,6 +348,7 @@ export const parseQuotes = (
   defaultMaxLimit: number = 150,
   defaultQuoteFontSize: number = 12,
   defaultBackgroundColor?: string,
+  defaultBorderColor?: string,
 ): React.ReactNode => {
   if (!text) return null;
 
@@ -494,22 +496,41 @@ export const parseQuotes = (
 
       if (endTagIdx !== -1) {
         const innerText = normalizedText.substring(startTagEnd, endTagIdx);
+        
+        // 确定最终背景色和边框颜色（支持继承）
+        const resolvedBg = customStyle.backgroundColor || defaultBackgroundColor || 'var(--quote-bg)';
+        const resolvedBorderColor = (customStyle.borderColor as string) || defaultBorderColor || 'var(--quote-border)';
+
         nodes.push(
           <div
             key={foundIdx}
             data-quote-id={quotedItemId || undefined}
             style={{
-              border: '1px solid var(--quote-border)',
-              backgroundColor: defaultBackgroundColor || 'var(--quote-bg)',
               padding: '8px 12px',
               margin: '4px 0',
               borderRadius: '4px',
               fontSize: `${defaultQuoteFontSize}px`,
-              ...customStyle
+              ...customStyle,
+              // 显式覆盖，确保使用计算后的颜色（处理继承逻辑）
+              border: `1px solid ${resolvedBorderColor}`,
+              backgroundColor: resolvedBg,
+              borderColor: resolvedBorderColor,
             }}
           >
             <div style={{ color: 'inherit' }}>
-              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}
+              {parseQuotes(
+                innerText,
+                maxAttr,
+                currentDepth + 1,
+                maxQuoteDepth,
+                [...authorPath, author],
+                hideAudio,
+                showMediaControls,
+                defaultMaxLimit,
+                defaultQuoteFontSize,
+                resolvedBg,
+                resolvedBorderColor
+              )}
             </div>
           </div>
         );
@@ -583,7 +604,7 @@ export const parseQuotes = (
         if (attrStr.match(/\bb\b/)) style.fontWeight = 'bold';
         if (attrStr.match(/\bi\b/)) style.fontStyle = 'italic';
         if (attrStr.match(/\bu\b/)) style.textDecoration = 'underline';
-        nodes.push(<span key={foundIdx} style={style}>{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}</span>);
+        nodes.push(<span key={foundIdx} style={style}>{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor, defaultBorderColor)}</span>);
         currentPos = endTagIdx + 8;
       } else {
         nodes.push(styleStartMatch[0]);
@@ -685,7 +706,7 @@ export const parseQuotes = (
           const rowStyle: React.CSSProperties = {
             display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px', alignItems: (attrs.align || 'center') as any, justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : (attrs.justify || 'start') === 'around' ? 'space-around' : (attrs.justify || 'start') as any, margin: '12px 0', width: '100%'
           };
-          nodes.push(<div key={foundIdx} style={rowStyle} className="script-row">{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}</div>);
+          nodes.push(<div key={foundIdx} style={rowStyle} className="script-row">{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor, defaultBorderColor)}</div>);
           currentPos = endTagIdx + 6;
         } else {
           nodes.push(fullTag);

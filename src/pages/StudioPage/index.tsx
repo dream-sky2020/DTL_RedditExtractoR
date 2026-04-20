@@ -81,6 +81,10 @@ interface StudioPageProps {
   setSceneBackgroundColor: (color: string) => void;
   itemBackgroundColor: string;
   setItemBackgroundColor: (color: string) => void;
+  quoteBackgroundColor: string;
+  setQuoteBackgroundColor: (color: string) => void;
+  quoteBorderColor: string;
+  setQuoteBorderColor: (color: string) => void;
   setAllSceneLayouts: (layout: 'top' | 'center') => void;
   addScene: () => void;
 }
@@ -120,6 +124,10 @@ export const StudioPage: React.FC<StudioPageProps> = ({
   setSceneBackgroundColor,
   itemBackgroundColor,
   setItemBackgroundColor,
+  quoteBackgroundColor,
+  setQuoteBackgroundColor,
+  quoteBorderColor,
+  setQuoteBorderColor,
   setAllSceneLayouts,
   addScene,
 }) => {
@@ -398,6 +406,10 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         setSceneBackgroundColor={setSceneBackgroundColor}
         itemBackgroundColor={itemBackgroundColor}
         setItemBackgroundColor={setItemBackgroundColor}
+        quoteBackgroundColor={quoteBackgroundColor}
+        setQuoteBackgroundColor={setQuoteBackgroundColor}
+        quoteBorderColor={quoteBorderColor}
+        setQuoteBorderColor={setQuoteBorderColor}
         canApplyCommentSort={canApplyCommentSort}
         onApplyCommentSort={onApplyCommentSort}
         allAuthors={allAuthors}

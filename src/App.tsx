@@ -73,6 +73,8 @@ interface GlobalSettings {
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
   itemBackgroundColor: string;
+  quoteBackgroundColor: string;
+  quoteBorderColor: string;
 }
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -88,6 +90,8 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   defaultQuoteMaxLimit: 150,
   sceneBackgroundColor: '#ffffff',
   itemBackgroundColor: 'transparent',
+  quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
+  quoteBorderColor: '#e0e0e0',
 };
 
 const App: React.FC = () => {
@@ -112,6 +116,8 @@ const App: React.FC = () => {
   const [defaultQuoteMaxLimit, setDefaultQuoteMaxLimit] = useState<number>(DEFAULT_GLOBAL_SETTINGS.defaultQuoteMaxLimit);
   const [sceneBackgroundColor, setSceneBackgroundColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.sceneBackgroundColor);
   const [itemBackgroundColor, setItemBackgroundColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.itemBackgroundColor);
+  const [quoteBackgroundColor, setQuoteBackgroundColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.quoteBackgroundColor);
+  const [quoteBorderColor, setQuoteBorderColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.quoteBorderColor);
   const [allAuthors, setAllAuthors] = useState<string[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
   const [colorArrangement, setColorArrangement] = useState<ColorArrangementSettings>({
@@ -227,6 +233,8 @@ const App: React.FC = () => {
       titleFontSize: titleSize,
       contentFontSize: contentSize,
       quoteFontSize: quoteFontSize,
+      quoteBackgroundColor: quoteBackgroundColor,
+      quoteBorderColor: quoteBorderColor,
       maxQuoteDepth: maxQuoteDepth,
       defaultQuoteMaxLimit: defaultQuoteMaxLimit,
       sceneBackgroundColor: sceneBackgroundColor,
@@ -391,6 +399,12 @@ const App: React.FC = () => {
       if (cachedGlobalConfig.itemBackgroundColor) {
         setItemBackgroundColor(cachedGlobalConfig.itemBackgroundColor);
       }
+      if (cachedGlobalConfig.quoteBackgroundColor) {
+        setQuoteBackgroundColor(cachedGlobalConfig.quoteBackgroundColor);
+      }
+      if (cachedGlobalConfig.quoteBorderColor) {
+        setQuoteBorderColor(cachedGlobalConfig.quoteBorderColor);
+      }
     }
 
     if (cachedVideoConfig) {
@@ -449,8 +463,10 @@ const App: React.FC = () => {
       defaultQuoteMaxLimit,
       sceneBackgroundColor,
       itemBackgroundColor,
+      quoteBackgroundColor,
+      quoteBorderColor,
     });
-  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment, titleFontSize, contentFontSize, quoteFontSize, maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor]);
+  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment, titleFontSize, contentFontSize, quoteFontSize, maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor, quoteBackgroundColor, quoteBorderColor]);
 
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
@@ -468,6 +484,8 @@ const App: React.FC = () => {
         titleFontSize: titleFontSize,
         contentFontSize: contentFontSize,
         quoteFontSize: quoteFontSize,
+        quoteBackgroundColor: quoteBackgroundColor,
+        quoteBorderColor: quoteBorderColor,
         maxQuoteDepth: maxQuoteDepth,
         defaultQuoteMaxLimit: defaultQuoteMaxLimit,
         sceneBackgroundColor: sceneBackgroundColor,
@@ -1059,6 +1077,22 @@ const App: React.FC = () => {
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);
                 }}
+                quoteBackgroundColor={quoteBackgroundColor}
+                setQuoteBackgroundColor={(color) => {
+                  setQuoteBackgroundColor(color);
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBackgroundColor: color });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                quoteBorderColor={quoteBorderColor}
+                setQuoteBorderColor={(color) => {
+                  setQuoteBorderColor(color);
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBorderColor: color });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
                 onApply={() => {
                   const normalizedConfig = normalizeVideoConfig(draftConfig);
                   setVideoConfig(normalizedConfig);
@@ -1256,6 +1290,22 @@ const App: React.FC = () => {
                     items: scene.items.map(item => ({ ...item, backgroundColor: color }))
                   }));
                   const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                quoteBackgroundColor={quoteBackgroundColor}
+                setQuoteBackgroundColor={(color) => {
+                  setQuoteBackgroundColor(color);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBackgroundColor: color });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                quoteBorderColor={quoteBorderColor}
+                setQuoteBorderColor={(color) => {
+                  setQuoteBorderColor(color);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBorderColor: color });
                   setVideoConfig(newConfig);
                   setDraftConfig(newConfig);
                   persistVideoConfig(newConfig);

@@ -65,6 +65,8 @@ export interface VideoConfig {
   titleFontSize?: number; // 标题字体大小
   contentFontSize?: number; // 正文字体大小
   quoteFontSize?: number; // 引用块字体大小
+  quoteBackgroundColor?: string; // 引用块默认背景颜色
+  quoteBorderColor?: string; // 引用块默认边框颜色
   maxQuoteDepth?: number; // 最大嵌套深度
   defaultQuoteMaxLimit?: number; // 默认最大字数限制
   sceneBackgroundColor?: string; // 默认场景背景颜色

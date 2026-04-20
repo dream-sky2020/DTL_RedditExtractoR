@@ -65,6 +65,8 @@ interface SceneItemProps {
   maxQuoteDepth?: number;
   defaultQuoteMaxLimit?: number;
   defaultItemBackgroundColor?: string;
+  quoteBackgroundColor?: string;
+  quoteBorderColor?: string;
 }
 
 const SceneItem: React.FC<SceneItemProps> = ({ 
@@ -76,6 +78,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
   maxQuoteDepth,
   defaultQuoteMaxLimit,
   defaultItemBackgroundColor,
+  quoteBackgroundColor,
+  quoteBorderColor,
 }) => {
   const audioTags = useMemo(() => parseAudioTags(item.content), [item.content]);
 
@@ -161,7 +165,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
             defaultQuoteFontSize={quoteFontSize}
             maxQuoteDepth={maxQuoteDepth}
             defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-            defaultBackgroundColor={item.backgroundColor || defaultItemBackgroundColor}
+            defaultBackgroundColor={quoteBackgroundColor || item.backgroundColor || defaultItemBackgroundColor}
+            defaultBorderColor={quoteBorderColor}
           />
       </div>
     </div>
@@ -179,6 +184,8 @@ export const MyVideo: React.FC<MyVideoProps> = ({
   maxQuoteDepth,
   defaultQuoteMaxLimit,
   itemBackgroundColor,
+  quoteBackgroundColor,
+  quoteBorderColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -238,8 +245,11 @@ export const MyVideo: React.FC<MyVideoProps> = ({
               fps={fps}
               quoteFontSize={quoteFontSize}
               maxQuoteDepth={maxQuoteDepth}
+              maxQuoteDepth={maxQuoteDepth}
               defaultQuoteMaxLimit={defaultQuoteMaxLimit}
               defaultItemBackgroundColor={itemBackgroundColor}
+              quoteBackgroundColor={quoteBackgroundColor}
+              quoteBorderColor={quoteBorderColor}
             />
           ))}
         </div>

@@ -527,7 +527,8 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                             maxQuoteDepth={videoConfig.maxQuoteDepth}
                             defaultQuoteMaxLimit={videoConfig.defaultQuoteMaxLimit}
                             defaultQuoteFontSize={videoConfig.quoteFontSize}
-                            defaultBackgroundColor={item.backgroundColor || videoConfig.itemBackgroundColor}
+                            defaultBackgroundColor={videoConfig.quoteBackgroundColor || item.backgroundColor || videoConfig.itemBackgroundColor}
+                            defaultBorderColor={videoConfig.quoteBorderColor}
                           />
                         </div>
                         {(() => {
