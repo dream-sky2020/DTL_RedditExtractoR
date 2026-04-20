@@ -9,13 +9,13 @@ import {
 import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene, TitleAlignmentType } from '../../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
-import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../../components/VideoPreviewPlayer';
+import { VideoConfig, VideoScene, TitleAlignmentType, ImageLayoutMode, SceneLayoutType } from '../../types';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
+import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { Sidebar } from './components/Sidebar';
 import { SceneFlow } from './components/SceneFlow';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../../rendering/videoCanvas';
+import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 
 type ColorArrangementMode = 'uniform' | 'randomized';
 interface ColorArrangementSettings {
@@ -51,6 +51,20 @@ interface EditorPageProps {
   setSceneLayout: (layout: SceneLayoutType) => void;
   titleAlignment: TitleAlignmentType;
   setTitleAlignment: (alignment: TitleAlignmentType) => void;
+  titleFontSize: number;
+  setTitleFontSize: (size: number) => void;
+  contentFontSize: number;
+  setContentFontSize: (size: number) => void;
+  quoteFontSize: number;
+  setQuoteFontSize: (size: number) => void;
+  maxQuoteDepth: number;
+  setMaxQuoteDepth: (depth: number) => void;
+  defaultQuoteMaxLimit: number;
+  setDefaultQuoteMaxLimit: (limit: number) => void;
+  sceneBackgroundColor: string;
+  setSceneBackgroundColor: (color: string) => void;
+  itemBackgroundColor: string;
+  setItemBackgroundColor: (color: string) => void;
   onApply: () => void;
   onBack: () => void;
   toolDesc: string;
@@ -76,6 +90,20 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   setSceneLayout,
   titleAlignment,
   setTitleAlignment,
+  titleFontSize,
+  setTitleFontSize,
+  contentFontSize,
+  setContentFontSize,
+  quoteFontSize,
+  setQuoteFontSize,
+  maxQuoteDepth,
+  setMaxQuoteDepth,
+  defaultQuoteMaxLimit,
+  setDefaultQuoteMaxLimit,
+  sceneBackgroundColor,
+  setSceneBackgroundColor,
+  itemBackgroundColor,
+  setItemBackgroundColor,
   onApply,
   onBack,
   toolDesc,
@@ -103,8 +131,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [editorColorArrangement, setEditorColorArrangement] = useState<ColorArrangementSettings>(colorArrangement);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
-  const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>('list');
-  const [cardScale, setCardScale] = useState(0.8);
+  
   const activeCanvas = getActiveVideoCanvasSize(draftConfig);
   const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
   const previewModalWidth = activeCanvas.width >= activeCanvas.height ? 800 : 560;
@@ -239,6 +266,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       type: 'comments',
       title: '新建画面格',
       layout: 'top',
+      backgroundColor: sceneBackgroundColor,
       duration: 5,
       items: [{
         id: 'item-' + Date.now(),
@@ -324,8 +352,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
             );
           }}
-          layoutMode={layoutMode}
-          cardScale={cardScale}
         />
 
         <div id="editor-page-bottom-divider-wrapper">
@@ -359,6 +385,20 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         setSceneLayout={setSceneLayout}
         titleAlignment={titleAlignment}
         setTitleAlignment={setTitleAlignment}
+        titleFontSize={titleFontSize}
+        setTitleFontSize={setTitleFontSize}
+        contentFontSize={contentFontSize}
+        setContentFontSize={setContentFontSize}
+        quoteFontSize={quoteFontSize}
+        setQuoteFontSize={setQuoteFontSize}
+        maxQuoteDepth={maxQuoteDepth}
+        setMaxQuoteDepth={setMaxQuoteDepth}
+        defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+        setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
+        sceneBackgroundColor={sceneBackgroundColor}
+        setSceneBackgroundColor={setSceneBackgroundColor}
+        itemBackgroundColor={itemBackgroundColor}
+        setItemBackgroundColor={setItemBackgroundColor}
         canApplyCommentSort={canApplyCommentSort}
         onApplyCommentSort={onApplyCommentSort}
         allAuthors={allAuthors}
@@ -376,10 +416,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         selectedSceneIds={selectedSceneIds}
         setSelectedSceneIds={setSelectedSceneIds}
         onRemoveSelectedScenes={removeSelectedScenes}
-        layoutMode={layoutMode}
-        setLayoutMode={setLayoutMode}
-        cardScale={cardScale}
-        setCardScale={setCardScale}
       />
 
       <Modal

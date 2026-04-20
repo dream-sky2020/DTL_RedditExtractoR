@@ -5,6 +5,7 @@ import {
   Button,
   Typography,
   Divider,
+  Form,
   message,
 } from 'antd';
 import {
@@ -14,15 +15,18 @@ import {
   SelectOutlined,
   DeleteOutlined,
   MergeCellsOutlined,
-  LayoutOutlined,
 } from '@ant-design/icons';
-import { Radio, Slider } from 'antd';
-import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../../utils/redditTransformer';
-import { mergeSelectedScenes } from '../../../../utils/sceneMergeEngine';
-import { GlobalConfigPanel } from './GlobalConfigPanel';
-import { PrivacyConfigPanel } from './PrivacyConfigPanel';
-import { QuickActions } from './QuickActions';
+import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
+import { BasicMetaSection } from '../../../components/DashboardSettings/BasicMetaSection';
+import { SortStrategySection } from '../../../components/DashboardSettings/SortStrategySection';
+import { LayoutSection } from '../../../components/DashboardSettings/LayoutSection';
+import { CanvasConfigSection } from '../../../components/DashboardSettings/CanvasConfigSection';
+import { TypographySection } from '../../../components/DashboardSettings/TypographySection';
+import { DefaultColorsSection } from '../../../components/DashboardSettings/DefaultColorsSection';
+import { PrivacyConfigPanel } from '../../../components/DashboardSettings/PrivacyConfigPanel';
+import { QuickActions } from '../../../components/DashboardSettings/QuickActions';
 
 const { Text } = Typography;
 
@@ -58,6 +62,20 @@ interface SidebarProps {
   setSceneLayout: (layout: SceneLayoutType) => void;
   titleAlignment: TitleAlignmentType;
   setTitleAlignment: (alignment: TitleAlignmentType) => void;
+  titleFontSize: number;
+  setTitleFontSize: (size: number) => void;
+  contentFontSize: number;
+  setContentFontSize: (size: number) => void;
+  quoteFontSize: number;
+  setQuoteFontSize: (size: number) => void;
+  maxQuoteDepth: number;
+  setMaxQuoteDepth: (depth: number) => void;
+  defaultQuoteMaxLimit: number;
+  setDefaultQuoteMaxLimit: (limit: number) => void;
+  sceneBackgroundColor: string;
+  setSceneBackgroundColor: (color: string) => void;
+  itemBackgroundColor: string;
+  setItemBackgroundColor: (color: string) => void;
   canApplyCommentSort: boolean;
   onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   allAuthors: string[];
@@ -75,10 +93,6 @@ interface SidebarProps {
   selectedSceneIds: string[];
   setSelectedSceneIds: (ids: string[]) => void;
   onRemoveSelectedScenes: () => void;
-  layoutMode: 'list' | 'grid';
-  setLayoutMode: (mode: 'list' | 'grid') => void;
-  cardScale: number;
-  setCardScale: (scale: number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -103,6 +117,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setSceneLayout,
   titleAlignment,
   setTitleAlignment,
+  titleFontSize,
+  setTitleFontSize,
+  contentFontSize,
+  setContentFontSize,
+  quoteFontSize,
+  setQuoteFontSize,
+  maxQuoteDepth,
+  setMaxQuoteDepth,
+  defaultQuoteMaxLimit,
+  setDefaultQuoteMaxLimit,
+  sceneBackgroundColor,
+  setSceneBackgroundColor,
+  itemBackgroundColor,
+  setItemBackgroundColor,
   canApplyCommentSort,
   onApplyCommentSort,
   allAuthors,
@@ -120,10 +148,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedSceneIds,
   setSelectedSceneIds,
   onRemoveSelectedScenes,
-  layoutMode,
-  setLayoutMode,
-  cardScale,
-  setCardScale,
 }) => {
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
   const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
@@ -221,50 +245,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Space>
           </div>
           
-          <div id="editor-page-view-config-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Space size="small">
-              <LayoutOutlined style={{ color: 'var(--text-primary)' }} />
-              <Text strong style={{ color: 'var(--text-primary)' }}>视图显示配置</Text>
-            </Space>
-          </div>
-          <div
-            id="editor-page-view-config-panel"
-            style={{
-              padding: 12,
-              borderRadius: 8,
-              border: '1px solid var(--brand-border)',
-              background: 'var(--panel-bg-translucent)',
-              marginBottom: 16
-            }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>排列模式</Text>
-                <Radio.Group 
-                  value={layoutMode} 
-                  onChange={e => setLayoutMode(e.target.value)}
-                  optionType="button"
-                  buttonStyle="solid"
-                  size="small"
-                >
-                  <Radio.Button value="list">列表布局</Radio.Button>
-                  <Radio.Button value="grid">网格布局</Radio.Button>
-                </Radio.Group>
-              </div>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>卡片预览缩放比例 ({Math.round(cardScale * 100)}%)</Text>
-                <Slider 
-                  min={0.3} 
-                  max={1.2} 
-                  step={0.05} 
-                  value={cardScale} 
-                  onChange={setCardScale}
-                  tooltip={{ formatter: val => `${Math.round((val || 0) * 100)}%` }}
-                />
-              </div>
-            </Space>
-          </div>
-
           <div id="editor-page-global-config-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text strong style={{ color: 'var(--text-primary)' }}>整体配置</Text>
             <Button
@@ -280,20 +260,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Button>
           </div>
           {!isConfigCollapsed && (
-            <GlobalConfigPanel
-              draftConfig={draftConfig}
-              setDraftConfig={setDraftConfig}
-              editorSortMode={editorSortMode}
-              setEditorSortMode={setEditorSortMode}
-              editorReplyOrderMode={editorReplyOrderMode}
-              setEditorReplyOrderMode={setEditorReplyOrderMode}
-              imageLayoutMode={imageLayoutMode}
-              setImageLayoutMode={setImageLayoutMode}
-              sceneLayout={sceneLayout}
-              setSceneLayout={setSceneLayout}
-              titleAlignment={titleAlignment}
-              setTitleAlignment={setTitleAlignment}
-            />
+            <div
+              id="editor-page-global-config-panel"
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                background: 'var(--panel-bg-darker)',
+                border: '1px solid var(--brand-border)',
+                marginBottom: 16,
+              }}
+            >
+              <Form id="editor-page-global-config-form" layout="vertical" variant="filled">
+                <BasicMetaSection idPrefix="editor-page" draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
+                <SortStrategySection
+                  idPrefix="editor-page"
+                  editorSortMode={editorSortMode}
+                  setEditorSortMode={setEditorSortMode}
+                  editorReplyOrderMode={editorReplyOrderMode}
+                  setEditorReplyOrderMode={setEditorReplyOrderMode}
+                />
+                <LayoutSection
+                  idPrefix="editor-page"
+                  titleAlignment={titleAlignment}
+                  setTitleAlignment={setTitleAlignment}
+                  imageLayoutMode={imageLayoutMode}
+                  setImageLayoutMode={setImageLayoutMode}
+                  sceneLayout={sceneLayout}
+                  setSceneLayout={setSceneLayout}
+                />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <CanvasConfigSection idPrefix="editor-page" draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <TypographySection
+                  titleFontSize={titleFontSize}
+                  setTitleFontSize={setTitleFontSize}
+                  contentFontSize={contentFontSize}
+                  setContentFontSize={setContentFontSize}
+                  quoteFontSize={quoteFontSize}
+                  setQuoteFontSize={setQuoteFontSize}
+                  maxQuoteDepth={maxQuoteDepth}
+                  setMaxQuoteDepth={setMaxQuoteDepth}
+                  defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+                  setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
+                />
+                <DefaultColorsSection
+                  sceneBackgroundColor={sceneBackgroundColor}
+                  setSceneBackgroundColor={setSceneBackgroundColor}
+                  itemBackgroundColor={itemBackgroundColor}
+                  setItemBackgroundColor={setItemBackgroundColor}
+                />
+              </Form>
+            </div>
           )}
 
           <div id="editor-page-sidebar-divider-wrapper">
@@ -316,6 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {!isPrivacyCollapsed && (
             <PrivacyConfigPanel
+              idPrefix="editor-page"
               editorColorArrangement={editorColorArrangement}
               setEditorColorArrangement={setEditorColorArrangement}
               onRearrangeColorsAndApply={onRearrangeColorsAndApply}
@@ -430,6 +448,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Text strong style={{ color: 'var(--text-primary)' }}>画面流快捷操作</Text>
           </div>
           <QuickActions
+            idPrefix="editor-page"
             canApplyCommentSort={canApplyCommentSort}
             onApplyCommentSort={onApplyCommentSort}
             editorSortMode={editorSortMode}

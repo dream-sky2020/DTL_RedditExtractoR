@@ -8,6 +8,7 @@ import {
   Typography,
   Modal,
   message,
+  ColorPicker,
 } from 'antd';
 import {
   EditOutlined,
@@ -47,7 +48,6 @@ interface SceneCardProps {
   isMultiSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
-  onPreviewScale?: number;
 }
 
 export const SceneCard: React.FC<SceneCardProps> = ({
@@ -68,7 +68,6 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   isMultiSelectMode = false,
   isSelected = false,
   onToggleSelection,
-  onPreviewScale = 1.0,
 }) => {
   const [isSceneEditorVisible, setIsSceneEditorVisible] = useState(false);
   const [sceneEditorText, setSceneEditorText] = useState('');
@@ -287,6 +286,12 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           <Space id={`scene-card-actions-${scene.id}`} size="middle">
             {!isMultiSelectMode && (
               <>
+                <ColorPicker
+                  size="small"
+                  value={scene.backgroundColor || videoConfig.sceneBackgroundColor || '#ffffff'}
+                  onChange={(color) => onUpdateScene({ backgroundColor: color.toHexString() })}
+                  showText
+                />
                 <Button id={`scene-card-edit-btn-${scene.id}`} name="edit-dsl-btn" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); toggleSceneEditor(); }}>
                   {isSceneEditorVisible ? '收起场景脚本' : '编辑场景脚本'}
                 </Button>
@@ -400,21 +405,17 @@ export const SceneCard: React.FC<SceneCardProps> = ({
 
           <div ref={previewShellRef} style={{ 
             width: '100%', 
-            height: previewSurfaceHeight > 0 ? previewSurfaceHeight * onPreviewScale : undefined,
-            maxHeight: activeCanvas.height > activeCanvas.width ? 600 : 'none', 
-            overflowY: (activeCanvas.height > activeCanvas.width || (previewSurfaceHeight * onPreviewScale > 600)) ? 'auto' : 'visible',
+            height: previewSurfaceHeight > 0 ? previewSurfaceHeight : undefined,
             borderRadius: 12,
-            border: (activeCanvas.height > activeCanvas.width || onPreviewScale < 1) ? '1px solid var(--scene-item-border)' : 'none',
-            padding: (activeCanvas.height > activeCanvas.width || onPreviewScale < 1) ? '4px' : '0',
+            border: activeCanvas.height > activeCanvas.width ? '1px solid var(--scene-item-border)' : 'none',
+            padding: activeCanvas.height > activeCanvas.width ? '4px' : '0',
             position: 'relative',
           }}>
             <div
               style={{
-                width: `${100 / onPreviewScale}%`,
+                width: '100%',
                 height: previewSurfaceHeight > 0 ? previewSurfaceHeight : undefined,
                 minHeight: previewViewportHeight > 0 ? previewViewportHeight : undefined,
-                transform: `scale(${onPreviewScale})`,
-                transformOrigin: 'top left',
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -433,9 +434,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                     ? '1px solid rgba(255,77,79,0.45)'
                     : '1px solid var(--scene-item-border)',
                   background:
-                    scene.type === 'post'
-                      ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98))'
-                      : 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98))',
+                    scene.backgroundColor || '#ffffff',
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35)',
                 }}
               >
@@ -502,12 +501,34 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                         size="small"
                         variant="outlined"
                         style={{
-                          background: 'var(--scene-item-bg)',
+                          background: item.backgroundColor || videoConfig.itemBackgroundColor || 'var(--scene-item-bg)',
                           border: '1px dashed var(--scene-item-border)',
+                          position: 'relative',
                         }}
                       >
+                        {!isMultiSelectMode && (
+                          <div style={{ position: 'absolute', right: 4, top: 4, zIndex: 10 }}>
+                            <ColorPicker
+                              size="small"
+                              value={item.backgroundColor || videoConfig.itemBackgroundColor || 'transparent'}
+                              onChange={(color) => {
+                                const newItems = [...scene.items];
+                                newItems[idx] = { ...item, backgroundColor: color.toHexString() };
+                                onUpdateScene({ items: newItems });
+                              }}
+                            />
+                          </div>
+                        )}
                         <div style={{ padding: '8px 4px' }}>
-                          <ScriptContentRenderer content={item.content} author={item.author} hideAudio={true} />
+                          <ScriptContentRenderer 
+                            content={item.content} 
+                            author={item.author} 
+                            hideAudio={true} 
+                            maxQuoteDepth={videoConfig.maxQuoteDepth}
+                            defaultQuoteMaxLimit={videoConfig.defaultQuoteMaxLimit}
+                            defaultQuoteFontSize={videoConfig.quoteFontSize}
+                            defaultBackgroundColor={item.backgroundColor || videoConfig.itemBackgroundColor}
+                          />
                         </div>
                         {(() => {
                           const audioMatches = Array.from(item.content.matchAll(/\[audio src="([^"]+)"(?: start="([^"]*)")?(?: volume="([^"]*)")?\]/g));

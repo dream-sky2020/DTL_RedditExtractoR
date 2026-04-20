@@ -85,6 +85,10 @@ export const sceneToDsl = (scene: VideoScene): string => {
     `title="${escapeAttr(scene.title || '')}"`,
   ];
 
+  if (scene.backgroundColor) {
+    sceneAttrs.push(`bg="${escapeAttr(scene.backgroundColor)}"`);
+  }
+
   const itemBlocks = scene.items
     .map((item) => {
       const itemAttrs = [`id="${escapeAttr(item.id)}"`, `author="${escapeAttr(item.author)}"`];
@@ -97,6 +101,9 @@ export const sceneToDsl = (scene: VideoScene): string => {
       itemAttrs.push(`exitAt=${exitAt}`);
       itemAttrs.push(`enterAnimation="${enterAnimation}"`);
       itemAttrs.push(`exitAnimation="${exitAnimation}"`);
+      if (item.backgroundColor) {
+        itemAttrs.push(`bg="${escapeAttr(item.backgroundColor)}"`);
+      }
       const content = encodeDslLineBreaks((item.content || '').trim());
       return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
     })
@@ -159,6 +166,7 @@ export const parseSceneDsl = (
   }
 
   const title = sceneAttrs.title ?? fallbackScene?.title ?? '';
+  const backgroundColor = sceneAttrs.bg || sceneAttrs.backgroundColor || fallbackScene?.backgroundColor || '';
   const layoutRaw = (sceneAttrs.layout ?? '').trim();
   const fallbackLayout = fallbackScene?.layout;
   let layout: SceneLayoutType;
@@ -222,6 +230,7 @@ export const parseSceneDsl = (
     const parsedExitAnimation = parseOptionalAnimation(itemAttrs.exitAnimation);
     const enterAnimation = parsedEnterAnimation ?? fallbackItem?.enterAnimation;
     const exitAnimation = parsedExitAnimation ?? fallbackItem?.exitAnimation;
+    const itemBackgroundColor = itemAttrs.bg || itemAttrs.backgroundColor || fallbackItem?.backgroundColor || '';
     if (itemAttrs.enterAnimation != null && parsedEnterAnimation == null) {
       warnings.push({
         message: `第 ${index + 1} 个 <item> 的 enterAnimation="${itemAttrs.enterAnimation}" 无效，已自动回退。`,
@@ -244,6 +253,7 @@ export const parseSceneDsl = (
       exitAt,
       enterAnimation,
       exitAnimation,
+      backgroundColor: itemBackgroundColor,
     });
     index += 1;
   }
@@ -273,6 +283,7 @@ export const parseSceneDsl = (
       type,
       title,
       layout,
+      backgroundColor,
       duration,
       items,
     },

@@ -56,7 +56,7 @@ const parseInlineAttrs = (input: string): Record<string, string> => {
 const parseQuoteStartTag = (
   source: string,
   defaultMaxLimit: number
-): { fullTag: string; author: string; maxLimit: number; itemId: string } | null => {
+): { fullTag: string; author: string; maxLimit: number; itemId: string; customStyle: React.CSSProperties } | null => {
   const startTagMatch = source.match(/^\[quote(?:=[^\]]*|\s[^\]]*)?\]/);
   if (!startTagMatch) return null;
 
@@ -80,7 +80,18 @@ const parseQuoteStartTag = (
   const maxLimit = Number.isFinite(maxFromAttr) && maxFromAttr > 0 ? maxFromAttr : defaultMaxLimit;
   const itemId = (attrs.id || '').trim();
 
-  return { fullTag, author, maxLimit, itemId };
+  // 解析样式属性
+  const customStyle: React.CSSProperties = {};
+  if (attrs.size) {
+    const size = parseInt(attrs.size);
+    if (!isNaN(size)) customStyle.fontSize = size;
+  }
+  if (attrs.color) customStyle.color = attrs.color;
+  if (attrs.bg) customStyle.backgroundColor = attrs.bg;
+  if (attrs.bold === 'true' || attrs.bold === '') customStyle.fontWeight = 'bold';
+  if (attrs.italic === 'true' || attrs.italic === '') customStyle.fontStyle = 'italic';
+
+  return { fullTag, author, maxLimit, itemId, customStyle };
 };
 
 const DEFAULT_MEDIA_DURATION = 2.5;
@@ -333,6 +344,9 @@ export const parseQuotes = (
   authorPath: string[] = [],
   hideAudio: boolean = false,
   showMediaControls: boolean = true,
+  defaultMaxLimit: number = 150,
+  defaultQuoteFontSize: number = 12,
+  defaultBackgroundColor?: string,
 ): React.ReactNode => {
   if (!text) return null;
 
@@ -346,7 +360,6 @@ export const parseQuotes = (
   const nodes: React.ReactNode[] = [];
   let currentPos = 0;
   let currentLevelChars = 0; // 当前层级已经积累的纯文本字符数
-  const DEFAULT_MAX_LIMIT = 150;
 
   // 只有当 parentMaxLimit > 0 时才启用截断逻辑
   const hasLimit = parentMaxLimit > 0;
@@ -361,7 +374,7 @@ export const parseQuotes = (
     const quoteRegex = new RegExp(QUOTE_OPEN_TAG_GLOBAL_RE);
     let match;
     while ((match = quoteRegex.exec(normalizedText)) !== null) {
-      const parsed = parseQuoteStartTag(match[0], DEFAULT_MAX_LIMIT);
+      const parsed = parseQuoteStartTag(match[0], defaultMaxLimit);
       if (parsed?.author) {
         fullChain.push(parsed.author);
       }
@@ -447,7 +460,7 @@ export const parseQuotes = (
     }
 
     if (type === 'quote') {
-      const parsedStartTag = parseQuoteStartTag(normalizedText.substring(foundIdx), DEFAULT_MAX_LIMIT);
+      const parsedStartTag = parseQuoteStartTag(normalizedText.substring(foundIdx), defaultMaxLimit);
       if (!parsedStartTag) {
         nodes.push('[quote=');
         currentPos = foundIdx + 7;
@@ -457,6 +470,7 @@ export const parseQuotes = (
       const author = parsedStartTag.author;
       const maxAttr = parsedStartTag.maxLimit;
       const quotedItemId = parsedStartTag.itemId;
+      const customStyle = parsedStartTag.customStyle;
       const startTagEnd = foundIdx + parsedStartTag.fullTag.length;
 
       let depth = 1;
@@ -486,15 +500,16 @@ export const parseQuotes = (
             data-quote-id={quotedItemId || undefined}
             style={{
               border: '1px solid var(--quote-border)',
-              backgroundColor: 'var(--quote-bg)',
+              backgroundColor: defaultBackgroundColor || 'var(--quote-bg)',
               padding: '8px 12px',
               margin: '4px 0',
               borderRadius: '4px',
-              fontSize: '12px'
+              fontSize: `${defaultQuoteFontSize}px`,
+              ...customStyle
             }}
           >
             <div style={{ color: 'inherit' }}>
-              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio, showMediaControls)}
+              {parseQuotes(innerText, maxAttr, currentDepth + 1, maxQuoteDepth, [...authorPath, author], hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}
             </div>
           </div>
         );
@@ -533,7 +548,25 @@ export const parseQuotes = (
       }
       const attrStr = styleStartMatch[1];
       const startTagEnd = foundIdx + styleStartMatch[0].length;
-      const endTagIdx = normalizedText.indexOf('[/style]', startTagEnd);
+      
+      // 深度优先匹配闭合标签，支持嵌套 [style]
+      let depth = 1;
+      let searchPos = startTagEnd;
+      let endTagIdx = -1;
+      while (depth > 0 && searchPos < normalizedText.length) {
+        const nextStart = normalizedText.indexOf('[style', searchPos);
+        const nextEnd = normalizedText.indexOf('[/style]', searchPos);
+        if (nextEnd === -1) break;
+        if (nextStart !== -1 && nextStart < nextEnd) {
+          depth++;
+          searchPos = nextStart + 6;
+        } else {
+          depth--;
+          if (depth === 0) endTagIdx = nextEnd;
+          else searchPos = nextEnd + 8;
+        }
+      }
+
       if (endTagIdx !== -1) {
         const innerText = normalizedText.substring(startTagEnd, endTagIdx);
         const style: React.CSSProperties = {};
@@ -550,7 +583,7 @@ export const parseQuotes = (
         if (attrStr.match(/\bb\b/)) style.fontWeight = 'bold';
         if (attrStr.match(/\bi\b/)) style.fontStyle = 'italic';
         if (attrStr.match(/\bu\b/)) style.textDecoration = 'underline';
-        nodes.push(<span key={foundIdx} style={style}>{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls)}</span>);
+        nodes.push(<span key={foundIdx} style={style}>{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}</span>);
         currentPos = endTagIdx + 8;
       } else {
         nodes.push(styleStartMatch[0]);
@@ -627,14 +660,32 @@ export const parseQuotes = (
         const fullTag = rowStartMatch[0];
         const attrStr = rowStartMatch[1];
         const startTagEnd = foundIdx + fullTag.length;
-        const endTagIdx = normalizedText.indexOf('[/row]', startTagEnd);
+        
+        // 深度优先匹配闭合标签，支持嵌套 [row]
+        let depth = 1;
+        let searchPos = startTagEnd;
+        let endTagIdx = -1;
+        while (depth > 0 && searchPos < normalizedText.length) {
+          const nextStart = normalizedText.indexOf('[row', searchPos);
+          const nextEnd = normalizedText.indexOf('[/row]', searchPos);
+          if (nextEnd === -1) break;
+          if (nextStart !== -1 && nextStart < nextEnd) {
+            depth++;
+            searchPos = nextStart + 4;
+          } else {
+            depth--;
+            if (depth === 0) endTagIdx = nextEnd;
+            else searchPos = nextEnd + 6;
+          }
+        }
+
         if (endTagIdx !== -1) {
           const innerText = normalizedText.substring(startTagEnd, endTagIdx);
           const attrs = parseInlineAttrs(attrStr);
           const rowStyle: React.CSSProperties = {
             display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px', alignItems: (attrs.align || 'center') as any, justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : (attrs.justify || 'start') === 'around' ? 'space-around' : (attrs.justify || 'start') as any, margin: '12px 0', width: '100%'
           };
-          nodes.push(<div key={foundIdx} style={rowStyle} className="script-row">{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls)}</div>);
+          nodes.push(<div key={foundIdx} style={rowStyle} className="script-row">{parseQuotes(innerText, parentMaxLimit, currentDepth, maxQuoteDepth, authorPath, hideAudio, showMediaControls, defaultMaxLimit, defaultQuoteFontSize, defaultBackgroundColor)}</div>);
           currentPos = endTagIdx + 6;
         } else {
           nodes.push(fullTag);

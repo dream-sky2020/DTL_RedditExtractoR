@@ -17,9 +17,10 @@ Scene DSL (HTML-style) 语法说明
 - layout: 内容格垂直布局。可选值:
   - center: 垂直居中排列（默认，适合短内容）
   - top: 从顶部开始排列（适合长内容或多项排列）
+- bg: 场景背景颜色 (如 #ffffff, red, rgba(...))，不填默认为白色。
 
 示例:
-<scene id="scene-001" duration=10 type="comments" layout="center" title="热门评论区">
+<scene id="scene-001" duration=10 type="comments" layout="center" title="热门评论区" bg="#f0f2f5">
   ...
 </scene>
 

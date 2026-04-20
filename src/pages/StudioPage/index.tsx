@@ -67,6 +67,20 @@ interface StudioPageProps {
   setSceneLayout: (layout: SceneLayoutType) => void;
   titleAlignment: TitleAlignmentType;
   setTitleAlignment: (alignment: TitleAlignmentType) => void;
+  titleFontSize: number;
+  setTitleFontSize: (size: number) => void;
+  contentFontSize: number;
+  setContentFontSize: (size: number) => void;
+  quoteFontSize: number;
+  setQuoteFontSize: (size: number) => void;
+  maxQuoteDepth: number;
+  setMaxQuoteDepth: (depth: number) => void;
+  defaultQuoteMaxLimit: number;
+  setDefaultQuoteMaxLimit: (limit: number) => void;
+  sceneBackgroundColor: string;
+  setSceneBackgroundColor: (color: string) => void;
+  itemBackgroundColor: string;
+  setItemBackgroundColor: (color: string) => void;
   setAllSceneLayouts: (layout: 'top' | 'center') => void;
   addScene: () => void;
 }
@@ -92,6 +106,20 @@ export const StudioPage: React.FC<StudioPageProps> = ({
   setSceneLayout,
   titleAlignment,
   setTitleAlignment,
+  titleFontSize,
+  setTitleFontSize,
+  contentFontSize,
+  setContentFontSize,
+  quoteFontSize,
+  setQuoteFontSize,
+  maxQuoteDepth,
+  setMaxQuoteDepth,
+  defaultQuoteMaxLimit,
+  setDefaultQuoteMaxLimit,
+  sceneBackgroundColor,
+  setSceneBackgroundColor,
+  itemBackgroundColor,
+  setItemBackgroundColor,
   setAllSceneLayouts,
   addScene,
 }) => {
@@ -356,6 +384,20 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         setSceneLayout={setSceneLayout}
         titleAlignment={titleAlignment}
         setTitleAlignment={setTitleAlignment}
+        titleFontSize={titleFontSize}
+        setTitleFontSize={setTitleFontSize}
+        contentFontSize={contentFontSize}
+        setContentFontSize={setContentFontSize}
+        quoteFontSize={quoteFontSize}
+        setQuoteFontSize={setQuoteFontSize}
+        maxQuoteDepth={maxQuoteDepth}
+        setMaxQuoteDepth={setMaxQuoteDepth}
+        defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+        setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
+        sceneBackgroundColor={sceneBackgroundColor}
+        setSceneBackgroundColor={setSceneBackgroundColor}
+        itemBackgroundColor={itemBackgroundColor}
+        setItemBackgroundColor={setItemBackgroundColor}
         canApplyCommentSort={canApplyCommentSort}
         onApplyCommentSort={onApplyCommentSort}
         allAuthors={allAuthors}

@@ -61,9 +61,22 @@ interface SceneItemProps {
   sceneDuration: number;
   relativeFrame: number;
   fps: number;
+  quoteFontSize?: number;
+  maxQuoteDepth?: number;
+  defaultQuoteMaxLimit?: number;
+  defaultItemBackgroundColor?: string;
 }
 
-const SceneItem: React.FC<SceneItemProps> = ({ item, sceneDuration, relativeFrame, fps }) => {
+const SceneItem: React.FC<SceneItemProps> = ({ 
+  item, 
+  sceneDuration, 
+  relativeFrame, 
+  fps,
+  quoteFontSize,
+  maxQuoteDepth,
+  defaultQuoteMaxLimit,
+  defaultItemBackgroundColor,
+}) => {
   const audioTags = useMemo(() => parseAudioTags(item.content), [item.content]);
 
   const enterSec = Math.min(Math.max(item.enterAt ?? 0, 0), sceneDuration);
@@ -114,7 +127,7 @@ const SceneItem: React.FC<SceneItemProps> = ({ item, sceneDuration, relativeFram
   return (
     <div
       style={{
-        background: '#f8f9fa',
+        background: item.backgroundColor || defaultItemBackgroundColor || '#f8f9fa',
         border: '1px dashed #d9d9d9',
         borderRadius: 8,
         padding: '12px',
@@ -138,14 +151,18 @@ const SceneItem: React.FC<SceneItemProps> = ({ item, sceneDuration, relativeFram
         );
       })}
       <div style={{ padding: '8px 4px' }}>
-        <ScriptContentRenderer
-          content={item.content}
-          author={item.author}
-          hideAudio={true}
-          showMediaControls={false}
-          playbackFrame={Math.max(0, relativeFrame - enterFrame)}
-          fps={fps}
-        />
+          <ScriptContentRenderer
+            content={item.content}
+            author={item.author}
+            hideAudio={true}
+            showMediaControls={false}
+            playbackFrame={Math.max(0, relativeFrame - enterFrame)}
+            fps={fps}
+            defaultQuoteFontSize={quoteFontSize}
+            maxQuoteDepth={maxQuoteDepth}
+            defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+            defaultBackgroundColor={item.backgroundColor || defaultItemBackgroundColor}
+          />
       </div>
     </div>
   );
@@ -155,7 +172,14 @@ export interface MyVideoProps extends VideoConfig {
   focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
 }
 
-export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId }) => {
+export const MyVideo: React.FC<MyVideoProps> = ({ 
+  scenes = [], 
+  focusedSceneId,
+  quoteFontSize,
+  maxQuoteDepth,
+  defaultQuoteMaxLimit,
+  itemBackgroundColor,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -184,11 +208,12 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
 
   if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
   const layoutMode = activeScene.layout === 'center' ? 'center' : 'top';
+  const bgColor = activeScene.backgroundColor || '#ffffff';
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: '#f0f2f5',
+        backgroundColor: bgColor,
         padding: 28,
         fontFamily: 'Inter, -apple-system, sans-serif',
       }}
@@ -211,6 +236,10 @@ export const MyVideo: React.FC<MyVideoProps> = ({ scenes = [], focusedSceneId })
               sceneDuration={activeScene!.duration}
               relativeFrame={relativeFrame}
               fps={fps}
+              quoteFontSize={quoteFontSize}
+              maxQuoteDepth={maxQuoteDepth}
+              defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+              defaultItemBackgroundColor={itemBackgroundColor}
             />
           ))}
         </div>

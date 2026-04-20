@@ -28,7 +28,7 @@ import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './renderin
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage/index';
-import { EditorPage } from './pages/DeprecatedPages/EditorPage/index';
+import { EditorPage } from './pages/EditorPage/index';
 import { VideoPreviewPage } from './pages/VideoPreviewPage/index';
 import { FilteredJsonPage } from './pages/FilteredJsonPage/index';
 import { RawJsonPage } from './pages/RawJsonPage/index';
@@ -66,6 +66,13 @@ interface GlobalSettings {
   imageLayoutMode: 'gallery' | 'row' | 'single';
   sceneLayout: 'top' | 'center';
   titleAlignment: TitleAlignmentType;
+  titleFontSize: number;
+  contentFontSize: number;
+  quoteFontSize: number;
+  maxQuoteDepth: number;
+  defaultQuoteMaxLimit: number;
+  sceneBackgroundColor: string;
+  itemBackgroundColor: string;
 }
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -74,6 +81,13 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   imageLayoutMode: 'gallery',
   sceneLayout: 'center',
   titleAlignment: 'center',
+  titleFontSize: 64,
+  contentFontSize: 32,
+  quoteFontSize: 12,
+  maxQuoteDepth: 4,
+  defaultQuoteMaxLimit: 150,
+  sceneBackgroundColor: '#ffffff',
+  itemBackgroundColor: 'transparent',
 };
 
 const App: React.FC = () => {
@@ -91,6 +105,13 @@ const App: React.FC = () => {
   const [imageLayoutMode, setImageLayoutMode] = useState<'gallery' | 'row' | 'single'>(DEFAULT_GLOBAL_SETTINGS.imageLayoutMode);
   const [sceneLayout, setSceneLayout] = useState<'top' | 'center'>(DEFAULT_GLOBAL_SETTINGS.sceneLayout);
   const [titleAlignment, setTitleAlignment] = useState<TitleAlignmentType>(DEFAULT_GLOBAL_SETTINGS.titleAlignment);
+  const [titleFontSize, setTitleFontSize] = useState<number>(DEFAULT_GLOBAL_SETTINGS.titleFontSize);
+  const [contentFontSize, setContentFontSize] = useState<number>(DEFAULT_GLOBAL_SETTINGS.contentFontSize);
+  const [quoteFontSize, setQuoteFontSize] = useState<number>(DEFAULT_GLOBAL_SETTINGS.quoteFontSize);
+  const [maxQuoteDepth, setMaxQuoteDepth] = useState<number>(DEFAULT_GLOBAL_SETTINGS.maxQuoteDepth);
+  const [defaultQuoteMaxLimit, setDefaultQuoteMaxLimit] = useState<number>(DEFAULT_GLOBAL_SETTINGS.defaultQuoteMaxLimit);
+  const [sceneBackgroundColor, setSceneBackgroundColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.sceneBackgroundColor);
+  const [itemBackgroundColor, setItemBackgroundColor] = useState<string>(DEFAULT_GLOBAL_SETTINGS.itemBackgroundColor);
   const [allAuthors, setAllAuthors] = useState<string[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
   const [colorArrangement, setColorArrangement] = useState<ColorArrangementSettings>({
@@ -168,6 +189,8 @@ const App: React.FC = () => {
   const buildVideoConfigFromResult = (
     nextResult: any,
     alignment: TitleAlignmentType = 'center',
+    titleSize = 64,
+    contentSize = 32,
     canvas = createDefaultVideoCanvasConfig()
   ): VideoConfig => {
     const postScene: VideoScene = {
@@ -179,7 +202,7 @@ const App: React.FC = () => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: `[style size=32 b align=${alignment}]${nextResult.title}[/style]\n\n${nextResult.content || ''}`,
+        content: `[style size=${titleSize} b align=${alignment}]${nextResult.title}[/style]\n\n[style size=${contentSize}]${nextResult.content || ''}[/style]`,
       }]
     };
 
@@ -192,7 +215,7 @@ const App: React.FC = () => {
       items: [{
         id: c.id,
         author: c.author,
-        content: c.body,
+        content: `[style size=${contentSize}]${c.body}[/style]`,
         replyChain: c.replyChain
       }]
     }));
@@ -201,6 +224,13 @@ const App: React.FC = () => {
       title: nextResult.title,
       subreddit: nextResult.subreddit,
       scenes: [postScene, ...commentScenes],
+      titleFontSize: titleSize,
+      contentFontSize: contentSize,
+      quoteFontSize: quoteFontSize,
+      maxQuoteDepth: maxQuoteDepth,
+      defaultQuoteMaxLimit: defaultQuoteMaxLimit,
+      sceneBackgroundColor: sceneBackgroundColor,
+      itemBackgroundColor: itemBackgroundColor,
       canvas,
     };
   };
@@ -340,6 +370,27 @@ const App: React.FC = () => {
       if (cachedGlobalConfig.titleAlignment) {
         setTitleAlignment(cachedGlobalConfig.titleAlignment);
       }
+      if (cachedGlobalConfig.titleFontSize) {
+        setTitleFontSize(cachedGlobalConfig.titleFontSize);
+      }
+      if (cachedGlobalConfig.contentFontSize) {
+        setContentFontSize(cachedGlobalConfig.contentFontSize);
+      }
+      if (cachedGlobalConfig.quoteFontSize) {
+        setQuoteFontSize(cachedGlobalConfig.quoteFontSize);
+      }
+      if (cachedGlobalConfig.maxQuoteDepth) {
+        setMaxQuoteDepth(cachedGlobalConfig.maxQuoteDepth);
+      }
+      if (cachedGlobalConfig.defaultQuoteMaxLimit) {
+        setDefaultQuoteMaxLimit(cachedGlobalConfig.defaultQuoteMaxLimit);
+      }
+      if (cachedGlobalConfig.sceneBackgroundColor) {
+        setSceneBackgroundColor(cachedGlobalConfig.sceneBackgroundColor);
+      }
+      if (cachedGlobalConfig.itemBackgroundColor) {
+        setItemBackgroundColor(cachedGlobalConfig.itemBackgroundColor);
+      }
     }
 
     if (cachedVideoConfig) {
@@ -371,6 +422,8 @@ const App: React.FC = () => {
         const nextConfig = buildVideoConfigFromResult(
           nextResult,
           cachedGlobalConfig.titleAlignment || 'center',
+          cachedGlobalConfig.titleFontSize || 64,
+          cachedGlobalConfig.contentFontSize || 32,
           createDefaultVideoCanvasConfig()
         );
         setVideoConfig(nextConfig);
@@ -389,20 +442,45 @@ const App: React.FC = () => {
       imageLayoutMode,
       sceneLayout,
       titleAlignment,
+      titleFontSize,
+      contentFontSize,
+      quoteFontSize,
+      maxQuoteDepth,
+      defaultQuoteMaxLimit,
+      sceneBackgroundColor,
+      itemBackgroundColor,
     });
-  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment]);
+  }, [commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment, titleFontSize, contentFontSize, quoteFontSize, maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor]);
 
   // 当抓取结果更新时，自动同步到草稿配置
   useEffect(() => {
     if (result) {
       const newConfig: VideoConfig = {
-        ...buildVideoConfigFromResult(result, titleAlignment, draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()),
+        ...buildVideoConfigFromResult(
+          result, 
+          titleAlignment, 
+          titleFontSize, 
+          contentFontSize,
+          draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
+        ),
         imageLayoutMode: imageLayoutMode, // 使用当前全局设置
         titleAlignment: titleAlignment, // 使用当前全局设置
+        titleFontSize: titleFontSize,
+        contentFontSize: contentFontSize,
+        quoteFontSize: quoteFontSize,
+        maxQuoteDepth: maxQuoteDepth,
+        defaultQuoteMaxLimit: defaultQuoteMaxLimit,
+        sceneBackgroundColor: sceneBackgroundColor,
+        itemBackgroundColor: itemBackgroundColor,
       };
       
-      // 统一应用当前场景布局
-      newConfig.scenes = newConfig.scenes.map(s => ({ ...s, layout: sceneLayout }));
+      // 统一应用当前场景布局，并保持全局颜色设置
+      newConfig.scenes = newConfig.scenes.map((scene) => ({
+        ...scene,
+        layout: sceneLayout,
+        backgroundColor: sceneBackgroundColor,
+        items: scene.items.map((item) => ({ ...item, backgroundColor: itemBackgroundColor })),
+      }));
       
       setVideoConfig(newConfig);
       setDraftConfig(newConfig);
@@ -575,6 +653,8 @@ const App: React.FC = () => {
       ...buildVideoConfigFromResult(
         nextResult,
         titleAlignment,
+        titleFontSize,
+        contentFontSize,
         draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
       ),
       imageLayoutMode: draftConfig.imageLayoutMode,
@@ -853,15 +933,16 @@ const App: React.FC = () => {
                   const newScenes = draftConfig.scenes.map(scene => {
                     if (scene.type === 'post' && scene.items.length > 0) {
                       const newItems = scene.items.map(item => {
-                        // 寻找 [style ... size=32 ...] 标签并替换 align
-                        // 这里的正则匹配 [style ... size=32 ... b ...] 结构
                         let newContent = item.content;
-                        if (newContent.includes('size=32')) {
-                          if (newContent.includes('align=')) {
-                            newContent = newContent.replace(/align=[^ \]]+/, `align=${alignment}`);
-                          } else {
-                            newContent = newContent.replace(/\[style ([^\]]*size=32[^\]]*)\]/, `[style $1 align=${alignment}]`);
-                          }
+                        // 寻找标题 style 块（带 b 的那个）
+                        if (newContent.includes('[style') && newContent.includes(' b')) {
+                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+                            if (match.includes('align=')) {
+                              return match.replace(/align=[^ \]]+/, `align=${alignment}`);
+                            } else {
+                              return match.slice(0, -1) + ` align=${alignment}]`;
+                            }
+                          });
                         }
                         return { ...item, content: newContent };
                       });
@@ -871,6 +952,109 @@ const App: React.FC = () => {
                   });
 
                   const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleAlignment: alignment });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                titleFontSize={titleFontSize}
+                setTitleFontSize={(size) => {
+                  setTitleFontSize(size);
+                  const newScenes = draftConfig.scenes.map(scene => {
+                    if (scene.type === 'post' && scene.items.length > 0) {
+                      const newItems = scene.items.map(item => {
+                        let newContent = item.content;
+                        // 寻找标题 style 块（带 b 的那个）并替换 size
+                        if (newContent.includes('[style') && newContent.includes(' b')) {
+                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+                            if (match.includes('size=')) {
+                              return match.replace(/size=\d+/, `size=${size}`);
+                            } else {
+                              return match.slice(0, -1) + ` size=${size}]`;
+                            }
+                          });
+                        }
+                        return { ...item, content: newContent };
+                      });
+                      return { ...scene, items: newItems };
+                    }
+                    return scene;
+                  });
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleFontSize: size });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                contentFontSize={contentFontSize}
+                setContentFontSize={(size) => {
+                  setContentFontSize(size);
+                  const newScenes = draftConfig.scenes.map(scene => {
+                    const newItems = scene.items.map(item => {
+                      let newContent = item.content;
+                      // 替换正文的 size (不带 b 的 style 或者是除了第一个之外的)
+                      // 这里我们采用全局替换所有不带 b 的 size
+                      newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
+                        if (part.startsWith('[style') && !part.includes(' b')) {
+                          if (part.includes('size=')) {
+                            return part.replace(/size=\d+/, `size=${size}`);
+                          } else {
+                            return part.slice(0, -1) + ` size=${size}]`;
+                          }
+                        }
+                        return part;
+                      }).join('');
+                      return { ...item, content: newContent };
+                    });
+                    return { ...scene, items: newItems };
+                  });
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, contentFontSize: size });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                quoteFontSize={quoteFontSize}
+                setQuoteFontSize={(size) => {
+                  setQuoteFontSize(size);
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteFontSize: size });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                maxQuoteDepth={maxQuoteDepth}
+                setMaxQuoteDepth={(depth) => {
+                  setMaxQuoteDepth(depth);
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, maxQuoteDepth: depth });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+                setDefaultQuoteMaxLimit={(limit) => {
+                  setDefaultQuoteMaxLimit(limit);
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, defaultQuoteMaxLimit: limit });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                sceneBackgroundColor={sceneBackgroundColor}
+                setSceneBackgroundColor={(color) => {
+                  setSceneBackgroundColor(color);
+                  const newScenes = draftConfig.scenes.map(scene => ({
+                    ...scene,
+                    backgroundColor: color
+                  }));
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, sceneBackgroundColor: color });
+                  setDraftConfig(newConfig);
+                  setVideoConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                itemBackgroundColor={itemBackgroundColor}
+                setItemBackgroundColor={(color) => {
+                  setItemBackgroundColor(color);
+                  const newScenes = draftConfig.scenes.map(scene => ({
+                    ...scene,
+                    items: scene.items.map(item => ({ ...item, backgroundColor: color }))
+                  }));
+                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, itemBackgroundColor: color });
                   setDraftConfig(newConfig);
                   setVideoConfig(newConfig);
                   persistVideoConfig(newConfig);
@@ -956,12 +1140,14 @@ const App: React.FC = () => {
                     if (scene.type === 'post' && scene.items.length > 0) {
                       const newItems = scene.items.map(item => {
                         let newContent = item.content;
-                        if (newContent.includes('size=32')) {
-                          if (newContent.includes('align=')) {
-                            newContent = newContent.replace(/align=[^ \]]+/, `align=${alignment}`);
-                          } else {
-                            newContent = newContent.replace(/\[style ([^\]]*size=32[^\]]*)\]/, `[style $1 align=${alignment}]`);
-                          }
+                        if (newContent.includes('[style') && newContent.includes(' b')) {
+                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+                            if (match.includes('align=')) {
+                              return match.replace(/align=[^ \]]+/, `align=${alignment}`);
+                            } else {
+                              return match.slice(0, -1) + ` align=${alignment}]`;
+                            }
+                          });
                         }
                         return { ...item, content: newContent };
                       });
@@ -970,6 +1156,106 @@ const App: React.FC = () => {
                     return scene;
                   });
                   const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                titleFontSize={titleFontSize}
+                setTitleFontSize={(size) => {
+                  setTitleFontSize(size);
+                  const newScenes = videoConfig.scenes.map(scene => {
+                    if (scene.type === 'post' && scene.items.length > 0) {
+                      const newItems = scene.items.map(item => {
+                        let newContent = item.content;
+                        if (newContent.includes('[style') && newContent.includes(' b')) {
+                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+                            if (match.includes('size=')) {
+                              return match.replace(/size=\d+/, `size=${size}`);
+                            } else {
+                              return match.slice(0, -1) + ` size=${size}]`;
+                            }
+                          });
+                        }
+                        return { ...item, content: newContent };
+                      });
+                      return { ...scene, items: newItems };
+                    }
+                    return scene;
+                  });
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontSize: size });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                contentFontSize={contentFontSize}
+                setContentFontSize={(size) => {
+                  setContentFontSize(size);
+                  const newScenes = videoConfig.scenes.map(scene => {
+                    const newItems = scene.items.map(item => {
+                      let newContent = item.content;
+                      newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
+                        if (part.startsWith('[style') && !part.includes(' b')) {
+                          if (part.includes('size=')) {
+                            return part.replace(/size=\d+/, `size=${size}`);
+                          } else {
+                            return part.slice(0, -1) + ` size=${size}]`;
+                          }
+                        }
+                        return part;
+                      }).join('');
+                      return { ...item, content: newContent };
+                    });
+                    return { ...scene, items: newItems };
+                  });
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontSize: size });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                quoteFontSize={quoteFontSize}
+                setQuoteFontSize={(size) => {
+                  setQuoteFontSize(size);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontSize: size });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                maxQuoteDepth={maxQuoteDepth}
+                setMaxQuoteDepth={(depth) => {
+                  setMaxQuoteDepth(depth);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, maxQuoteDepth: depth });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+                setDefaultQuoteMaxLimit={(limit) => {
+                  setDefaultQuoteMaxLimit(limit);
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, defaultQuoteMaxLimit: limit });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                sceneBackgroundColor={sceneBackgroundColor}
+                setSceneBackgroundColor={(color) => {
+                  setSceneBackgroundColor(color);
+                  const newScenes = videoConfig.scenes.map(scene => ({
+                    ...scene,
+                    backgroundColor: color
+                  }));
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, sceneBackgroundColor: color });
+                  setVideoConfig(newConfig);
+                  setDraftConfig(newConfig);
+                  persistVideoConfig(newConfig);
+                }}
+                itemBackgroundColor={itemBackgroundColor}
+                setItemBackgroundColor={(color) => {
+                  setItemBackgroundColor(color);
+                  const newScenes = videoConfig.scenes.map(scene => ({
+                    ...scene,
+                    items: scene.items.map(item => ({ ...item, backgroundColor: color }))
+                  }));
+                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
                   setVideoConfig(newConfig);
                   setDraftConfig(newConfig);
                   persistVideoConfig(newConfig);
@@ -988,6 +1274,7 @@ const App: React.FC = () => {
                     type: 'comments',
                     title: '新建画面格',
                     layout: 'top',
+                    backgroundColor: sceneBackgroundColor,
                     duration: 5,
                     items: [{
                       id: 'item-' + Date.now(),

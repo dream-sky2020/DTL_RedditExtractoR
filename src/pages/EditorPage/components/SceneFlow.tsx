@@ -1,8 +1,8 @@
 import React from 'react';
 import { Space, Typography, Pagination } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { SceneCard } from '../../../../components/SceneCard';
-import { VideoConfig, VideoScene } from '../../../../types';
+import { SceneCard } from '../../../components/SceneCard';
+import { VideoConfig, VideoScene } from '../../../types';
 
 interface SceneFlowProps {
   videoConfig: VideoConfig;
@@ -21,8 +21,6 @@ interface SceneFlowProps {
   isMultiSelectMode: boolean;
   selectedSceneIds: string[];
   onToggleSceneSelection: (id: string) => void;
-  layoutMode: 'list' | 'grid';
-  cardScale: number;
 }
 
 export const SceneFlow: React.FC<SceneFlowProps> = ({
@@ -42,8 +40,6 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
   isMultiSelectMode,
   selectedSceneIds,
   onToggleSceneSelection,
-  layoutMode,
-  cardScale,
 }) => {
   return (
     <div style={{ marginTop: 24 }}>
@@ -54,16 +50,14 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="scene-list" type="scene" isCombineEnabled direction={layoutMode === 'grid' ? 'horizontal' : 'vertical'}>
+        <Droppable droppableId="scene-list" type="scene" isCombineEnabled direction="vertical">
           {(provided) => (
             <div 
               id="editor-page-scene-list" 
               {...provided.droppableProps} 
               ref={provided.innerRef}
               style={{
-                display: layoutMode === 'grid' ? 'grid' : 'block',
-                gridTemplateColumns: layoutMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : 'none',
-                gap: layoutMode === 'grid' ? '16px' : '0',
+                display: 'block',
               }}
             >
               {pagedScenes.map((scene, localIdx) => {
@@ -80,7 +74,6 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
                         onUpdateScene={(updates) => onUpdateScene(scene.id, updates)}
                         onRemoveScene={() => onRemoveScene(scene.id)}
                         onPreviewScene={() => setPreviewSceneId(scene.id)}
-                        onPreviewScale={cardScale}
                         onReplaceScene={(nextScene) => replaceScene(scene.id, nextScene)}
                         innerRef={draggableProvided.innerRef}
                         draggableProps={draggableProvided.draggableProps}
