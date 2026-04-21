@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { message } from 'antd';
-import { VideoConfig } from '../types';
+import { VideoConfig } from '@/types';
 
 export const useVideoRender = (videoConfig: VideoConfig) => {
   const [isAutoRendering, setIsAutoRendering] = useState(false);

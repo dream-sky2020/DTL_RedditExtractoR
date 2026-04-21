@@ -4,19 +4,19 @@ import axios from 'axios';
 import { 
   transformRedditJson, 
   extractAuthorsFromRawData 
-} from '../utils/redditTransformer';
+} from '@/utils/redditTransformer';
 import { 
   AuthorProfile, 
   CommentSortMode, 
   ReplyOrderMode, 
   ColorArrangementSettings 
-} from '../types';
+} from '@/types';
 import { 
   RAW_REDDIT_DATA_STORAGE_KEY, 
   AUTHOR_PROFILES_STORAGE_KEY 
-} from '../constants/storage';
-import { hslToHex } from '../utils/color/hslToHex';
-import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
+} from '@/constants/storage';
+import { hslToHex } from '@/utils/color/hslToHex';
+import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
 
 export const useRedditData = (
   commentSortMode: CommentSortMode,

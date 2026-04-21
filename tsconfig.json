@@ -14,7 +14,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@components": ["src/components/index.ts"],
       "@components/*": ["src/components/*"],
+      "@hooks": ["src/hooks"],
       "@hooks/*": ["src/hooks/*"],
       "@config": ["video-config.json"],
       "VideoSettingsSidebarComponent_panel_compont": ["src/components/VideoSettingsSidebarComponent/index.tsx"],

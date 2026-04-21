@@ -6,8 +6,8 @@ import {
   ReplyOrderMode, 
   TitleAlignmentType, 
   ColorArrangementSettings 
-} from '../types';
-import { GLOBAL_CONFIG_STORAGE_KEY } from '../constants/storage';
+} from '@/types';
+import { GLOBAL_CONFIG_STORAGE_KEY } from '@/constants/storage';
 
 export const useGlobalSettings = () => {
   const [commentSortMode, setCommentSortMode] = useState<CommentSortMode>(DEFAULT_GLOBAL_SETTINGS.commentSortMode);

@@ -126,3 +126,13 @@ export interface VideoConfig {
   itemBackgroundColor?: string; // 默认项背景颜色
   canvas?: VideoCanvasConfig; // 画布尺寸配置（横版/竖版）
 }
+
+export interface AudioItem {
+  name: string;
+  path: string;
+  url: string;
+  alias: string;
+  tags: string[];
+  category?: string;
+  previewVolume: number;
+}

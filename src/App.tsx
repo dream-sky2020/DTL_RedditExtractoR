@@ -6,19 +6,19 @@ import './style/tables.css';
 import {
   transformRedditJson,
   extractAuthorsFromRawData,
-} from './utils/redditTransformer';
+} from '@/utils/redditTransformer';
 import {
   ToolKey,
   DEFAULT_GLOBAL_SETTINGS,
-} from './types';
-import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './rendering/videoCanvas';
-import { MainLayout } from './pages/MainPages';
+} from '@/types';
+import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from '@/rendering/videoCanvas';
+import { MainLayout } from '@/pages/MainPages';
 
 // Hooks
-import { useGlobalSettings } from './hooks/useGlobalSettings';
-import { useRedditData } from './hooks/useRedditData';
-import { useVideoRender } from './hooks/useVideoRender';
-import { useVideoConfig } from './hooks/useVideoConfig';
+import { useGlobalSettings } from '@hooks/useGlobalSettings';
+import { useRedditData } from '@hooks/useRedditData';
+import { useVideoRender } from '@hooks/useVideoRender';
+import { useVideoConfig } from '@hooks/useVideoConfig';
 
 // Constants
 import {
@@ -26,7 +26,7 @@ import {
   VIDEO_CONFIG_STORAGE_KEY,
   AUTHOR_PROFILES_STORAGE_KEY,
   GLOBAL_CONFIG_STORAGE_KEY,
-} from './constants/storage';
+} from '@/constants/storage';
 
 const App: React.FC = () => {
   // UI States

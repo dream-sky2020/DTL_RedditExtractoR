@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { VideoConfig, TitleAlignmentType } from '../types';
-import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from '../rendering/videoCanvas';
-import { VIDEO_CONFIG_STORAGE_KEY } from '../constants/storage';
+import { VideoConfig, TitleAlignmentType } from '@/types';
+import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from '@/rendering/videoCanvas';
+import { VIDEO_CONFIG_STORAGE_KEY } from '@/constants/storage';
 
 export const useVideoConfig = (
   result: any,
