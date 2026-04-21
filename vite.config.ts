@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'hslToHex_color_calculate_tool': path.resolve(__dirname, 'src/utils/color/hslToHex.ts'),
+      'pseudoRandom01_random_calculate_tool': path.resolve(__dirname, 'src/utils/random/pseudoRandom01.ts'),
       '@': path.resolve(__dirname, 'src'),
     }
   }

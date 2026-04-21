@@ -34,6 +34,7 @@ import {
 } from './types';
 import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './rendering/videoCanvas';
 import { hslToHex } from 'hslToHex_color_calculate_tool';
+import { pseudoRandom01 } from 'pseudoRandom01_random_calculate_tool';
 
 // Pages
 import { ExtractPage } from './pages/ExtractPage/index';
@@ -99,11 +100,6 @@ const App: React.FC = () => {
   const [renderProgress, setRenderProgress] = useState<{ percent: number, task: string, detail?: string } | null>(null);
   const [hasStoredRawData, setHasStoredRawData] = useState(false);
   const [selectedSceneIdx, setSelectedSceneIdx] = useState<number>(0);
-
-  const pseudoRandom01 = (seed: number, index: number) => {
-    const x = Math.sin(seed * 12.9898 + index * 78.233) * 43758.5453;
-    return x - Math.floor(x);
-  };
 
   const buildColorWithSettings = (index: number, settings: ColorArrangementSettings) => {
     const s = Math.max(20, Math.min(90, settings.saturation)) / 100;

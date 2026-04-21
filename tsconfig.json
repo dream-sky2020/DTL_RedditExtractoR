@@ -14,7 +14,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "hslToHex_color_calculate_tool": ["src/utils/color/hslToHex.ts"]
+      "hslToHex_color_calculate_tool": ["src/utils/color/hslToHex.ts"],
+      "pseudoRandom01_random_calculate_tool": ["src/utils/random/pseudoRandom01.ts"]
     }
   },
   "include": ["src/**/*"],
