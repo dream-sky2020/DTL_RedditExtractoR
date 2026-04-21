@@ -22,7 +22,7 @@ import {
 } from '../../components/VideoPreviewPlayer';
 import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
-import { VideoSettingsSidebar } from 'VideoSettingsSidebarCompont_panel_compont';
+import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode, ColorArrangementSettings } from '../../types';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';

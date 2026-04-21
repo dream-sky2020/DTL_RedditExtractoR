@@ -11,9 +11,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      'VideoSettingsSidebarCompont_panel_compont': path.resolve(__dirname, 'src/components/VideoSettingsSidebarCompont/index.tsx'),
+      'VideoSettingsSidebarComponent_panel_compont': path.resolve(__dirname, 'src/components/VideoSettingsSidebarComponent/index.tsx'),
       'hslToHex_color_calculate_tool': path.resolve(__dirname, 'src/utils/color/hslToHex.ts'),
       'pseudoRandom01_random_calculate_tool': path.resolve(__dirname, 'src/utils/random/pseudoRandom01.ts'),
+      '@components': path.resolve(__dirname, 'src/components'),
       '@hooks': path.resolve(__dirname, 'src/hooks'),
       '@config': path.resolve(__dirname, 'video-config.json'),
       '@': path.resolve(__dirname, 'src'),

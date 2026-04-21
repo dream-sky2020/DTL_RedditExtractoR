@@ -23,7 +23,7 @@ import {
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { SceneFlow } from './components/SceneFlow';
-import { VideoSettingsSidebar } from 'VideoSettingsSidebarCompont_panel_compont';
+import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
