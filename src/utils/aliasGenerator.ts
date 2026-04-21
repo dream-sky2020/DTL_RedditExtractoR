@@ -1,4 +1,4 @@
-import { AuthorProfile } from './redditTransformer';
+import { AuthorProfile } from '../types';
 
 const ADJECTIVES = [
   'Calm', 'Bright', 'Swift', 'Quiet', 'Clever', 'Kind', 'Brave', 'Sharp',

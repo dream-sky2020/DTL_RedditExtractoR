@@ -17,7 +17,7 @@ import {
   MergeCellsOutlined,
 } from '@ant-design/icons';
 import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../types';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 import { BasicMetaSection } from '../../../components/DashboardSettings/BasicMetaSection';
 import { SortStrategySection } from '../../../components/DashboardSettings/SortStrategySection';

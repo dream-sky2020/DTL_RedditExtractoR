@@ -1,3 +1,56 @@
+export type CommentSortMode = 'best' | 'top' | 'new' | 'old' | 'controversial';
+export type ReplyOrderMode = 'preserve' | 'global';
+
+export interface AuthorProfile {
+  alias?: string;
+  color?: string;
+}
+
+export type ColorArrangementMode = 'uniform' | 'randomized';
+
+export interface ColorArrangementSettings {
+  mode: ColorArrangementMode;
+  hueOffset: number;
+  hueStep: number;
+  saturation: number;
+  lightness: number;
+  seed: number;
+}
+
+export interface GlobalSettings {
+  commentSortMode: CommentSortMode;
+  replyOrderMode: ReplyOrderMode;
+  imageLayoutMode: 'gallery' | 'row' | 'single';
+  sceneLayout: 'top' | 'center';
+  titleAlignment: TitleAlignmentType;
+  titleFontSize: number;
+  contentFontSize: number;
+  quoteFontSize: number;
+  maxQuoteDepth: number;
+  defaultQuoteMaxLimit: number;
+  sceneBackgroundColor: string;
+  itemBackgroundColor: string;
+  quoteBackgroundColor: string;
+  quoteBorderColor: string;
+}
+
+export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  commentSortMode: 'best',
+  replyOrderMode: 'preserve',
+  imageLayoutMode: 'gallery',
+  sceneLayout: 'center',
+  titleAlignment: 'center',
+  titleFontSize: 64,
+  contentFontSize: 32,
+  quoteFontSize: 12,
+  maxQuoteDepth: 4,
+  defaultQuoteMaxLimit: 150,
+  sceneBackgroundColor: '#ffffff',
+  itemBackgroundColor: 'transparent',
+  quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
+  quoteBorderColor: '#e0e0e0',
+};
+
 export type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
 
 export interface ReplyInfo {

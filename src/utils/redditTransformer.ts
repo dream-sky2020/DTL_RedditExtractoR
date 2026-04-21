@@ -1,3 +1,5 @@
+import { CommentSortMode, ReplyOrderMode, AuthorProfile } from '../types';
+
 // 定义通用的输出格式
 export interface CleanComment {
     id: string;
@@ -24,13 +26,6 @@ export interface CleanPost {
         commentCount: number;
     };
     comments: CleanComment[];
-}
-
-export type CommentSortMode = 'best' | 'top' | 'new' | 'old' | 'controversial';
-export type ReplyOrderMode = 'preserve' | 'global';
-export interface AuthorProfile {
-    alias?: string;
-    color?: string;
 }
 
 export interface TransformOptions {

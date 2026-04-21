@@ -10,7 +10,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import { VideoConfig, VideoScene, TitleAlignmentType, ImageLayoutMode, SceneLayoutType } from '../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../types';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { Sidebar } from './components/Sidebar';

@@ -17,13 +17,21 @@ import './style/style.css';
 import './style/tables.css';
 import {
   transformRedditJson,
-  CommentSortMode,
-  ReplyOrderMode,
-  AuthorProfile,
   extractAuthorsFromRawData,
 } from './utils/redditTransformer';
 import { generateRandomAliasProfiles } from './utils/aliasGenerator';
-import { VideoConfig, VideoScene, TitleAlignmentType, ToolKey } from './types';
+import {
+  VideoConfig,
+  VideoScene,
+  TitleAlignmentType,
+  ToolKey,
+  CommentSortMode,
+  ReplyOrderMode,
+  AuthorProfile,
+  ColorArrangementSettings,
+  GlobalSettings,
+  DEFAULT_GLOBAL_SETTINGS,
+} from './types';
 import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from './rendering/videoCanvas';
 
 // Pages
@@ -49,50 +57,6 @@ const RAW_REDDIT_DATA_STORAGE_KEY = 'reddit-extractor.raw-reddit-data.v1';
 const VIDEO_CONFIG_STORAGE_KEY = 'reddit-extractor.video-config.v1';
 const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1';
 const GLOBAL_CONFIG_STORAGE_KEY = 'reddit-extractor.global-config.v1';
-
-type ColorArrangementMode = 'uniform' | 'randomized';
-interface ColorArrangementSettings {
-  mode: ColorArrangementMode;
-  hueOffset: number;
-  hueStep: number;
-  saturation: number;
-  lightness: number;
-  seed: number;
-}
-
-interface GlobalSettings {
-  commentSortMode: CommentSortMode;
-  replyOrderMode: ReplyOrderMode;
-  imageLayoutMode: 'gallery' | 'row' | 'single';
-  sceneLayout: 'top' | 'center';
-  titleAlignment: TitleAlignmentType;
-  titleFontSize: number;
-  contentFontSize: number;
-  quoteFontSize: number;
-  maxQuoteDepth: number;
-  defaultQuoteMaxLimit: number;
-  sceneBackgroundColor: string;
-  itemBackgroundColor: string;
-  quoteBackgroundColor: string;
-  quoteBorderColor: string;
-}
-
-const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
-  commentSortMode: 'best',
-  replyOrderMode: 'preserve',
-  imageLayoutMode: 'gallery',
-  sceneLayout: 'center',
-  titleAlignment: 'center',
-  titleFontSize: 64,
-  contentFontSize: 32,
-  quoteFontSize: 12,
-  maxQuoteDepth: 4,
-  defaultQuoteMaxLimit: 150,
-  sceneBackgroundColor: '#ffffff',
-  itemBackgroundColor: 'transparent',
-  quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
-  quoteBorderColor: '#e0e0e0',
-};
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);

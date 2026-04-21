@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Radio, Slider } from 'antd';
 import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../utils/redditTransformer';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../../types';
 import { BasicMetaSection } from '../../../components/DashboardSettings/BasicMetaSection';
 import { SortStrategySection } from '../../../components/DashboardSettings/SortStrategySection';
 import { LayoutSection } from '../../../components/DashboardSettings/LayoutSection';

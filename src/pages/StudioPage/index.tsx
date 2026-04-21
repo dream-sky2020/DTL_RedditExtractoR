@@ -25,7 +25,7 @@ import {
 import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { Sidebar } from './components/Sidebar';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../types';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';

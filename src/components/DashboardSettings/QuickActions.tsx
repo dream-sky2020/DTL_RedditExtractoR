@@ -1,7 +1,7 @@
 import React from 'react';
 import { Space, Button, Row, Col } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
+import { CommentSortMode, ReplyOrderMode } from '../../types';
 
 interface QuickActionsProps {
   idPrefix?: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Form, Select, Typography } from 'antd';
-import { CommentSortMode, ReplyOrderMode } from '../../utils/redditTransformer';
+import { CommentSortMode, ReplyOrderMode } from '../../types';
 
 const { Text } = Typography;
 
