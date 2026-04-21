@@ -478,112 +478,6 @@ const App: React.FC = () => {
     }
   };
 
-  const rebuildFromRaw = (
-    sortMode: CommentSortMode,
-    replyOrder: ReplyOrderMode,
-    profiles: Record<string, AuthorProfile>,
-    successMessage: string,
-  ) => {
-    if (!rawResult) {
-      message.warning('请先提取 Reddit 数据，再进行排序重排');
-      return;
-    }
-
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
-
-    const nextResult = transformRedditJson(rawResult, {
-      sortMode,
-      replyOrder,
-      authorProfiles: profiles,
-      imageLayoutMode: draftConfig.imageLayoutMode,
-    });
-    const nextConfig = {
-      ...buildVideoConfigFromResult(
-        nextResult,
-        titleAlignment,
-        titleFontSize,
-        contentFontSize,
-        draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
-      ),
-      imageLayoutMode: draftConfig.imageLayoutMode,
-    };
-
-    setResult(nextResult);
-    setVideoConfig(nextConfig);
-    setDraftConfig(nextConfig);
-    message.success(successMessage);
-  };
-
-  const applyCommentSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
-    rebuildFromRaw(sortMode, replyOrder, authorProfiles, '评论排序已应用并重排脚本');
-  };
-
-  const updateAuthorProfile = (
-    author: string,
-    updates: Partial<AuthorProfile>,
-  ) => {
-    setAuthorProfiles((prev) => {
-      const next = {
-        ...prev,
-        [author]: {
-          ...(prev[author] || {}),
-          ...updates,
-        },
-      };
-      persistAuthorProfiles(next); // 持久化更新
-      return next;
-    });
-  };
-
-  const applyIdentityAndSortInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
-    applyCommentSortInEditor(sortMode, replyOrder);
-  };
-
-  const randomizeAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
-    const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles);
-    setAuthorProfiles(nextProfiles);
-    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已随机生成代号并重建脚本');
-  };
-
-  const clearAliasesAndApplyInEditor = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
-    const nextProfiles: Record<string, AuthorProfile> = { ...authorProfiles };
-    allAuthors.forEach((author) => {
-      const existing = nextProfiles[author] || {};
-      nextProfiles[author] = {
-        ...existing,
-        alias: '',
-      };
-    });
-    setAuthorProfiles(nextProfiles);
-    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已清空所有代号并重建脚本');
-  };
-
-  const rearrangeColorsAndApplyInEditor = (
-    sortMode: CommentSortMode,
-    replyOrder: ReplyOrderMode,
-    nextSettings: ColorArrangementSettings,
-  ) => {
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
-    const normalizedSettings = {
-      ...nextSettings,
-      saturation: Math.max(20, Math.min(90, nextSettings.saturation)),
-      lightness: Math.max(20, Math.min(80, nextSettings.lightness)),
-      hueStep: Math.max(1, Math.min(359, nextSettings.hueStep)),
-    };
-    setColorArrangement(normalizedSettings);
-    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, normalizedSettings, true);
-    setAuthorProfiles(nextProfiles);
-    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已按新规则重排颜色并重建脚本');
-  };
-
   const copyToClipboard = async () => {
     if (!result) return;
 
@@ -705,8 +599,18 @@ const App: React.FC = () => {
       setVideoConfig={setVideoConfig}
       draftConfig={draftConfig}
       setDraftConfig={setDraftConfig}
+      persistVideoConfig={persistVideoConfig}
       commentSortMode={commentSortMode}
+      setCommentSortMode={setCommentSortMode}
       replyOrderMode={replyOrderMode}
+      setReplyOrderMode={setReplyOrderMode}
+      setResult={setResult}
+      colorArrangement={colorArrangement}
+      setColorArrangement={setColorArrangement}
+      allAuthors={allAuthors}
+      authorProfiles={authorProfiles}
+      setAuthorProfiles={setAuthorProfiles}
+      persistAuthorProfiles={persistAuthorProfiles}
       imageLayoutMode={imageLayoutMode}
       setImageLayoutMode={setImageLayoutMode}
       sceneLayout={sceneLayout}
@@ -731,19 +635,10 @@ const App: React.FC = () => {
       setQuoteBackgroundColor={setQuoteBackgroundColor}
       quoteBorderColor={quoteBorderColor}
       setQuoteBorderColor={setQuoteBorderColor}
-      allAuthors={allAuthors}
-      authorProfiles={authorProfiles}
-      updateAuthorProfile={updateAuthorProfile}
-      colorArrangement={colorArrangement}
       fetchRedditData={fetchRedditData}
       clearPersistedRawRedditData={clearPersistedRawRedditData}
       copyToClipboard={copyToClipboard}
-      applyIdentityAndSortInEditor={applyIdentityAndSortInEditor}
-      randomizeAliasesAndApplyInEditor={randomizeAliasesAndApplyInEditor}
-      clearAliasesAndApplyInEditor={clearAliasesAndApplyInEditor}
-      rearrangeColorsAndApplyInEditor={rearrangeColorsAndApplyInEditor}
       normalizeVideoConfig={normalizeVideoConfig}
-      persistVideoConfig={persistVideoConfig}
       onMenuSelect={onMenuSelect}
       isExportModalVisible={isExportModalVisible}
       setIsExportModalVisible={setIsExportModalVisible}

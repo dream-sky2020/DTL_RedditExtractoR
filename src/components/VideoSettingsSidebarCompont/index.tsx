@@ -1,0 +1,577 @@
+import React, { useState } from 'react';
+import {
+  InputNumber,
+  Space,
+  Button,
+  Typography,
+  Divider,
+  Form,
+  Radio,
+  Slider,
+  message,
+} from 'antd';
+import {
+  EditOutlined,
+  DownOutlined,
+  UpOutlined,
+  SelectOutlined,
+  DeleteOutlined,
+  MergeCellsOutlined,
+  LayoutOutlined,
+} from '@ant-design/icons';
+import { 
+  VideoConfig, 
+  ImageLayoutMode, 
+  SceneLayoutType, 
+  TitleAlignmentType,
+  AuthorProfile, 
+  CommentSortMode, 
+  ReplyOrderMode,
+  ColorArrangementSettings,
+  VideoScene
+} from '../../types';
+import { BasicMetaSection } from '../DashboardSettings/BasicMetaSection';
+import { SortStrategySection } from '../DashboardSettings/SortStrategySection';
+import { LayoutSection } from '../DashboardSettings/LayoutSection';
+import { CanvasConfigSection } from '../DashboardSettings/CanvasConfigSection';
+import { TypographySection } from '../DashboardSettings/TypographySection';
+import { DefaultColorsSection } from '../DashboardSettings/DefaultColorsSection';
+import { QuoteStyleSection } from '../DashboardSettings/QuoteStyleSection';
+import { PrivacyConfigPanel } from '../DashboardSettings/PrivacyConfigPanel';
+import { QuickActions } from '../DashboardSettings/QuickActions';
+import { mergeSelectedScenes } from '../../utils/sceneMergeEngine';
+
+const { Text } = Typography;
+
+interface VideoSettingsSidebarProps {
+  // Sidebar UI State
+  sidebarWidth: number;
+  SIDEBAR_MIN_WIDTH: number;
+  SIDEBAR_MAX_WIDTH: number;
+  FIXED_SIDEBAR_TOP_OFFSET: number;
+  isSidebarResizing: boolean;
+  startSidebarResize: (event: React.MouseEvent<HTMLDivElement>) => void;
+  updateSidebarWidthByInput: (value: number | null) => void;
+  resetSidebarWidthToDefault: () => void;
+
+  // Header
+  toolTitle?: string;
+  toolDesc?: string;
+
+  // Video Config & State
+  draftConfig: VideoConfig;
+  setDraftConfig: (config: VideoConfig) => void;
+  
+  // Shared Settings Logic
+  commentSortMode: CommentSortMode;
+  replyOrderMode: ReplyOrderMode;
+  imageLayoutMode: ImageLayoutMode;
+  sceneLayout: SceneLayoutType;
+  titleAlignment: TitleAlignmentType;
+  titleFontSize: number;
+  contentFontSize: number;
+  quoteFontSize: number;
+  maxQuoteDepth: number;
+  defaultQuoteMaxLimit: number;
+  sceneBackgroundColor: string;
+  itemBackgroundColor: string;
+  quoteBackgroundColor: string;
+  quoteBorderColor: string;
+  
+  // Handlers for Settings (Moving logic here)
+  onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  onRandomizeAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  onClearAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  onRearrangeColorsAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode, settings: ColorArrangementSettings) => void;
+  onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
+  onImageLayoutModeChange: (mode: ImageLayoutMode) => void;
+  onSceneLayoutChange: (layout: SceneLayoutType) => void;
+  onTitleAlignmentChange: (alignment: TitleAlignmentType) => void;
+  onTitleFontSizeChange: (size: number) => void;
+  onContentFontSizeChange: (size: number) => void;
+  onQuoteFontSizeChange: (size: number) => void;
+  onMaxQuoteDepthChange: (depth: number) => void;
+  onDefaultQuoteMaxLimitChange: (limit: number) => void;
+  onSceneBackgroundColorChange: (color: string) => void;
+  onItemBackgroundColorChange: (color: string) => void;
+  onQuoteBackgroundColorChange: (color: string) => void;
+  onQuoteBorderColorChange: (color: string) => void;
+  onSetAllSceneLayouts: (layout: 'top' | 'center') => void;
+  onAddScene: () => void;
+
+  // Shared Data
+  canApplyCommentSort: boolean;
+  allAuthors: string[];
+  authorProfiles: Record<string, AuthorProfile>;
+  colorArrangement: ColorArrangementSettings;
+  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
+
+  // Mode-Specific Features
+  mode: 'editor' | 'studio';
+
+  // Editor-Specific
+  isMultiSelectMode?: boolean;
+  setIsMultiSelectMode?: (mode: boolean) => void;
+  selectedSceneIds?: string[];
+  setSelectedSceneIds?: (ids: string[]) => void;
+  onRemoveSelectedScenes?: () => void;
+
+  // Studio-Specific
+  galleryPageSize?: number;
+  setGalleryPageSize?: (size: number) => void;
+  previewLayoutMode?: 'auto' | 'fixed';
+  setPreviewLayoutMode?: (mode: 'auto' | 'fixed') => void;
+  previewMinWidth?: number;
+  setPreviewMinWidth?: (width: number) => void;
+}
+
+export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props) => {
+  const {
+    sidebarWidth,
+    SIDEBAR_MIN_WIDTH,
+    SIDEBAR_MAX_WIDTH,
+    FIXED_SIDEBAR_TOP_OFFSET,
+    isSidebarResizing,
+    startSidebarResize,
+    updateSidebarWidthByInput,
+    resetSidebarWidthToDefault,
+    toolTitle = '操作面板',
+    toolDesc,
+    draftConfig,
+    setDraftConfig,
+    commentSortMode,
+    replyOrderMode,
+    imageLayoutMode,
+    sceneLayout,
+    titleAlignment,
+    titleFontSize,
+    contentFontSize,
+    quoteFontSize,
+    maxQuoteDepth,
+    defaultQuoteMaxLimit,
+    sceneBackgroundColor,
+    itemBackgroundColor,
+    quoteBackgroundColor,
+    quoteBorderColor,
+    onApplyCommentSort,
+    onRandomizeAliasesAndApply,
+    onClearAliasesAndApply,
+    onRearrangeColorsAndApply,
+    onUpdateAuthorProfile,
+    onImageLayoutModeChange,
+    onSceneLayoutChange,
+    onTitleAlignmentChange,
+    onTitleFontSizeChange,
+    onContentFontSizeChange,
+    onQuoteFontSizeChange,
+    onMaxQuoteDepthChange,
+    onDefaultQuoteMaxLimitChange,
+    onSceneBackgroundColorChange,
+    onItemBackgroundColorChange,
+    onQuoteBackgroundColorChange,
+    onQuoteBorderColorChange,
+    onSetAllSceneLayouts,
+    onAddScene,
+    canApplyCommentSort,
+    allAuthors,
+    authorProfiles,
+    colorArrangement,
+    setColorArrangement,
+    mode,
+    // Editor specific
+    isMultiSelectMode,
+    setIsMultiSelectMode,
+    selectedSceneIds,
+    setSelectedSceneIds,
+    onRemoveSelectedScenes,
+    // Studio specific
+    galleryPageSize,
+    setGalleryPageSize,
+    previewLayoutMode,
+    setPreviewLayoutMode,
+    previewMinWidth,
+    setPreviewMinWidth,
+  } = props;
+
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
+  const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
+  const [isMultiSelectCollapsed, setIsMultiSelectCollapsed] = useState(false);
+
+  return (
+    <div
+      id={`${mode}-page-sidebar`}
+      style={{
+        position: 'fixed',
+        right: 0,
+        top: FIXED_SIDEBAR_TOP_OFFSET,
+        bottom: 0,
+        width: sidebarWidth,
+        overflowY: 'auto',
+        zIndex: 20,
+        borderLeft: '1px solid var(--brand-border)',
+        background: 'var(--brand-dark)',
+      }}
+    >
+      <div
+        id={`${mode}-page-sidebar-resizer`}
+        role="separator"
+        aria-label="调整右侧面板宽度"
+        onMouseDown={startSidebarResize}
+        style={{
+          position: 'absolute',
+          left: -4,
+          top: 0,
+          bottom: 0,
+          width: 8,
+          cursor: 'col-resize',
+          zIndex: 21,
+          background: isSidebarResizing ? 'rgba(24,144,255,0.22)' : 'transparent',
+        }}
+      />
+      <div
+        id={`${mode}-page-sidebar-inner`}
+        style={{
+          borderRadius: 0,
+          border: 'none',
+          background: 'transparent',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          id={`${mode}-page-sidebar-header`}
+          style={{
+            padding: '10px 14px',
+            borderBottom: '1px solid var(--brand-border)',
+            background: 'var(--brand-dark)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Space size="small">
+            <EditOutlined style={{ color: 'var(--text-primary)' }} />
+            <Text strong style={{ color: 'var(--text-primary)' }}>{toolTitle}</Text>
+          </Space>
+          {toolDesc && <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{toolDesc}</Text>}
+        </div>
+
+        <div id={`${mode}-page-sidebar-content`} style={{ padding: 16 }}>
+          {/* Sidebar Width Config */}
+          <div
+            id={`${mode}-page-sidebar-width-config`}
+            style={{
+              marginBottom: 16,
+              padding: 12,
+              borderRadius: 8,
+              border: '1px solid var(--brand-border)',
+              background: 'var(--panel-bg-translucent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}
+          >
+            <Text strong style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>侧栏宽度</Text>
+            <Space size="small" align="center">
+              <Space.Compact style={{ width: 110 }}>
+                <InputNumber
+                  min={SIDEBAR_MIN_WIDTH}
+                  max={SIDEBAR_MAX_WIDTH}
+                  value={sidebarWidth}
+                  onChange={updateSidebarWidthByInput}
+                  style={{ width: '100%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
+                />
+                <Button disabled style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>px</Button>
+              </Space.Compact>
+              <Button onClick={resetSidebarWidthToDefault} size="small" style={{ color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }}>还原</Button>
+            </Space>
+          </div>
+
+          {/* Studio Specific: Gallery Config */}
+          {mode === 'studio' && setPreviewLayoutMode && (
+            <div
+              id="studio-page-view-config-panel"
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                border: '1px solid var(--brand-border)',
+                background: 'var(--panel-bg-translucent)',
+                marginBottom: 16
+              }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space>
+                  <LayoutOutlined style={{ color: 'var(--text-primary)' }} />
+                  <Text strong style={{ color: 'var(--text-primary)' }}>图库显示设置</Text>
+                </Space>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>布局模式</Text>
+                  <Radio.Group
+                    value={previewLayoutMode}
+                    onChange={(e) => setPreviewLayoutMode(e.target.value)}
+                    size="small"
+                    style={{ marginBottom: 12 }}
+                  >
+                    <Radio.Button value="auto">自动适配列数</Radio.Button>
+                    <Radio.Button value="fixed">固定分页数量</Radio.Button>
+                  </Radio.Group>
+                </div>
+                {previewLayoutMode === 'auto' && setPreviewMinWidth ? (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+                      每个预览最小宽度（px）
+                    </Text>
+                    <Space direction="vertical" style={{ width: '100%' }} size={6}>
+                      <Slider
+                        min={180}
+                        max={520}
+                        step={10}
+                        value={previewMinWidth}
+                        onChange={(value) => setPreviewMinWidth(value)}
+                      />
+                      <Space.Compact style={{ width: 120 }}>
+                        <InputNumber
+                          min={180}
+                          max={520}
+                          value={previewMinWidth}
+                          onChange={(value) => setPreviewMinWidth(value ?? 280)}
+                          style={{ width: '100%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
+                        />
+                        <Button disabled style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>px</Button>
+                      </Space.Compact>
+                    </Space>
+                  </div>
+                ) : (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>每页显示数量</Text>
+                    <Radio.Group
+                      value={galleryPageSize}
+                      onChange={e => setGalleryPageSize?.(e.target.value)}
+                      size="small"
+                    >
+                      <Radio.Button value={12}>12</Radio.Button>
+                      <Radio.Button value={24}>24</Radio.Button>
+                      <Radio.Button value={48}>48</Radio.Button>
+                    </Radio.Group>
+                  </div>
+                )}
+              </Space>
+            </div>
+          )}
+
+          {/* Global Config Section */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text strong style={{ color: 'var(--text-primary)' }}>整体配置</Text>
+            <Button
+              size="small"
+              type="text"
+              onClick={() => setIsConfigCollapsed((prev) => !prev)}
+              icon={isConfigCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {isConfigCollapsed ? '展开' : '收起'}
+            </Button>
+          </div>
+          {!isConfigCollapsed && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                background: 'var(--panel-bg-darker)',
+                border: '1px solid var(--brand-border)',
+                marginBottom: 16,
+              }}
+            >
+              <Form layout="vertical" variant="filled">
+                <BasicMetaSection idPrefix={mode} draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
+                <SortStrategySection
+                  idPrefix={mode}
+                  editorSortMode={commentSortMode}
+                  setEditorSortMode={(mode) => onApplyCommentSort(mode, replyOrderMode)}
+                  editorReplyOrderMode={replyOrderMode}
+                  setEditorReplyOrderMode={(order) => onApplyCommentSort(commentSortMode, order)}
+                />
+                <LayoutSection
+                  idPrefix={mode}
+                  titleAlignment={titleAlignment}
+                  setTitleAlignment={onTitleAlignmentChange}
+                  imageLayoutMode={imageLayoutMode}
+                  setImageLayoutMode={onImageLayoutModeChange}
+                  sceneLayout={sceneLayout}
+                  setSceneLayout={onSceneLayoutChange}
+                />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <CanvasConfigSection idPrefix={mode} draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <TypographySection
+                  titleFontSize={titleFontSize}
+                  setTitleFontSize={onTitleFontSizeChange}
+                  contentFontSize={contentFontSize}
+                  setContentFontSize={onContentFontSizeChange}
+                  quoteFontSize={quoteFontSize}
+                  setQuoteFontSize={onQuoteFontSizeChange}
+                  maxQuoteDepth={maxQuoteDepth}
+                  setMaxQuoteDepth={onMaxQuoteDepthChange}
+                  defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+                  setDefaultQuoteMaxLimit={onDefaultQuoteMaxLimitChange}
+                />
+                <DefaultColorsSection
+                  sceneBackgroundColor={sceneBackgroundColor}
+                  setSceneBackgroundColor={onSceneBackgroundColorChange}
+                  itemBackgroundColor={itemBackgroundColor}
+                  setItemBackgroundColor={onItemBackgroundColorChange}
+                />
+                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
+                <QuoteStyleSection
+                  quoteBackgroundColor={quoteBackgroundColor}
+                  setQuoteBackgroundColor={onQuoteBackgroundColorChange}
+                  quoteBorderColor={quoteBorderColor}
+                  setQuoteBorderColor={onQuoteBorderColorChange}
+                />
+              </Form>
+            </div>
+          )}
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          {/* Privacy Config Section */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text strong style={{ color: 'var(--text-primary)' }}>用户隐私与身份映射</Text>
+            <Button
+              size="small"
+              type="text"
+              onClick={() => setIsPrivacyCollapsed((prev) => !prev)}
+              icon={isPrivacyCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {isPrivacyCollapsed ? '展开' : '收起'}
+            </Button>
+          </div>
+          {!isPrivacyCollapsed && (
+            <PrivacyConfigPanel
+              idPrefix={mode}
+              editorColorArrangement={colorArrangement}
+              setEditorColorArrangement={setColorArrangement}
+              onRearrangeColorsAndApply={(sort, reply, settings) => onRearrangeColorsAndApply(sort, reply, settings)}
+              editorSortMode={commentSortMode}
+              editorReplyOrderMode={replyOrderMode}
+              allAuthors={allAuthors}
+              authorProfiles={authorProfiles}
+              onUpdateAuthorProfile={onUpdateAuthorProfile}
+            />
+          )}
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          {/* Editor Specific: Multi-select Section */}
+          {mode === 'editor' && setIsMultiSelectMode && selectedSceneIds && setSelectedSceneIds && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Space size="small">
+                  <SelectOutlined style={{ color: 'var(--text-primary)' }} />
+                  <Text strong style={{ color: 'var(--text-primary)' }}>多选模式</Text>
+                </Space>
+                <Button
+                  size="small"
+                  type="text"
+                  onClick={() => setIsMultiSelectCollapsed((prev) => !prev)}
+                  icon={isMultiSelectCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {isMultiSelectCollapsed ? '展开' : '收起'}
+                </Button>
+              </div>
+              {!isMultiSelectCollapsed && (
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    border: '1px solid var(--brand-border)',
+                    background: 'var(--panel-bg-translucent)',
+                  }}
+                >
+                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: 'var(--text-secondary)' }}>
+                      {isMultiSelectMode ? `已选择 ${selectedSceneIds.length} 个画面格` : '未开启多选模式'}
+                    </Text>
+                    <Button
+                      size="small"
+                      type={isMultiSelectMode ? 'primary' : 'default'}
+                      onClick={() => {
+                        setIsMultiSelectMode(!isMultiSelectMode);
+                        if (isMultiSelectMode) setSelectedSceneIds([]);
+                      }}
+                    >
+                      {isMultiSelectMode ? '退出多选' : '开启多选'}
+                    </Button>
+                  </div>
+                  {isMultiSelectMode && (
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button
+                        block
+                        danger
+                        icon={<DeleteOutlined />}
+                        disabled={selectedSceneIds.length === 0}
+                        onClick={onRemoveSelectedScenes}
+                      >
+                        批量删除
+                      </Button>
+                      <Button
+                        block
+                        icon={<MergeCellsOutlined />}
+                        disabled={selectedSceneIds.length < 2}
+                        onClick={() => {
+                          const result = mergeSelectedScenes({
+                            scenes: draftConfig.scenes,
+                            selectedSceneIds: selectedSceneIds,
+                            strategy: 'auto',
+                          });
+                          if (result.ok) {
+                            setDraftConfig({ ...draftConfig, scenes: result.scenes });
+                            setSelectedSceneIds([]);
+                            message.success(result.message || '合并成功');
+                          } else {
+                            message.error(result.message || '合并失败');
+                          }
+                        }}
+                      >
+                        批量合并
+                      </Button>
+                      <Button
+                        block
+                        size="small"
+                        onClick={() => setSelectedSceneIds([])}
+                        disabled={selectedSceneIds.length === 0}
+                      >
+                        清空选择
+                      </Button>
+                    </Space>
+                  )}
+                </div>
+              )}
+              <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+            </>
+          )}
+
+          {/* Quick Actions Section */}
+          <div style={{ marginBottom: 8 }}>
+            <Text strong style={{ color: 'var(--text-primary)' }}>画面流快捷操作</Text>
+          </div>
+          <QuickActions
+            idPrefix={mode}
+            canApplyCommentSort={canApplyCommentSort}
+            onApplyCommentSort={onApplyCommentSort}
+            editorSortMode={commentSortMode}
+            editorReplyOrderMode={replyOrderMode}
+            allAuthors={allAuthors}
+            onRandomizeAliasesAndApply={onRandomizeAliasesAndApply}
+            onClearAliasesAndApply={onClearAliasesAndApply}
+            setAllSceneLayouts={onSetAllSceneLayouts}
+            addScene={onAddScene}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -56,6 +56,7 @@ interface MainLayoutProps {
   error: string;
   errorDebug: string;
   result: any;
+  setResult: React.Dispatch<React.SetStateAction<any>>;
   rawResult: any;
   hasStoredRawData: boolean;
   
@@ -64,10 +65,13 @@ interface MainLayoutProps {
   setVideoConfig: React.Dispatch<React.SetStateAction<VideoConfig>>;
   draftConfig: VideoConfig;
   setDraftConfig: React.Dispatch<React.SetStateAction<VideoConfig>>;
+  persistVideoConfig: (config: VideoConfig) => void;
   
   // Preferences
   commentSortMode: CommentSortMode;
+  setCommentSortMode: React.Dispatch<React.SetStateAction<CommentSortMode>>;
   replyOrderMode: ReplyOrderMode;
+  setReplyOrderMode: React.Dispatch<React.SetStateAction<ReplyOrderMode>>;
   imageLayoutMode: 'gallery' | 'row' | 'single';
   setImageLayoutMode: React.Dispatch<React.SetStateAction<'gallery' | 'row' | 'single'>>;
   sceneLayout: 'top' | 'center';
@@ -96,19 +100,16 @@ interface MainLayoutProps {
   // Profiles
   allAuthors: string[];
   authorProfiles: Record<string, AuthorProfile>;
-  updateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
+  setAuthorProfiles: React.Dispatch<React.SetStateAction<Record<string, AuthorProfile>>>;
+  persistAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
   colorArrangement: ColorArrangementSettings;
+  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
   
   // Actions
   fetchRedditData: () => Promise<void>;
   clearPersistedRawRedditData: () => void;
   copyToClipboard: () => Promise<void>;
-  applyIdentityAndSortInEditor: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  randomizeAliasesAndApplyInEditor: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  clearAliasesAndApplyInEditor: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  rearrangeColorsAndApplyInEditor: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode, nextSettings: ColorArrangementSettings) => void;
   normalizeVideoConfig: (config: VideoConfig) => VideoConfig;
-  persistVideoConfig: (config: VideoConfig) => void;
   onMenuSelect: (info: { key: string }) => void;
   
   // Export/Render
@@ -128,17 +129,17 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = (props) => {
   const {
     collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool,
-    redditUrl, setRedditUrl, loading, error, errorDebug, result, rawResult, hasStoredRawData,
-    videoConfig, setVideoConfig, draftConfig, setDraftConfig,
-    commentSortMode, replyOrderMode, imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
+    redditUrl, setRedditUrl, loading, error, errorDebug, result, setResult, rawResult, hasStoredRawData,
+    videoConfig, setVideoConfig, draftConfig, setDraftConfig, persistVideoConfig,
+    commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode, 
+    imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
     titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize, contentFontSize, setContentFontSize,
     quoteFontSize, setQuoteFontSize, maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
     sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
-    allAuthors, authorProfiles, updateAuthorProfile, colorArrangement,
+    allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles, colorArrangement, setColorArrangement,
     fetchRedditData, clearPersistedRawRedditData, copyToClipboard,
-    applyIdentityAndSortInEditor, randomizeAliasesAndApplyInEditor, clearAliasesAndApplyInEditor,
-    rearrangeColorsAndApplyInEditor, normalizeVideoConfig, persistVideoConfig, onMenuSelect,
+    normalizeVideoConfig, onMenuSelect,
     isExportModalVisible, setIsExportModalVisible, isAutoRendering, autoRenderStatus, renderProgress,
     startAutoRender, downloadVideoConfig, selectedSceneIdx, setSelectedSceneIdx
   } = props;
@@ -283,190 +284,47 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
             {activeTool === 'editor' && (
               <EditorPage 
                 draftConfig={draftConfig}
-                setDraftConfig={(cfg) => {
-                  const normalizedConfig = normalizeVideoConfig(cfg);
-                  setDraftConfig(normalizedConfig);
-                  setVideoConfig(normalizedConfig); // 同时更新主配置，确保其他页面实时可见
-                  persistVideoConfig(normalizedConfig); // 持久化
-                }}
+                setDraftConfig={setDraftConfig}
+                videoConfig={videoConfig}
+                setVideoConfig={setVideoConfig}
+                persistVideoConfig={persistVideoConfig}
                 commentSortMode={commentSortMode}
+                setCommentSortMode={setCommentSortMode}
                 replyOrderMode={replyOrderMode}
-                onApplyCommentSort={applyIdentityAndSortInEditor}
-                onRandomizeAliasesAndApply={randomizeAliasesAndApplyInEditor}
-                onClearAliasesAndApply={clearAliasesAndApplyInEditor}
+                setReplyOrderMode={setReplyOrderMode}
+                rawResult={rawResult}
+                result={result}
+                setResult={setResult}
                 colorArrangement={colorArrangement}
-                onRearrangeColorsAndApply={rearrangeColorsAndApplyInEditor}
-                canApplyCommentSort={!!rawResult}
+                setColorArrangement={setColorArrangement}
                 allAuthors={allAuthors}
                 authorProfiles={authorProfiles}
-                onUpdateAuthorProfile={updateAuthorProfile}
+                setAuthorProfiles={setAuthorProfiles}
+                persistAuthorProfiles={persistAuthorProfiles}
                 imageLayoutMode={imageLayoutMode}
-                setImageLayoutMode={(mode) => {
-                  setImageLayoutMode(mode);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, imageLayoutMode: mode });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setImageLayoutMode={setImageLayoutMode}
                 sceneLayout={sceneLayout}
-                setSceneLayout={(layout) => {
-                  setSceneLayout(layout);
-                  const newScenes = draftConfig.scenes.map(s => ({ ...s, layout }));
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setSceneLayout={setSceneLayout}
                 titleAlignment={titleAlignment}
-                setTitleAlignment={(alignment) => {
-                  setTitleAlignment(alignment);
-                  
-                  // 同时更新所有 post 类型场景中标题的 align 属性
-                  const newScenes = draftConfig.scenes.map(scene => {
-                    if (scene.type === 'post' && scene.items.length > 0) {
-                      const newItems = scene.items.map(item => {
-                        let newContent = item.content;
-                        // 寻找标题 style 块（带 b 的那个）
-                        if (newContent.includes('[style') && newContent.includes(' b')) {
-                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-                            if (match.includes('align=')) {
-                              return match.replace(/align=[^ \]]+/, `align=${alignment}`);
-                            } else {
-                              return match.slice(0, -1) + ` align=${alignment}]`;
-                            }
-                          });
-                        }
-                        return { ...item, content: newContent };
-                      });
-                      return { ...scene, items: newItems };
-                    }
-                    return scene;
-                  });
-
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleAlignment: alignment });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setTitleAlignment={setTitleAlignment}
                 titleFontSize={titleFontSize}
-                setTitleFontSize={(size) => {
-                  setTitleFontSize(size);
-                  const newScenes = draftConfig.scenes.map(scene => {
-                    if (scene.type === 'post' && scene.items.length > 0) {
-                      const newItems = scene.items.map(item => {
-                        let newContent = item.content;
-                        // 寻找标题 style 块（带 b 的那个）并替换 size
-                        if (newContent.includes('[style') && newContent.includes(' b')) {
-                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-                            if (match.includes('size=')) {
-                              return match.replace(/size=\d+/, `size=${size}`);
-                            } else {
-                              return match.slice(0, -1) + ` size=${size}]`;
-                            }
-                          });
-                        }
-                        return { ...item, content: newContent };
-                      });
-                      return { ...scene, items: newItems };
-                    }
-                    return scene;
-                  });
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleFontSize: size });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setTitleFontSize={setTitleFontSize}
                 contentFontSize={contentFontSize}
-                setContentFontSize={(size) => {
-                  setContentFontSize(size);
-                  const newScenes = draftConfig.scenes.map(scene => {
-                    const newItems = scene.items.map(item => {
-                      let newContent = item.content;
-                      // 替换正文的 size (不带 b 的 style 或者是除了第一个之外的)
-                      // 这里我们采用全局替换所有不带 b 的 size
-                      newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
-                        if (part.startsWith('[style') && !part.includes(' b')) {
-                          if (part.includes('size=')) {
-                            return part.replace(/size=\d+/, `size=${size}`);
-                          } else {
-                            return part.slice(0, -1) + ` size=${size}]`;
-                          }
-                        }
-                        return part;
-                      }).join('');
-                      return { ...item, content: newContent };
-                    });
-                    return { ...scene, items: newItems };
-                  });
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, contentFontSize: size });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setContentFontSize={setContentFontSize}
                 quoteFontSize={quoteFontSize}
-                setQuoteFontSize={(size) => {
-                  setQuoteFontSize(size);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteFontSize: size });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteFontSize={setQuoteFontSize}
                 maxQuoteDepth={maxQuoteDepth}
-                setMaxQuoteDepth={(depth) => {
-                  setMaxQuoteDepth(depth);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, maxQuoteDepth: depth });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setMaxQuoteDepth={setMaxQuoteDepth}
                 defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-                setDefaultQuoteMaxLimit={(limit) => {
-                  setDefaultQuoteMaxLimit(limit);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, defaultQuoteMaxLimit: limit });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
                 sceneBackgroundColor={sceneBackgroundColor}
-                setSceneBackgroundColor={(color) => {
-                  setSceneBackgroundColor(color);
-                  const newScenes = draftConfig.scenes.map(scene => ({
-                    ...scene,
-                    backgroundColor: color
-                  }));
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, sceneBackgroundColor: color });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setSceneBackgroundColor={setSceneBackgroundColor}
                 itemBackgroundColor={itemBackgroundColor}
-                setItemBackgroundColor={(color) => {
-                  setItemBackgroundColor(color);
-                  const newScenes = draftConfig.scenes.map(scene => ({
-                    ...scene,
-                    items: scene.items.map(item => ({ ...item, backgroundColor: color }))
-                  }));
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, itemBackgroundColor: color });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setItemBackgroundColor={setItemBackgroundColor}
                 quoteBackgroundColor={quoteBackgroundColor}
-                setQuoteBackgroundColor={(color) => {
-                  setQuoteBackgroundColor(color);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBackgroundColor: color });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteBackgroundColor={setQuoteBackgroundColor}
                 quoteBorderColor={quoteBorderColor}
-                setQuoteBorderColor={(color) => {
-                  setQuoteBorderColor(color);
-                  const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBorderColor: color });
-                  setDraftConfig(newConfig);
-                  setVideoConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteBorderColor={setQuoteBorderColor}
                 onApply={() => {
                   const normalizedConfig = normalizeVideoConfig(draftConfig);
                   setVideoConfig(normalizedConfig);
@@ -503,214 +361,51 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
             {activeTool === 'studio' && (
               <StudioPage 
                 videoConfig={videoConfig}
-                setVideoConfig={(cfg) => {
-                  const normalizedConfig = normalizeVideoConfig(cfg);
-                  setVideoConfig(normalizedConfig);
-                  setDraftConfig(normalizedConfig);
-                  persistVideoConfig(normalizedConfig);
-                }}
+                setVideoConfig={setVideoConfig}
+                draftConfig={draftConfig}
+                setDraftConfig={setDraftConfig}
+                persistVideoConfig={persistVideoConfig}
                 onViewScene={(idx) => {
                   setSelectedSceneIdx(idx);
                   setActiveTool('studio_scene');
                 }}
                 commentSortMode={commentSortMode}
+                setCommentSortMode={setCommentSortMode}
                 replyOrderMode={replyOrderMode}
-                onApplyCommentSort={applyIdentityAndSortInEditor}
-                onRandomizeAliasesAndApply={randomizeAliasesAndApplyInEditor}
-                onClearAliasesAndApply={clearAliasesAndApplyInEditor}
+                setReplyOrderMode={setReplyOrderMode}
+                rawResult={rawResult}
+                result={result}
+                setResult={setResult}
                 colorArrangement={colorArrangement}
-                onRearrangeColorsAndApply={rearrangeColorsAndApplyInEditor}
-                canApplyCommentSort={!!rawResult}
+                setColorArrangement={setColorArrangement}
                 allAuthors={allAuthors}
                 authorProfiles={authorProfiles}
-                onUpdateAuthorProfile={updateAuthorProfile}
+                setAuthorProfiles={setAuthorProfiles}
+                persistAuthorProfiles={persistAuthorProfiles}
                 imageLayoutMode={imageLayoutMode}
-                setImageLayoutMode={(mode) => {
-                  setImageLayoutMode(mode);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, imageLayoutMode: mode });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setImageLayoutMode={setImageLayoutMode}
                 sceneLayout={sceneLayout}
-                setSceneLayout={(layout) => {
-                  setSceneLayout(layout);
-                  const newScenes = videoConfig.scenes.map(s => ({ ...s, layout }));
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setSceneLayout={setSceneLayout}
                 titleAlignment={titleAlignment}
-                setTitleAlignment={(alignment) => {
-                  setTitleAlignment(alignment);
-                  const newScenes = videoConfig.scenes.map(scene => {
-                    if (scene.type === 'post' && scene.items.length > 0) {
-                      const newItems = scene.items.map(item => {
-                        let newContent = item.content;
-                        if (newContent.includes('[style') && newContent.includes(' b')) {
-                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-                            if (match.includes('align=')) {
-                              return match.replace(/align=[^ \]]+/, `align=${alignment}`);
-                            } else {
-                              return match.slice(0, -1) + ` align=${alignment}]`;
-                            }
-                          });
-                        }
-                        return { ...item, content: newContent };
-                      });
-                      return { ...scene, items: newItems };
-                    }
-                    return scene;
-                  });
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setTitleAlignment={setTitleAlignment}
                 titleFontSize={titleFontSize}
-                setTitleFontSize={(size) => {
-                  setTitleFontSize(size);
-                  const newScenes = videoConfig.scenes.map(scene => {
-                    if (scene.type === 'post' && scene.items.length > 0) {
-                      const newItems = scene.items.map(item => {
-                        let newContent = item.content;
-                        if (newContent.includes('[style') && newContent.includes(' b')) {
-                          newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-                            if (match.includes('size=')) {
-                              return match.replace(/size=\d+/, `size=${size}`);
-                            } else {
-                              return match.slice(0, -1) + ` size=${size}]`;
-                            }
-                          });
-                        }
-                        return { ...item, content: newContent };
-                      });
-                      return { ...scene, items: newItems };
-                    }
-                    return scene;
-                  });
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontSize: size });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setTitleFontSize={setTitleFontSize}
                 contentFontSize={contentFontSize}
-                setContentFontSize={(size) => {
-                  setContentFontSize(size);
-                  const newScenes = videoConfig.scenes.map(scene => {
-                    const newItems = scene.items.map(item => {
-                      let newContent = item.content;
-                      newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
-                        if (part.startsWith('[style') && !part.includes(' b')) {
-                          if (part.includes('size=')) {
-                            return part.replace(/size=\d+/, `size=${size}`);
-                          } else {
-                            return part.slice(0, -1) + ` size=${size}]`;
-                          }
-                        }
-                        return part;
-                      }).join('');
-                      return { ...item, content: newContent };
-                    });
-                    return { ...scene, items: newItems };
-                  });
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontSize: size });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setContentFontSize={setContentFontSize}
                 quoteFontSize={quoteFontSize}
-                setQuoteFontSize={(size) => {
-                  setQuoteFontSize(size);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontSize: size });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteFontSize={setQuoteFontSize}
                 maxQuoteDepth={maxQuoteDepth}
-                setMaxQuoteDepth={(depth) => {
-                  setMaxQuoteDepth(depth);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, maxQuoteDepth: depth });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setMaxQuoteDepth={setMaxQuoteDepth}
                 defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-                setDefaultQuoteMaxLimit={(limit) => {
-                  setDefaultQuoteMaxLimit(limit);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, defaultQuoteMaxLimit: limit });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
                 sceneBackgroundColor={sceneBackgroundColor}
-                setSceneBackgroundColor={(color) => {
-                  setSceneBackgroundColor(color);
-                  const newScenes = videoConfig.scenes.map(scene => ({
-                    ...scene,
-                    backgroundColor: color
-                  }));
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, sceneBackgroundColor: color });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setSceneBackgroundColor={setSceneBackgroundColor}
                 itemBackgroundColor={itemBackgroundColor}
-                setItemBackgroundColor={(color) => {
-                  setItemBackgroundColor(color);
-                  const newScenes = videoConfig.scenes.map(scene => ({
-                    ...scene,
-                    items: scene.items.map(item => ({ ...item, backgroundColor: color }))
-                  }));
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setItemBackgroundColor={setItemBackgroundColor}
                 quoteBackgroundColor={quoteBackgroundColor}
-                setQuoteBackgroundColor={(color) => {
-                  setQuoteBackgroundColor(color);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBackgroundColor: color });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteBackgroundColor={setQuoteBackgroundColor}
                 quoteBorderColor={quoteBorderColor}
-                setQuoteBorderColor={(color) => {
-                  setQuoteBorderColor(color);
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBorderColor: color });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
-                setAllSceneLayouts={(layout) => {
-                  const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                  message.success(`已将全部画面格布局设为 ${layout}`);
-                }}
-                addScene={() => {
-                  const newScene: VideoScene = {
-                    id: 'scene-' + Date.now(),
-                    type: 'comments',
-                    title: '新建画面格',
-                    layout: 'top',
-                    backgroundColor: sceneBackgroundColor,
-                    duration: 5,
-                    items: [{
-                      id: 'item-' + Date.now(),
-                      author: 'NewUser',
-                      content: '',
-                    }]
-                  };
-                  const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] });
-                  setVideoConfig(newConfig);
-                  setDraftConfig(newConfig);
-                  persistVideoConfig(newConfig);
-                }}
+                setQuoteBorderColor={setQuoteBorderColor}
               />
             )}
 

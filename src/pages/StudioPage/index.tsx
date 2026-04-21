@@ -22,45 +22,43 @@ import {
   getTotalFrames,
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
-import { VideoConfig, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
-import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
-import { Sidebar } from './components/Sidebar';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode } from '../../types';
+import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
+import { getActiveVideoCanvasSize, getAspectRatioLabel, normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../../rendering/videoCanvas';
+import { VideoSettingsSidebar } from '../../components/VideoSettingsSidebarCompont';
+import { AuthorProfile, CommentSortMode, ReplyOrderMode, ColorArrangementSettings } from '../../types';
+import { transformRedditJson } from '../../utils/redditTransformer';
+import { generateRandomAliasProfiles } from '../../utils/aliasGenerator';
+import { hslToHex } from '../../utils/color/hslToHex';
+import { pseudoRandom01 } from '../../utils/random/pseudoRandom01';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';
 
-type ColorArrangementMode = 'uniform' | 'randomized';
-interface ColorArrangementSettings {
-  mode: ColorArrangementMode;
-  hueOffset: number;
-  hueStep: number;
-  saturation: number;
-  lightness: number;
-  seed: number;
-}
-
 interface StudioPageProps {
   videoConfig: VideoConfig;
   setVideoConfig: (config: VideoConfig) => void;
+  draftConfig: VideoConfig;
+  setDraftConfig: (config: VideoConfig) => void;
+  persistVideoConfig: (config: VideoConfig) => void;
   onViewScene?: (idx: number) => void;
   
-  // From App.tsx (shared with EditorPage)
   commentSortMode: CommentSortMode;
+  setCommentSortMode: React.Dispatch<React.SetStateAction<CommentSortMode>>;
   replyOrderMode: ReplyOrderMode;
-  onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  onRandomizeAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  onClearAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
+  setReplyOrderMode: React.Dispatch<React.SetStateAction<ReplyOrderMode>>;
+  
+  rawResult: any;
+  result: any;
+  setResult: React.Dispatch<React.SetStateAction<any>>;
+  
   colorArrangement: ColorArrangementSettings;
-  onRearrangeColorsAndApply: (
-    sortMode: CommentSortMode,
-    replyOrder: ReplyOrderMode,
-    settings: ColorArrangementSettings,
-  ) => void;
-  canApplyCommentSort: boolean;
+  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
+  
   allAuthors: string[];
   authorProfiles: Record<string, AuthorProfile>;
-  onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
+  setAuthorProfiles: React.Dispatch<React.SetStateAction<Record<string, AuthorProfile>>>;
+  persistAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
+  
   imageLayoutMode: ImageLayoutMode;
   setImageLayoutMode: (mode: ImageLayoutMode) => void;
   sceneLayout: SceneLayoutType;
@@ -85,25 +83,28 @@ interface StudioPageProps {
   setQuoteBackgroundColor: (color: string) => void;
   quoteBorderColor: string;
   setQuoteBorderColor: (color: string) => void;
-  setAllSceneLayouts: (layout: 'top' | 'center') => void;
-  addScene: () => void;
 }
 
 export const StudioPage: React.FC<StudioPageProps> = ({
   videoConfig,
   setVideoConfig,
+  draftConfig,
+  setDraftConfig,
+  persistVideoConfig,
   onViewScene,
   commentSortMode,
+  setCommentSortMode,
   replyOrderMode,
-  onApplyCommentSort,
-  onRandomizeAliasesAndApply,
-  onClearAliasesAndApply,
+  setReplyOrderMode,
+  rawResult,
+  result,
+  setResult,
   colorArrangement,
-  onRearrangeColorsAndApply,
-  canApplyCommentSort,
+  setColorArrangement,
   allAuthors,
   authorProfiles,
-  onUpdateAuthorProfile,
+  setAuthorProfiles,
+  persistAuthorProfiles,
   imageLayoutMode,
   setImageLayoutMode,
   sceneLayout,
@@ -128,9 +129,392 @@ export const StudioPage: React.FC<StudioPageProps> = ({
   setQuoteBackgroundColor,
   quoteBorderColor,
   setQuoteBorderColor,
-  setAllSceneLayouts,
-  addScene,
 }) => {
+  // ---------------------------------------------------------
+  // 辅助函数 (原本在 App.tsx 中)
+  // ---------------------------------------------------------
+  
+  const buildColorWithSettings = (index: number, settings: ColorArrangementSettings) => {
+    const s = Math.max(20, Math.min(90, settings.saturation)) / 100;
+    const l = Math.max(20, Math.min(80, settings.lightness)) / 100;
+    const offset = ((settings.hueOffset % 360) + 360) % 360;
+    const step = Math.max(1, Math.min(359, settings.hueStep));
+    const hue = settings.mode === 'uniform'
+      ? (offset + index * step) % 360
+      : (offset + pseudoRandom01(settings.seed, index) * 360) % 360;
+    return hslToHex(hue, s, l);
+  };
+
+  const buildProfilesForAuthors = (
+    authors: string[],
+    previousProfiles: Record<string, AuthorProfile>,
+    settings: ColorArrangementSettings,
+    overwriteColors = false,
+  ) => {
+    const nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
+
+    authors.forEach((author, index) => {
+      const existing = nextProfiles[author] || {};
+      if (overwriteColors || !existing.color) {
+        nextProfiles[author] = {
+          ...existing,
+          color: buildColorWithSettings(index, settings),
+        };
+      }
+    });
+
+    return nextProfiles;
+  };
+
+  const buildVideoConfigFromResult = (
+    nextResult: any,
+    alignment: TitleAlignmentType = 'center',
+    titleSize = 64,
+    contentSize = 32,
+    canvas = createDefaultVideoCanvasConfig()
+  ): VideoConfig => {
+    const postScene: VideoScene = {
+      id: 'scene-post-' + Date.now(),
+      type: 'post',
+      title: '贴子正文',
+      layout: 'top',
+      duration: 5,
+      items: [{
+        id: 'post-content',
+        author: nextResult.author,
+        content: `[style size=${titleSize} b align=${alignment}]${nextResult.title}[/style]\n\n[style size=${contentSize}]${nextResult.content || ''}[/style]`,
+      }]
+    };
+
+    const commentScenes: VideoScene[] = nextResult.comments.map((c: any) => ({
+      id: 'scene-' + c.id,
+      type: 'comments',
+      title: `评论 u/${c.author}`,
+      layout: 'center',
+      duration: 3,
+      items: [{
+        id: c.id,
+        author: c.author,
+        content: `[style size=${contentSize}]${c.body}[/style]`,
+        replyChain: c.replyChain
+      }]
+    }));
+
+    return {
+      title: nextResult.title,
+      subreddit: nextResult.subreddit,
+      scenes: [postScene, ...commentScenes],
+      titleFontSize: titleSize,
+      contentFontSize: contentSize,
+      quoteFontSize: quoteFontSize,
+      quoteBackgroundColor: quoteBackgroundColor,
+      quoteBorderColor: quoteBorderColor,
+      maxQuoteDepth: maxQuoteDepth,
+      defaultQuoteMaxLimit: defaultQuoteMaxLimit,
+      sceneBackgroundColor: sceneBackgroundColor,
+      itemBackgroundColor: itemBackgroundColor,
+      canvas,
+    };
+  };
+
+  const rebuildFromRaw = (
+    sortMode: CommentSortMode,
+    replyOrder: ReplyOrderMode,
+    profiles: Record<string, AuthorProfile>,
+    successMessage: string,
+  ) => {
+    if (!rawResult) {
+      message.warning('请先提取 Reddit 数据，再进行排序重排');
+      return;
+    }
+
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+
+    const nextResult = transformRedditJson(rawResult, {
+      sortMode,
+      replyOrder,
+      authorProfiles: profiles,
+      imageLayoutMode: draftConfig.imageLayoutMode,
+    });
+    const nextConfig = {
+      ...buildVideoConfigFromResult(
+        nextResult,
+        titleAlignment,
+        titleFontSize,
+        contentFontSize,
+        draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
+      ),
+      imageLayoutMode: draftConfig.imageLayoutMode,
+    };
+
+    setResult(nextResult);
+    const normalizedConfig = normalizeVideoConfig(nextConfig);
+    setVideoConfig(normalizedConfig);
+    setDraftConfig(normalizedConfig);
+    persistVideoConfig(normalizedConfig);
+    message.success(successMessage);
+  };
+
+  // ---------------------------------------------------------
+  // 核心逻辑处理器 (原本在 App.tsx / MainPages 中)
+  // ---------------------------------------------------------
+
+  const updateAuthorProfile = (
+    author: string,
+    updates: Partial<AuthorProfile>,
+  ) => {
+    const next = {
+      ...authorProfiles,
+      [author]: {
+        ...(authorProfiles[author] || {}),
+        ...updates,
+      },
+    };
+    setAuthorProfiles(next);
+    persistAuthorProfiles(next);
+  };
+
+  const handleApplyCommentSort = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+    rebuildFromRaw(sortMode, replyOrder, authorProfiles, '评论排序已应用并重排脚本');
+  };
+
+  const handleRandomizeAliasesAndApply = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+    const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles);
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已随机生成代号并重建脚本');
+  };
+
+  const handleClearAliasesAndApply = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+    const nextProfiles: Record<string, AuthorProfile> = { ...authorProfiles };
+    allAuthors.forEach((author) => {
+      const existing = nextProfiles[author] || {};
+      nextProfiles[author] = {
+        ...existing,
+        alias: '',
+      };
+    });
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已清空所有代号并重建脚本');
+  };
+
+  const handleRearrangeColorsAndApply = (
+    sortMode: CommentSortMode,
+    replyOrder: ReplyOrderMode,
+    nextSettings: ColorArrangementSettings,
+  ) => {
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+    const normalizedSettings = {
+      ...nextSettings,
+      saturation: Math.max(20, Math.min(90, nextSettings.saturation)),
+      lightness: Math.max(20, Math.min(80, nextSettings.lightness)),
+      hueStep: Math.max(1, Math.min(359, nextSettings.hueStep)),
+    };
+    setColorArrangement(normalizedSettings);
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, normalizedSettings, true);
+    setAuthorProfiles(nextProfiles);
+    rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已按新规则重排颜色并重建脚本');
+  };
+
+  const handleImageLayoutModeChange = (mode: ImageLayoutMode) => {
+    setImageLayoutMode(mode);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, imageLayoutMode: mode });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleSceneLayoutChange = (layout: SceneLayoutType) => {
+    setSceneLayout(layout);
+    const newScenes = videoConfig.scenes.map(s => ({ ...s, layout }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleTitleAlignmentChange = (alignment: TitleAlignmentType) => {
+    setTitleAlignment(alignment);
+    const newScenes = videoConfig.scenes.map(scene => {
+      if (scene.type === 'post' && scene.items.length > 0) {
+        const newItems = scene.items.map(item => {
+          let newContent = item.content;
+          if (newContent.includes('[style') && newContent.includes(' b')) {
+            newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+              if (match.includes('align=')) {
+                return match.replace(/align=[^ \]]+/, `align=${alignment}`);
+              } else {
+                return match.slice(0, -1) + ` align=${alignment}]`;
+              }
+            });
+          }
+          return { ...item, content: newContent };
+        });
+        return { ...scene, items: newItems };
+      }
+      return scene;
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleTitleFontSizeChange = (size: number) => {
+    setTitleFontSize(size);
+    const newScenes = videoConfig.scenes.map(scene => {
+      if (scene.type === 'post' && scene.items.length > 0) {
+        const newItems = scene.items.map(item => {
+          let newContent = item.content;
+          if (newContent.includes('[style') && newContent.includes(' b')) {
+            newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
+              if (match.includes('size=')) {
+                return match.replace(/size=\d+/, `size=${size}`);
+              } else {
+                return match.slice(0, -1) + ` size=${size}]`;
+              }
+            });
+          }
+          return { ...item, content: newContent };
+        });
+        return { ...scene, items: newItems };
+      }
+      return scene;
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontSize: size });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleContentFontSizeChange = (size: number) => {
+    setContentFontSize(size);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => {
+        let newContent = item.content;
+        newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
+          if (part.startsWith('[style') && !part.includes(' b')) {
+            if (part.includes('size=')) {
+              return part.replace(/size=\d+/, `size=${size}`);
+            } else {
+              return part.slice(0, -1) + ` size=${size}]`;
+            }
+          }
+          return part;
+        }).join('');
+        return { ...item, content: newContent };
+      });
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontSize: size });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleQuoteFontSizeChange = (size: number) => {
+    setQuoteFontSize(size);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontSize: size });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleMaxQuoteDepthChange = (depth: number) => {
+    setMaxQuoteDepth(depth);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, maxQuoteDepth: depth });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleDefaultQuoteMaxLimitChange = (limit: number) => {
+    setDefaultQuoteMaxLimit(limit);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, defaultQuoteMaxLimit: limit });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleSceneBackgroundColorChange = (color: string) => {
+    setSceneBackgroundColor(color);
+    const newScenes = videoConfig.scenes.map(scene => ({
+      ...scene,
+      backgroundColor: color
+    }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, sceneBackgroundColor: color });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleItemBackgroundColorChange = (color: string) => {
+    setItemBackgroundColor(color);
+    const newScenes = videoConfig.scenes.map(scene => ({
+      ...scene,
+      items: scene.items.map(item => ({ ...item, backgroundColor: color }))
+    }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleQuoteBackgroundColorChange = (color: string) => {
+    setQuoteBackgroundColor(color);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBackgroundColor: color });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const handleQuoteBorderColorChange = (color: string) => {
+    setQuoteBorderColor(color);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBorderColor: color });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  const setAllSceneLayouts = (layout: 'top' | 'center') => {
+    const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+    message.success(`已将全部画面格布局设为 ${layout}`);
+  };
+
+  const addScene = () => {
+    const newScene: VideoScene = {
+      id: 'scene-' + Date.now(),
+      type: 'comments',
+      title: '新建画面格',
+      layout: 'top',
+      backgroundColor: sceneBackgroundColor,
+      duration: 5,
+      items: [{
+        id: 'item-' + Date.now(),
+        author: 'NewUser',
+        content: '',
+      }]
+    };
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] });
+    setVideoConfig(newConfig);
+    setDraftConfig(newConfig);
+    persistVideoConfig(newConfig);
+  };
+
+  // ---------------------------------------------------------
+  // 原有的组件逻辑
+  // ---------------------------------------------------------
   // Resizable Sidebar Logic (Mimicking EditorPage)
   const DEFAULT_SIDEBAR_WIDTH = 420;
   const SIDEBAR_MIN_WIDTH = 300;
@@ -373,54 +757,57 @@ export const StudioPage: React.FC<StudioPageProps> = ({
         </Row>
       </div>
 
-      <Sidebar
+      <VideoSettingsSidebar
+        mode="studio"
         sidebarWidth={sidebarWidth}
-        FIXED_SIDEBAR_TOP_OFFSET={FIXED_SIDEBAR_TOP_OFFSET}
-        startSidebarResize={startSidebarResize}
-        isSidebarResizing={isSidebarResizing}
         SIDEBAR_MIN_WIDTH={SIDEBAR_MIN_WIDTH}
         SIDEBAR_MAX_WIDTH={SIDEBAR_MAX_WIDTH}
+        FIXED_SIDEBAR_TOP_OFFSET={FIXED_SIDEBAR_TOP_OFFSET}
+        isSidebarResizing={isSidebarResizing}
+        startSidebarResize={startSidebarResize}
         updateSidebarWidthByInput={updateSidebarWidthByInput}
         resetSidebarWidthToDefault={resetSidebarWidthToDefault}
-        videoConfig={videoConfig}
-        setVideoConfig={setVideoConfig}
+        toolTitle="Studio 操作面板"
+        draftConfig={videoConfig}
+        setDraftConfig={setVideoConfig}
         commentSortMode={commentSortMode}
         replyOrderMode={replyOrderMode}
         imageLayoutMode={imageLayoutMode}
-        setImageLayoutMode={setImageLayoutMode}
         sceneLayout={sceneLayout}
-        setSceneLayout={setSceneLayout}
         titleAlignment={titleAlignment}
-        setTitleAlignment={setTitleAlignment}
         titleFontSize={titleFontSize}
-        setTitleFontSize={setTitleFontSize}
         contentFontSize={contentFontSize}
-        setContentFontSize={setContentFontSize}
         quoteFontSize={quoteFontSize}
-        setQuoteFontSize={setQuoteFontSize}
         maxQuoteDepth={maxQuoteDepth}
-        setMaxQuoteDepth={setMaxQuoteDepth}
         defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-        setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
         sceneBackgroundColor={sceneBackgroundColor}
-        setSceneBackgroundColor={setSceneBackgroundColor}
         itemBackgroundColor={itemBackgroundColor}
-        setItemBackgroundColor={setItemBackgroundColor}
         quoteBackgroundColor={quoteBackgroundColor}
-        setQuoteBackgroundColor={setQuoteBackgroundColor}
         quoteBorderColor={quoteBorderColor}
-        setQuoteBorderColor={setQuoteBorderColor}
-        canApplyCommentSort={canApplyCommentSort}
-        onApplyCommentSort={onApplyCommentSort}
+        onApplyCommentSort={handleApplyCommentSort}
+        onRandomizeAliasesAndApply={handleRandomizeAliasesAndApply}
+        onClearAliasesAndApply={handleClearAliasesAndApply}
+        onRearrangeColorsAndApply={handleRearrangeColorsAndApply}
+        onUpdateAuthorProfile={updateAuthorProfile}
+        onImageLayoutModeChange={handleImageLayoutModeChange}
+        onSceneLayoutChange={handleSceneLayoutChange}
+        onTitleAlignmentChange={handleTitleAlignmentChange}
+        onTitleFontSizeChange={handleTitleFontSizeChange}
+        onContentFontSizeChange={handleContentFontSizeChange}
+        onQuoteFontSizeChange={handleQuoteFontSizeChange}
+        onMaxQuoteDepthChange={handleMaxQuoteDepthChange}
+        onDefaultQuoteMaxLimitChange={handleDefaultQuoteMaxLimitChange}
+        onSceneBackgroundColorChange={handleSceneBackgroundColorChange}
+        onItemBackgroundColorChange={handleItemBackgroundColorChange}
+        onQuoteBackgroundColorChange={handleQuoteBackgroundColorChange}
+        onQuoteBorderColorChange={handleQuoteBorderColorChange}
+        onSetAllSceneLayouts={setAllSceneLayouts}
+        onAddScene={addScene}
+        canApplyCommentSort={!!rawResult}
         allAuthors={allAuthors}
-        onRandomizeAliasesAndApply={onRandomizeAliasesAndApply}
-        onClearAliasesAndApply={onClearAliasesAndApply}
-        colorArrangement={colorArrangement}
-        onRearrangeColorsAndApply={onRearrangeColorsAndApply}
         authorProfiles={authorProfiles}
-        onUpdateAuthorProfile={onUpdateAuthorProfile}
-        setAllSceneLayouts={setAllSceneLayouts}
-        addScene={addScene}
+        colorArrangement={colorArrangement}
+        setColorArrangement={setColorArrangement}
         galleryPageSize={galleryPageSize}
         setGalleryPageSize={setGalleryPageSize}
         previewLayoutMode={previewLayoutMode}
