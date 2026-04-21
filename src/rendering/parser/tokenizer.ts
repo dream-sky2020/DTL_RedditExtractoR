@@ -1,7 +1,8 @@
 import React from 'react';
-import { ASTNode, TextNode, QuoteNode, ImageNode, GalleryNode, StyleNode, AudioNode, RowNode } from './types';
+import { ASTNode, TextNode, QuoteNode, ImageNode, GalleryNode, StyleNode, AudioNode, RowNode, DepthLimitNode } from './types';
 import { 
   QUOTE_OPEN_TAG_RE, 
+  QUOTE_OPEN_TAG_GLOBAL_RE,
   parseQuoteStartTag, 
   parseMediaSequence, 
   parseInlineAttrs 
@@ -10,6 +11,7 @@ import {
 export interface TokenizerOptions {
   defaultMaxLimit?: number;
   maxQuoteDepth?: number;
+  authorPath?: string[];
 }
 
 export const tokenize = (
@@ -17,14 +19,23 @@ export const tokenize = (
   options: TokenizerOptions = {},
   currentDepth: number = 0
 ): ASTNode[] => {
-  const { defaultMaxLimit = 150, maxQuoteDepth = 4 } = options;
+  const { defaultMaxLimit = 150, maxQuoteDepth = 4, authorPath = [] } = options;
   if (!text) return [];
 
   const nodes: ASTNode[] = [];
   let currentPos = 0;
 
   if (currentDepth >= maxQuoteDepth) {
-    return [{ type: 'text', content: '... (已达到最大嵌套层级)' }];
+    const fullChain = [...authorPath];
+    const quoteRegex = new RegExp(QUOTE_OPEN_TAG_GLOBAL_RE);
+    let match;
+    while ((match = quoteRegex.exec(text)) !== null) {
+      const parsed = parseQuoteStartTag(match[0], defaultMaxLimit);
+      if (parsed?.author) {
+        fullChain.push(parsed.author);
+      }
+    }
+    return [{ type: 'depthLimit', authorChain: fullChain }];
   }
 
   while (currentPos < text.length) {
@@ -118,7 +129,10 @@ export const tokenize = (
           maxLimit,
           itemId,
           customStyle,
-          children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth + 1)
+          children: tokenize(text.substring(startTagEnd, endTagIdx), {
+            ...options,
+            authorPath: [...authorPath, author]
+          }, currentDepth + 1)
         });
         currentPos = endTagIdx + 8;
       } else {

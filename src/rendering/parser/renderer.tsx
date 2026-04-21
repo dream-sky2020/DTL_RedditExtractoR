@@ -276,6 +276,15 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
       case 'text':
         return <React.Fragment key={index}>{node.content}</React.Fragment>;
 
+      case 'depthLimit': {
+        const authorChain = node.authorChain.map((a) => `u/${a}:...`).join('->');
+        return (
+          <Text key={index} type="secondary" italic style={{ fontSize: '11px' }}>
+            {authorChain} (已达到最大嵌套层级)
+          </Text>
+        );
+      }
+
       case 'quote': {
         const resolvedBg = node.customStyle.backgroundColor || defaultBackgroundColor || 'var(--quote-bg)';
         const resolvedBorderColor = (node.customStyle.borderColor as string) || defaultBorderColor || 'var(--quote-border)';

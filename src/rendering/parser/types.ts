@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'audio' | 'row';
+export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'audio' | 'row' | 'depthLimit';
 
 export interface BaseNode {
   type: NodeType;
@@ -9,6 +9,11 @@ export interface BaseNode {
 export interface TextNode extends BaseNode {
   type: 'text';
   content: string;
+}
+
+export interface DepthLimitNode extends BaseNode {
+  type: 'depthLimit';
+  authorChain: string[];
 }
 
 export interface QuoteNode extends BaseNode {
@@ -58,6 +63,7 @@ export interface RowNode extends BaseNode {
 
 export type ASTNode = 
   | TextNode 
+  | DepthLimitNode
   | QuoteNode 
   | ImageNode 
   | GalleryNode 

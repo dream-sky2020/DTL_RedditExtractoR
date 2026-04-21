@@ -28,11 +28,19 @@ export const enrich = (nodes: ASTNode[], parentMaxLimit: number = -1): ASTNode[]
       }
     } else if (node.type === 'quote') {
       // Quote 节点内部有自己的限制 (maxLimit)
-      // 但它也受父级限制的影响。如果进入 Quote 前已经快到限制了，
-      // 这里的逻辑可以根据需求调整。
-      // 目前保持原样：Quote 节点本身不计入父级的字符数（或者可以计入）
-      // 原代码中 Quote 标签本身不计入 currentLevelChars，只有 prefixText 计入。
-      enrichedNodes.push(node);
+      // 处理子节点的增强逻辑（递归处理截断）
+      const enrichedChildren = enrich(node.children, node.maxLimit);
+      enrichedNodes.push({
+        ...node,
+        children: enrichedChildren
+      });
+    } else if (node.type === 'style' || node.type === 'row') {
+      // 对于 style 和 row，继承当前的限制 (原逻辑直接继承 parentMaxLimit)
+      const enrichedChildren = enrich(node.children, parentMaxLimit);
+      enrichedNodes.push({
+        ...node,
+        children: enrichedChildren
+      });
     } else {
       // 其他标签（image, audio 等）在原代码中也不计入字符数
       enrichedNodes.push(node);

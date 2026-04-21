@@ -36,6 +36,7 @@ export const parseQuotes = (
   const ast = tokenize(normalizedText, {
     defaultMaxLimit,
     maxQuoteDepth,
+    authorPath,
   }, currentDepth);
 
   // Step 3: Enrich (处理截断等逻辑)

@@ -14,9 +14,26 @@ def count_lines(directory, extensions=('.ts', '.tsx', '.js', '.jsx')):
             if file.endswith(extensions):
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        # 统计非空行（如果需要统计所有行，直接使用 len(f.readlines())）
-                        lines = sum(1 for line in f)
+                    with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+                        # 读取前几行检查是否有忽略标识
+                        content = []
+                        is_ignored = False
+                        for _ in range(5): # 检查前 5 行
+                            line = f.readline()
+                            if not line:
+                                break
+                            # 转换为小写并检查常见忽略标识
+                            lower_line = line.lower()
+                            if '@ts-nocheck' in lower_line or 'eslint-disable' in lower_line:
+                                is_ignored = True
+                                break
+                            content.append(line)
+                        
+                        if is_ignored:
+                            continue
+
+                        # 统计剩余行数并加上已经读取的行数
+                        lines = len(content) + sum(1 for _ in f)
                         total_lines += lines
                         relative_path = os.path.relpath(file_path, directory)
                         file_stats.append({'path': relative_path, 'lines': lines})
