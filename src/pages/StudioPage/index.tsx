@@ -24,7 +24,7 @@ import {
 } from '../../components/VideoPreviewPlayer';
 import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel, normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../../rendering/videoCanvas';
-import { VideoSettingsSidebar } from '../../components/VideoSettingsSidebarCompont';
+import { VideoSettingsSidebar } from 'VideoSettingsSidebarCompont_panel_compont';
 import { AuthorProfile, CommentSortMode, ReplyOrderMode, ColorArrangementSettings } from '../../types';
 import { transformRedditJson } from '../../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../../utils/aliasGenerator';

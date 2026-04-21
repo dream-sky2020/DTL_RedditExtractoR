@@ -23,7 +23,7 @@ import {
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { SceneFlow } from './components/SceneFlow';
-import { VideoSettingsSidebar } from '../../components/VideoSettingsSidebarCompont';
+import { VideoSettingsSidebar } from 'VideoSettingsSidebarCompont_panel_compont';
 import { getActiveVideoCanvasSize, getAspectRatioLabel, normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../../rendering/videoCanvas';
 import { transformRedditJson } from '../../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../../utils/aliasGenerator';
