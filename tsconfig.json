@@ -14,6 +14,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@config": ["video-config.json"],
       "VideoSettingsSidebarCompont_panel_compont": ["src/components/VideoSettingsSidebarCompont/index.tsx"],
       "hslToHex_color_calculate_tool": ["src/utils/color/hslToHex.ts"],
       "pseudoRandom01_random_calculate_tool": ["src/utils/random/pseudoRandom01.ts"]
