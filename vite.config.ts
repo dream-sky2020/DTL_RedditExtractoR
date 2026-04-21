@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -8,4 +9,10 @@ export default defineConfig({
     react(),
     tsconfigPaths(),
   ],
+  resolve: {
+    alias: {
+      'hslToHex_color_calculate_tool': path.resolve(__dirname, 'src/utils/color/hslToHex.ts'),
+      '@': path.resolve(__dirname, 'src'),
+    }
+  }
 })
