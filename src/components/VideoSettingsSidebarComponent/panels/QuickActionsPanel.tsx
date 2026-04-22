@@ -1,9 +1,9 @@
 import React from 'react';
 import { Space, Button, Row, Col } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { CommentSortMode, ReplyOrderMode } from '../../types';
+import { CommentSortMode, ReplyOrderMode } from '../../../types';
 
-interface QuickActionsProps {
+interface QuickActionsPanelProps {
   idPrefix?: string;
   canApplyCommentSort: boolean;
   onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
@@ -16,7 +16,7 @@ interface QuickActionsProps {
   addScene: () => void;
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({
+export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   idPrefix = 'editor-page',
   canApplyCommentSort,
   onApplyCommentSort,

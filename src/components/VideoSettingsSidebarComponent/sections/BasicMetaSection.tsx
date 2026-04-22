@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Form, Input, Typography } from 'antd';
-import { VideoConfig } from '../../types';
+import { VideoConfig } from '../../../types';
 
 const { Text } = Typography;
 

@@ -1,23 +1,15 @@
 import React, { useState } from 'react';
 import {
-  InputNumber,
   Space,
   Button,
   Typography,
   Divider,
   Form,
-  Radio,
-  Slider,
-  message,
 } from 'antd';
 import {
   EditOutlined,
   DownOutlined,
   UpOutlined,
-  SelectOutlined,
-  DeleteOutlined,
-  MergeCellsOutlined,
-  LayoutOutlined,
 } from '@ant-design/icons';
 import { 
   VideoConfig, 
@@ -27,19 +19,20 @@ import {
   AuthorProfile, 
   CommentSortMode, 
   ReplyOrderMode,
-  ColorArrangementSettings,
-  VideoScene
+  ColorArrangementSettings
 } from '../../types';
-import { BasicMetaSection } from '../DashboardSettings/BasicMetaSection';
-import { SortStrategySection } from '../DashboardSettings/SortStrategySection';
-import { LayoutSection } from '../DashboardSettings/LayoutSection';
-import { CanvasConfigSection } from '../DashboardSettings/CanvasConfigSection';
-import { TypographySection } from '../DashboardSettings/TypographySection';
-import { DefaultColorsSection } from '../DashboardSettings/DefaultColorsSection';
-import { QuoteStyleSection } from '../DashboardSettings/QuoteStyleSection';
-import { PrivacyConfigPanel } from '../DashboardSettings/PrivacyConfigPanel';
-import { QuickActions } from '../DashboardSettings/QuickActions';
-import { mergeSelectedScenes } from '../../utils/sceneMergeEngine';
+import { BasicMetaSection } from './sections/BasicMetaSection';
+import { SortStrategySection } from './sections/SortStrategySection';
+import { LayoutSection } from './sections/LayoutSection';
+import { CanvasConfigSection } from './sections/CanvasConfigSection';
+import { TypographySection } from './sections/TypographySection';
+import { DefaultColorsSection } from './sections/DefaultColorsSection';
+import { QuoteStyleSection } from './sections/QuoteStyleSection';
+import { PrivacyConfigPanel } from './panels/PrivacyConfigPanel';
+import { QuickActionsPanel } from './panels/QuickActionsPanel';
+import { SidebarWidthSection } from './sections/SidebarWidthSection';
+import { StudioPreviewPanel } from './panels/StudioPreviewPanel';
+import { EditorMultiSelectPanel } from './panels/EditorMultiSelectPanel';
 
 const { Text } = Typography;
 
@@ -257,107 +250,24 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
 
         <div id={`${mode}-page-sidebar-content`} style={{ padding: 16 }}>
           {/* Sidebar Width Config */}
-          <div
-            id={`${mode}-page-sidebar-width-config`}
-            style={{
-              marginBottom: 16,
-              padding: 12,
-              borderRadius: 8,
-              border: '1px solid var(--brand-border)',
-              background: 'var(--panel-bg-translucent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '8px'
-            }}
-          >
-            <Text strong style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>侧栏宽度</Text>
-            <Space size="small" align="center">
-              <Space.Compact style={{ width: 110 }}>
-                <InputNumber
-                  min={SIDEBAR_MIN_WIDTH}
-                  max={SIDEBAR_MAX_WIDTH}
-                  value={sidebarWidth}
-                  onChange={updateSidebarWidthByInput}
-                  style={{ width: '100%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
-                />
-                <Button disabled style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>px</Button>
-              </Space.Compact>
-              <Button onClick={resetSidebarWidthToDefault} size="small" style={{ color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }}>还原</Button>
-            </Space>
-          </div>
+          <SidebarWidthSection
+            sidebarWidth={sidebarWidth}
+            SIDEBAR_MIN_WIDTH={SIDEBAR_MIN_WIDTH}
+            SIDEBAR_MAX_WIDTH={SIDEBAR_MAX_WIDTH}
+            updateSidebarWidthByInput={updateSidebarWidthByInput}
+            resetSidebarWidthToDefault={resetSidebarWidthToDefault}
+          />
 
           {/* Studio Specific: Gallery Config */}
           {mode === 'studio' && setPreviewLayoutMode && (
-            <div
-              id="studio-page-view-config-panel"
-              style={{
-                padding: 12,
-                borderRadius: 8,
-                border: '1px solid var(--brand-border)',
-                background: 'var(--panel-bg-translucent)',
-                marginBottom: 16
-              }}
-            >
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Space>
-                  <LayoutOutlined style={{ color: 'var(--text-primary)' }} />
-                  <Text strong style={{ color: 'var(--text-primary)' }}>图库显示设置</Text>
-                </Space>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>布局模式</Text>
-                  <Radio.Group
-                    value={previewLayoutMode}
-                    onChange={(e) => setPreviewLayoutMode(e.target.value)}
-                    size="small"
-                    style={{ marginBottom: 12 }}
-                  >
-                    <Radio.Button value="auto">自动适配列数</Radio.Button>
-                    <Radio.Button value="fixed">固定分页数量</Radio.Button>
-                  </Radio.Group>
-                </div>
-                {previewLayoutMode === 'auto' && setPreviewMinWidth ? (
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-                      每个预览最小宽度（px）
-                    </Text>
-                    <Space direction="vertical" style={{ width: '100%' }} size={6}>
-                      <Slider
-                        min={180}
-                        max={520}
-                        step={10}
-                        value={previewMinWidth}
-                        onChange={(value) => setPreviewMinWidth(value)}
-                      />
-                      <Space.Compact style={{ width: 120 }}>
-                        <InputNumber
-                          min={180}
-                          max={520}
-                          value={previewMinWidth}
-                          onChange={(value) => setPreviewMinWidth(value ?? 280)}
-                          style={{ width: '100%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
-                        />
-                        <Button disabled style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>px</Button>
-                      </Space.Compact>
-                    </Space>
-                  </div>
-                ) : (
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>每页显示数量</Text>
-                    <Radio.Group
-                      value={galleryPageSize}
-                      onChange={e => setGalleryPageSize?.(e.target.value)}
-                      size="small"
-                    >
-                      <Radio.Button value={12}>12</Radio.Button>
-                      <Radio.Button value={24}>24</Radio.Button>
-                      <Radio.Button value={48}>48</Radio.Button>
-                    </Radio.Group>
-                  </div>
-                )}
-              </Space>
-            </div>
+            <StudioPreviewPanel
+              previewLayoutMode={previewLayoutMode}
+              setPreviewLayoutMode={setPreviewLayoutMode}
+              previewMinWidth={previewMinWidth}
+              setPreviewMinWidth={setPreviewMinWidth}
+              galleryPageSize={galleryPageSize}
+              setGalleryPageSize={setGalleryPageSize}
+            />
           )}
 
           {/* Global Config Section */}
@@ -467,89 +377,17 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
           {/* Editor Specific: Multi-select Section */}
           {mode === 'editor' && setIsMultiSelectMode && selectedSceneIds && setSelectedSceneIds && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Space size="small">
-                  <SelectOutlined style={{ color: 'var(--text-primary)' }} />
-                  <Text strong style={{ color: 'var(--text-primary)' }}>多选模式</Text>
-                </Space>
-                <Button
-                  size="small"
-                  type="text"
-                  onClick={() => setIsMultiSelectCollapsed((prev) => !prev)}
-                  icon={isMultiSelectCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {isMultiSelectCollapsed ? '展开' : '收起'}
-                </Button>
-              </div>
-              {!isMultiSelectCollapsed && (
-                <div
-                  style={{
-                    padding: 12,
-                    borderRadius: 8,
-                    border: '1px solid var(--brand-border)',
-                    background: 'var(--panel-bg-translucent)',
-                  }}
-                >
-                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ color: 'var(--text-secondary)' }}>
-                      {isMultiSelectMode ? `已选择 ${selectedSceneIds.length} 个画面格` : '未开启多选模式'}
-                    </Text>
-                    <Button
-                      size="small"
-                      type={isMultiSelectMode ? 'primary' : 'default'}
-                      onClick={() => {
-                        setIsMultiSelectMode(!isMultiSelectMode);
-                        if (isMultiSelectMode) setSelectedSceneIds([]);
-                      }}
-                    >
-                      {isMultiSelectMode ? '退出多选' : '开启多选'}
-                    </Button>
-                  </div>
-                  {isMultiSelectMode && (
-                    <Space direction="vertical" style={{ width: '100%' }}>
-                      <Button
-                        block
-                        danger
-                        icon={<DeleteOutlined />}
-                        disabled={selectedSceneIds.length === 0}
-                        onClick={onRemoveSelectedScenes}
-                      >
-                        批量删除
-                      </Button>
-                      <Button
-                        block
-                        icon={<MergeCellsOutlined />}
-                        disabled={selectedSceneIds.length < 2}
-                        onClick={() => {
-                          const result = mergeSelectedScenes({
-                            scenes: draftConfig.scenes,
-                            selectedSceneIds: selectedSceneIds,
-                            strategy: 'auto',
-                          });
-                          if (result.ok) {
-                            setDraftConfig({ ...draftConfig, scenes: result.scenes });
-                            setSelectedSceneIds([]);
-                            message.success(result.message || '合并成功');
-                          } else {
-                            message.error(result.message || '合并失败');
-                          }
-                        }}
-                      >
-                        批量合并
-                      </Button>
-                      <Button
-                        block
-                        size="small"
-                        onClick={() => setSelectedSceneIds([])}
-                        disabled={selectedSceneIds.length === 0}
-                      >
-                        清空选择
-                      </Button>
-                    </Space>
-                  )}
-                </div>
-              )}
+              <EditorMultiSelectPanel
+                isMultiSelectMode={Boolean(isMultiSelectMode)}
+                setIsMultiSelectMode={setIsMultiSelectMode}
+                selectedSceneIds={selectedSceneIds}
+                setSelectedSceneIds={setSelectedSceneIds}
+                isCollapsed={isMultiSelectCollapsed}
+                setIsCollapsed={setIsMultiSelectCollapsed}
+                onRemoveSelectedScenes={onRemoveSelectedScenes}
+                draftConfig={draftConfig}
+                setDraftConfig={setDraftConfig}
+              />
               <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
             </>
           )}
@@ -558,7 +396,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
           <div style={{ marginBottom: 8 }}>
             <Text strong style={{ color: 'var(--text-primary)' }}>画面流快捷操作</Text>
           </div>
-          <QuickActions
+          <QuickActionsPanel
             idPrefix={mode}
             canApplyCommentSort={canApplyCommentSort}
             onApplyCommentSort={onApplyCommentSort}

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Row, Col, Form, Typography, Space, Radio, InputNumber, Button } from 'antd';
-import { VideoConfig, VideoCanvasPreset } from '../../types';
+import { VideoConfig, VideoCanvasPreset } from '../../../types';
 import {
   DEFAULT_VIDEO_CANVAS_PRESETS,
   getActiveVideoCanvasSize,
   getAspectRatioLabel,
   normalizeVideoCanvasConfig,
-} from '../../rendering/videoCanvas';
+} from '../../../rendering/videoCanvas';
 
 const { Text } = Typography;
 

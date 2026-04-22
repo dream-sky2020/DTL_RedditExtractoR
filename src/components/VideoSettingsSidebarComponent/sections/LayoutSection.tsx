@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Form, Select, Typography } from 'antd';
-import { ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
+import { ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../../types';
 
 const { Text } = Typography;
 
