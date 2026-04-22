@@ -10,6 +10,8 @@ import {
   Button,
   message,
   Tag,
+  Modal,
+  Input,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -25,12 +27,13 @@ import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
 import { dialogs } from '../../components/Dialogs';
+import { useDslGlobalReplace } from '@hooks/useDslGlobalReplace';
 
 // Components
 import { Filmstrip } from './components/Filmstrip';
 import { SceneHeader } from './components/SceneHeader';
 import { MainPreview } from './components/MainPreview';
-import { DslEditor } from '../../components/DslEditor';
+import { DslEditor } from '@components/DslEditor';
 
 const { Text } = Typography;
 
@@ -64,6 +67,9 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
   const [lastSavedDsl, setLastSavedDsl] = useState('');
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
+  const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
+  const [replaceFindText, setReplaceFindText] = useState('');
+  const [replaceTargetText, setReplaceTargetText] = useState('');
   const [previewHeight, setPreviewHeight] = useState(() => {
     try {
       const cached = window.localStorage.getItem(PREVIEW_HEIGHT_STORAGE_KEY);
@@ -101,6 +107,11 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
 
   const hasUnsavedChanges = dslText !== lastSavedDsl;
   const previewMaxHeight = getPreviewMaxHeight();
+  const { getReplaceStats, applyGlobalReplace } = useDslGlobalReplace();
+  const replaceStats = useMemo(
+    () => getReplaceStats(scenes, replaceFindText),
+    [scenes, replaceFindText, getReplaceStats],
+  );
 
   const handleSave = () => {
     const parsed = parseSceneDsl(dslText, currentScene || undefined);
@@ -162,6 +173,46 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
     setRedoStack((prevRedo) => prevRedo.slice(1));
     setUndoStack((prevUndo) => [...prevUndo, dslText].slice(-100));
     setDslText(nextText);
+  };
+
+  const handleOpenGlobalReplace = (selectedText: string) => {
+    if (hasUnsavedChanges) {
+      message.warning('请先保存或回退当前场景的修改，再执行全局替换。');
+      return;
+    }
+
+    setReplaceFindText(selectedText || '');
+    setReplaceTargetText('');
+    setIsReplaceModalOpen(true);
+  };
+
+  const handleApplyGlobalReplace = () => {
+    if (!replaceFindText) {
+      message.warning('请先输入要查找的文本。');
+      return;
+    }
+
+    const result = applyGlobalReplace(scenes, replaceFindText, replaceTargetText);
+    if (!result.ok || !result.nextScenes) {
+      message.error(result.error || '批量替换失败。');
+      return;
+    }
+
+    setVideoConfig({ ...videoConfig, scenes: result.nextScenes });
+    setIsReplaceModalOpen(false);
+    setReplaceTargetText('');
+
+    if (result.totalMatches === 0) {
+      message.info('未命中任何可替换文本。');
+      return;
+    }
+
+    if (result.warningCount > 0) {
+      message.warning(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景（含 ${result.warningCount} 条解析建议）。`);
+      return;
+    }
+
+    message.success(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景。`);
   };
 
   const updatePreviewHeightByInput = (value: number | null) => {
@@ -404,12 +455,48 @@ export const StudioScenePage: React.FC<StudioScenePageProps> = ({
                   onChange={handleDslChange}
                   rows={12}
                   placeholder="编辑当前场景的 DSL 脚本..."
+                  onOpenGlobalReplace={handleOpenGlobalReplace}
                 />
               </div>
             </div>
           </Card>
         </Col>
       </Row>
+      <Modal
+        title="全局统一替换"
+        open={isReplaceModalOpen}
+        onCancel={() => setIsReplaceModalOpen(false)}
+        onOk={handleApplyGlobalReplace}
+        okText="应用替换"
+        cancelText="取消"
+        okButtonProps={{ disabled: !replaceFindText || replaceStats.totalMatches === 0 }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          <div>
+            <Text type="secondary">查找文本</Text>
+            <Input.TextArea
+              value={replaceFindText}
+              onChange={(e) => setReplaceFindText(e.target.value)}
+              autoSize={{ minRows: 2, maxRows: 6 }}
+              placeholder="输入要全局替换的原文"
+              style={{ marginTop: 6 }}
+            />
+          </div>
+          <div>
+            <Text type="secondary">替换为</Text>
+            <Input.TextArea
+              value={replaceTargetText}
+              onChange={(e) => setReplaceTargetText(e.target.value)}
+              autoSize={{ minRows: 2, maxRows: 6 }}
+              placeholder="输入替换后的文本"
+              style={{ marginTop: 6 }}
+            />
+          </div>
+          <Text type="secondary">
+            命中统计：共 {replaceStats.totalMatches} 处，涉及 {replaceStats.affectedSceneCount} 个场景。
+          </Text>
+        </Space>
+      </Modal>
     </div>
   );
 };

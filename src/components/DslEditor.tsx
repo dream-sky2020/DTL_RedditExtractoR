@@ -17,6 +17,7 @@ import {
   MessageOutlined,
   LayoutOutlined,
   EnterOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -26,6 +27,7 @@ interface DslEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
+  onOpenGlobalReplace?: (selectedText: string) => void;
 }
 
 /**
@@ -41,6 +43,7 @@ export const DslEditor: React.FC<DslEditorProps> = ({
   onChange,
   placeholder = '请输入内容或使用上方工具栏插入标签...',
   rows = 8,
+  onOpenGlobalReplace,
 }) => {
   const textAreaRef = useRef<any>(null);
 
@@ -68,6 +71,18 @@ export const DslEditor: React.FC<DslEditorProps> = ({
       const newCursorPos = start + before.length + selectedText.length + after.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
+  };
+
+  const handleOpenGlobalReplace = () => {
+    const textarea = textAreaRef.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
+    if (!textarea) {
+      onOpenGlobalReplace?.('');
+      return;
+    }
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    const selectedText = value.substring(start, end);
+    onOpenGlobalReplace?.(selectedText);
   };
 
   return (
@@ -139,6 +154,9 @@ export const DslEditor: React.FC<DslEditorProps> = ({
             </Tooltip>
             <Tooltip title="重置样式 [/style]">
               <Button size="small" icon={<FormatPainterOutlined />} onClick={() => insertText('[/style]')} />
+            </Tooltip>
+            <Tooltip title="全局替换（先选中文本更方便）">
+              <Button size="small" icon={<SearchOutlined />} onClick={handleOpenGlobalReplace} />
             </Tooltip>
           </Space>
         </Space>

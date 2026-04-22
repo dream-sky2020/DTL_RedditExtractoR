@@ -5,18 +5,31 @@ import platform
 import requests
 import re
 from datetime import datetime
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
 
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+CACHE_PUBLIC_BASE_URL = 'http://127.0.0.1:5000/cache'
+
 ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
 MANIFEST_FILENAME = 'audio-manifest.json'
+IMAGE_BLOCK_RE = re.compile(r'(\[image[^\]]*\])(.+?)(\[/image\])', re.IGNORECASE | re.DOTALL)
+GALLERY_BLOCK_RE = re.compile(r'(\[gallery[^\]]*\])(.+?)(\[/gallery\])', re.IGNORECASE | re.DOTALL)
+
+
+def project_path(*parts):
+    return os.path.join(PROJECT_ROOT, *parts)
+
+
+def get_cache_dir():
+    return project_path('public', 'cache')
 
 
 def get_audio_dir():
-    return os.path.join(os.getcwd(), 'public', 'audio')
+    return project_path('public', 'audio')
 
 
 def get_audio_manifest_path():
@@ -47,7 +60,7 @@ def scan_audio_files():
         for file in files:
             if file.lower().endswith(ALLOWED_AUDIO_EXTENSIONS):
                 full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, os.getcwd())
+                relative_path = os.path.relpath(full_path, PROJECT_ROOT)
                 audio_files.append(normalize_path(relative_path))
 
     return sorted(audio_files)
@@ -170,12 +183,14 @@ def render_video():
         print(f"🚀 收到渲染请求: {video_config.get('title')}")
 
         # --- 新增资源预下载逻辑 ---
-        cache_dir = os.path.join(os.getcwd(), 'public', 'cache')
+        cache_dir = get_cache_dir()
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
             print(f"📁 已创建缓存目录: {cache_dir}")
 
-        def download_resource(url):
+        download_failures = []
+
+        def download_resource(url, context='unknown'):
             if not url or not url.startswith('http'):
                 return url
             
@@ -186,7 +201,7 @@ def render_video():
             filepath = os.path.join(cache_dir, filename)
             
             if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-                return f"cache/{filename}"
+                return f"{CACHE_PUBLIC_BASE_URL}/{filename}"
                 
             try:
                 print(f"📥 正在缓存资源: {url}")
@@ -195,16 +210,53 @@ def render_video():
                 with open(filepath, 'wb') as f:
                     for chunk in res.iter_content(chunk_size=8192):
                         f.write(chunk)
-                return f"cache/{filename}"
+                return f"{CACHE_PUBLIC_BASE_URL}/{filename}"
             except Exception as e:
                 print(f"⚠️ 资源下载失败 ({url}): {str(e)}")
+                download_failures.append({
+                    "url": url,
+                    "context": context,
+                    "error": str(e),
+                })
                 return url
+
+        def rewrite_media_sequence(content, tag_name):
+            segments = [seg.strip() for seg in content.split(',')]
+            rebuilt = []
+            for idx, seg in enumerate(segments):
+                if not seg:
+                    continue
+                parts = seg.split('|', 1)
+                media_url = parts[0].strip()
+                duration = parts[1].strip() if len(parts) > 1 else ''
+                if media_url.startswith('http'):
+                    media_url = download_resource(media_url, context=f"{tag_name}[{idx}]")
+                rebuilt.append(f"{media_url}|{duration}" if duration else media_url)
+            return ', '.join(rebuilt)
+
+        def rewrite_media_tags_in_text(text):
+            if not isinstance(text, str):
+                return text
+            if '[image' not in text and '[gallery' not in text:
+                return text
+
+            def image_repl(match):
+                return f"{match.group(1)}{rewrite_media_sequence(match.group(2), 'image')}{match.group(3)}"
+
+            def gallery_repl(match):
+                return f"{match.group(1)}{rewrite_media_sequence(match.group(2), 'gallery')}{match.group(3)}"
+
+            text = IMAGE_BLOCK_RE.sub(image_repl, text)
+            text = GALLERY_BLOCK_RE.sub(gallery_repl, text)
+            return text
 
         def process_config_urls(data):
             if isinstance(data, dict):
                 for key, value in data.items():
                     if isinstance(value, str) and value.startswith('http') and any(k in key.lower() for k in ['url', 'avatar', 'image', 'src']):
-                        data[key] = download_resource(value)
+                        data[key] = download_resource(value, context=f"field:{key}")
+                    elif isinstance(value, str):
+                        data[key] = rewrite_media_tags_in_text(value)
                     else:
                         process_config_urls(value)
             elif isinstance(data, list):
@@ -212,15 +264,31 @@ def render_video():
                     process_config_urls(data[i])
 
         process_config_urls(video_config)
+        if download_failures:
+            deduped_failures = []
+            seen = set()
+            for item in download_failures:
+                signature = f"{item.get('url', '')}|{item.get('context', '')}|{item.get('error', '')}"
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                deduped_failures.append(item)
+
+            return jsonify({
+                "success": False,
+                "message": "资源预下载失败，已中断渲染。请检查网络后重试。",
+                "failedCount": len(deduped_failures),
+                "failedResources": deduped_failures,
+            }), 400
         # --- 资源预处理结束 ---
 
         # 2. 写入配置文件
-        config_path = os.path.join(os.getcwd(), 'video-config.json')
+        config_path = project_path('video-config.json')
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(video_config, f, ensure_ascii=False, indent=2)
 
         # 3. 准备执行渲染命令
-        script_path = os.path.join(os.getcwd(), 'scripts', 'render.js')
+        script_path = project_path('scripts', 'render.js')
         print("🎬 正在启动渲染引擎...")
         
         env = os.environ.copy()
@@ -239,7 +307,8 @@ def render_video():
                     stderr=subprocess.STDOUT,
                     shell=(platform.system() == 'Windows'),
                     env=env,
-                    bufsize=0
+                    bufsize=0,
+                    cwd=PROJECT_ROOT
                 )
                 
                 while True:
@@ -279,7 +348,7 @@ def render_video():
                 process.wait()
 
                 if process.returncode == 0:
-                    abs_path = os.path.abspath(os.path.join(os.getcwd(), 'out', 'video.mp4'))
+                    abs_path = os.path.abspath(project_path('out', 'video.mp4'))
                     yield json.dumps({"type": "success", "message": "渲染成功", "path": abs_path}, ensure_ascii=False) + "\n"
                 else:
                     yield json.dumps({"type": "error", "message": f"渲染失败，错误码: {process.returncode}"}, ensure_ascii=False) + "\n"
@@ -293,6 +362,12 @@ def render_video():
     except Exception as e:
         print(f"💥 系统错误: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/cache/<path:filename>', methods=['GET'])
+def serve_cached_file(filename):
+    cache_dir = get_cache_dir()
+    return send_from_directory(cache_dir, filename)
 
 @app.route('/list_audio', methods=['GET'])
 def list_audio():
