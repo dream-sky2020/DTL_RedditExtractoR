@@ -276,6 +276,15 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
                 goToFilteredData={() => setActiveTool('filtered_data')}
                 goToRawData={() => setActiveTool('raw_data')}
                 goToScriptData={() => setActiveTool('script_data')}
+                onSyncDraftScenesToVideo={() => {
+                  const syncedConfig: VideoConfig = {
+                    ...videoConfig,
+                    scenes: draftConfig.scenes,
+                  };
+                  setVideoConfig(syncedConfig);
+                  persistVideoConfig(syncedConfig);
+                  message.success(`已同步 ${draftConfig.scenes.length} 个场景到 Studio`);
+                }}
                 toolDesc={toolMeta.desc}
                 toolButton={toolMeta.button}
               />

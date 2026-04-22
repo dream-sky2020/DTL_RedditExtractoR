@@ -272,7 +272,7 @@ export const tokenize = (
             display: 'flex', 
             flexDirection: 'row', 
             flexWrap: 'wrap', 
-            gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '8px', 
+            gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '0px', 
             alignItems: (attrs.align || 'center') as any, 
             justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : (attrs.justify || 'start') === 'around' ? 'space-around' : (attrs.justify || 'start') as any, 
             margin: '12px 0', 

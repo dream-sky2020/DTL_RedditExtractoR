@@ -53,7 +53,7 @@ const resolvePlaybackIndex = (items: MediaItem[], playbackSeconds: number): numb
   return 0;
 };
 
-const buildMediaStyles = (attrStr: string) => {
+const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
   const mediaStyle: React.CSSProperties = {
     maxWidth: '100%',
     borderRadius: '4px',
@@ -72,11 +72,7 @@ const buildMediaStyles = (attrStr: string) => {
     mediaStyle.width = isNaN(Number(val)) ? val : `${val}px`;
     mediaStyle.maxWidth = '100%';
 
-    if (val.includes('%')) {
-      mediaStyle.display = 'inline-block';
-      mediaStyle.margin = '0';
-      maxHeight = 'none';
-    }
+    if (val.includes('%')) maxHeight = 'none';
   }
 
   const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
@@ -102,10 +98,10 @@ const buildMediaStyles = (attrStr: string) => {
   }
 
   const wrapperStyle: React.CSSProperties = {
-    margin: mediaStyle.display === 'inline-block' ? '0' : '12px 0',
-    textAlign: mediaStyle.display === 'inline-block' ? 'left' : 'center',
-    display: mediaStyle.display === 'inline-block' ? 'inline-block' : 'block',
-    width: mediaStyle.display === 'inline-block' ? mediaStyle.width : 'auto',
+    margin: inRow ? '0' : '12px auto',
+    textAlign: 'center',
+    display: 'block',
+    width: mediaStyle.width || 'auto',
     verticalAlign: 'top',
     position: 'relative',
   };
@@ -118,7 +114,8 @@ const MediaContent: React.FC<{
   mediaItems: MediaItem[];
   attrStr: string;
   showControls: boolean;
-}> = ({ mediaItems, attrStr, showControls }) => {
+  inRow?: boolean;
+}> = ({ mediaItems, attrStr, showControls, inRow = false }) => {
   const { playbackFrame, fps } = usePlaybackContext();
   const [manualIndex, setManualIndex] = useState(0);
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
@@ -141,7 +138,7 @@ const MediaContent: React.FC<{
   );
   const currentIndex = mediaItems.length <= 1 ? 0 : (showControls ? manualIndex : autoIndex);
   const currentItem = mediaItems[currentIndex] || mediaItems[0];
-  const { mediaStyle, wrapperStyle } = buildMediaStyles(attrStr);
+  const { mediaStyle, wrapperStyle } = buildMediaStyles(attrStr, inRow);
   
   const navButtonStyle: React.CSSProperties = {
     width: 36,
@@ -173,7 +170,7 @@ const MediaContent: React.FC<{
 
   return (
     <div key={currentItem.url} style={wrapperStyle}>
-      <div style={{ position: 'relative', width: '100%', ...mediaStyle }}>
+      <div style={{ position: 'relative', width: '100%' }}>
         {mediaItems.map((item, index) => (
           <img
             key={item.url}
@@ -260,6 +257,7 @@ export interface RenderOptions {
   defaultQuoteFontSize?: number;
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
+  inRow?: boolean;
 }
 
 export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.ReactNode => {
@@ -268,7 +266,8 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
     showMediaControls = true,
     defaultQuoteFontSize = 12,
     defaultBackgroundColor,
-    defaultBorderColor
+    defaultBorderColor,
+    inRow = false
   } = options;
 
   return nodes.map((node, index) => {
@@ -322,6 +321,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
             mediaItems={node.mediaItems}
             attrStr={node.attrStr}
             showControls={showMediaControls}
+            inRow={inRow}
           />
         );
 
@@ -332,6 +332,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
             mediaItems={node.mediaItems}
             attrStr={node.attrStr}
             showControls={showMediaControls}
+            inRow={inRow}
           />
         );
 
@@ -381,7 +382,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
       case 'row':
         return (
           <div key={index} style={node.style} className="script-row">
-            {renderAST(node.children, options)}
+            {renderAST(node.children, { ...options, inRow: true })}
           </div>
         );
 

@@ -83,8 +83,7 @@ async function main() {
   const cpus = os.cpus().length;
   const concurrency = Math.max(1, cpus - 2); // 留出 2 个核心给系统
 
-  const args = [
-    'remotion',
+  const renderArgs = [
     'render',
     'src/remotion/index.tsx',
     'MyVideo',
@@ -92,30 +91,61 @@ async function main() {
     '--props=video-config.json',
     `--concurrency=${concurrency}`, // 启用多线程并发渲染
     '--gl=angle', // Windows 下使用 ANGLE 硬件加速渲染 CSS
-    '--chromium-flags="--disable-dev-shm-usage --no-sandbox"', // 提高 Chromium 运行稳定性
+    '--chromium-flags=--disable-dev-shm-usage --no-sandbox', // 提高 Chromium 运行稳定性
   ];
 
   // 检查是否有本地浏览器，避免下载失败
   const localBrowser = getLocalChromePath();
   if (localBrowser) {
     console.log(`🌐 使用本地浏览器进行渲染: ${localBrowser}`);
-    args.push(`--browser-executable="${localBrowser}"`);
+    renderArgs.push(`--browser-executable=${localBrowser}`);
   }
 
   // 统一使用 h264 编码，Remotion 内部会根据环境自动优化
   // 如果直接传 h264-nvenc，Remotion 会因 .mp4 扩展名检查而报错
-  args.push('--codec=h264');
+  renderArgs.push('--codec=h264');
 
-  console.log(`执行命令: npx ${args.join(' ')}`);
+  const localRemotionBin = resolve(
+    process.cwd(),
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'remotion.cmd' : 'remotion'
+  );
+  const localRemotionCliEntry = resolve(
+    process.cwd(),
+    'node_modules',
+    '@remotion',
+    'cli',
+    'remotion-cli.js'
+  );
+  const npmCliPath = resolve(
+    process.execPath,
+    '..',
+    'node_modules',
+    'npm',
+    'bin',
+    'npm-cli.js'
+  );
+
+  const hasLocalRemotion = existsSync(localRemotionBin) && existsSync(localRemotionCliEntry);
+  const canUseNpmCli = existsSync(npmCliPath);
+  const command = hasLocalRemotion
+    ? 'node'
+    : (canUseNpmCli ? process.execPath : (process.platform === 'win32' ? 'npm.cmd' : 'npm'));
+  const args = hasLocalRemotion
+    ? [localRemotionCliEntry, ...renderArgs]
+    : (canUseNpmCli
+      ? [npmCliPath, 'exec', '--yes', '--package=@remotion/cli', '--', 'remotion', ...renderArgs]
+      : ['exec', '--yes', '--package=@remotion/cli', '--', 'remotion', ...renderArgs]);
+
+  console.log(`执行命令: ${command} ${args.join(' ')}`);
   console.log(`并发线程: ${concurrency}`);
-
-  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   
   // 必须包装成 Promise 并等待进程结束
   await new Promise((resolvePromise, reject) => {
-    const renderProcess = spawn(npx, args, { 
+    const renderProcess = spawn(command, args, {
       stdio: ['inherit', 'pipe', 'pipe'], // 修改为 pipe 模式，以便 server.py 捕获
-      shell: process.platform === 'win32'
+      shell: !hasLocalRemotion && !canUseNpmCli && process.platform === 'win32'
     });
 
     // 实时转发子进程输出到当前进程的 stdout
@@ -133,8 +163,7 @@ async function main() {
         console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
         resolvePromise(true);
       } else {
-        console.error(`\n❌ 渲染失败，退出码: ${code}`);
-        process.exit(code || 1);
+        reject(new Error(`渲染失败，退出码: ${code || 1}`));
       }
     });
 

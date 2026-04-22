@@ -22,6 +22,7 @@ import {
   DeleteOutlined,
   RocketOutlined,
   InfoCircleOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { dialogs } from '../../components/Dialogs';
 
@@ -42,6 +43,7 @@ interface ExtractPageProps {
   goToFilteredData: () => void;
   goToRawData: () => void;
   goToScriptData: () => void;
+  onSyncDraftScenesToVideo: () => void;
   toolDesc: string;
   toolButton: string;
 }
@@ -61,6 +63,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
   goToFilteredData,
   goToRawData,
   goToScriptData,
+  onSyncDraftScenesToVideo,
   toolDesc,
   toolButton,
 }) => {
@@ -190,6 +193,13 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
                   onClick={goToEditor}
                 >
                   进入编辑器
+                </Button>
+                <Button
+                  size="large"
+                  icon={<SyncOutlined />}
+                  onClick={onSyncDraftScenesToVideo}
+                >
+                  同步场景到 Studio
                 </Button>
               </Space>
             )}

@@ -1,7 +1,6 @@
 import subprocess
 import json
 import os
-import platform
 import requests
 import re
 from datetime import datetime
@@ -305,7 +304,7 @@ def render_video():
                     ['node', script_path],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    shell=(platform.system() == 'Windows'),
+                    shell=False,
                     env=env,
                     bufsize=0,
                     cwd=PROJECT_ROOT
