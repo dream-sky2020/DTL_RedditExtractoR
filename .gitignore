@@ -8,3 +8,7 @@ dist
 video-config.json
 out/
 *.mp4
+public/cache/
+__pycache__/
+scripts/__pycache__/
+public/docs/临时*
