@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Space, Typography, message } from 'antd';
-import { DownOutlined, UpOutlined, SelectOutlined, DeleteOutlined, MergeCellsOutlined } from '@ant-design/icons';
+import { DownOutlined, UpOutlined, SelectOutlined, DeleteOutlined, MergeCellsOutlined, TranslationOutlined } from '@ant-design/icons';
 import { VideoConfig } from '../../../types';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 
@@ -14,6 +14,7 @@ interface EditorMultiSelectPanelProps {
   isCollapsed: boolean;
   setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   onRemoveSelectedScenes?: () => void;
+  onOpenTranslationModal?: () => void;
   draftConfig: VideoConfig;
   setDraftConfig: (config: VideoConfig) => void;
 }
@@ -26,6 +27,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   isCollapsed,
   setIsCollapsed,
   onRemoveSelectedScenes,
+  onOpenTranslationModal,
   draftConfig,
   setDraftConfig,
 }) => {
@@ -63,7 +65,11 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
             </Text>
             <Button
               size="small"
-              type={isMultiSelectMode ? 'primary' : 'default'}
+              style={{
+                backgroundColor: isMultiSelectMode ? '#e6f7ff' : '#fff',
+                color: isMultiSelectMode ? '#1890ff' : '#000',
+                borderColor: isMultiSelectMode ? '#91d5ff' : '#d9d9d9',
+              }}
               onClick={() => {
                 setIsMultiSelectMode(!isMultiSelectMode);
                 if (isMultiSelectMode) {
@@ -78,12 +84,29 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
             <Space direction="vertical" style={{ width: '100%' }}>
               <Button
                 block
-                danger
                 icon={<DeleteOutlined />}
                 disabled={selectedSceneIds.length === 0}
                 onClick={onRemoveSelectedScenes}
+                style={{
+                  backgroundColor: selectedSceneIds.length > 0 ? '#ff4d4f' : '#fff',
+                  color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                  borderColor: selectedSceneIds.length > 0 ? '#ff4d4f' : '#d9d9d9',
+                }}
               >
                 批量删除
+              </Button>
+              <Button
+                block
+                icon={<TranslationOutlined />}
+                disabled={selectedSceneIds.length === 0}
+                onClick={onOpenTranslationModal}
+                style={{
+                  backgroundColor: selectedSceneIds.length > 0 ? '#ffec3d' : '#fff',
+                  color: '#000',
+                  borderColor: selectedSceneIds.length > 0 ? '#ffec3d' : '#d9d9d9',
+                }}
+              >
+                批量翻译
               </Button>
               <Button
                 block
@@ -103,10 +126,24 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     message.error(result.message || '合并失败');
                   }
                 }}
+                style={{
+                  backgroundColor: selectedSceneIds.length >= 2 ? '#ffec3d' : '#fff',
+                  color: '#000',
+                  borderColor: selectedSceneIds.length >= 2 ? '#ffec3d' : '#d9d9d9',
+                }}
               >
                 批量合并
               </Button>
-              <Button block size="small" onClick={() => setSelectedSceneIds([])} disabled={selectedSceneIds.length === 0}>
+              <Button 
+                block 
+                size="small" 
+                onClick={() => setSelectedSceneIds([])} 
+                disabled={selectedSceneIds.length === 0}
+                style={{
+                  backgroundColor: '#fff',
+                  color: '#000',
+                }}
+              >
                 清空选择
               </Button>
             </Space>

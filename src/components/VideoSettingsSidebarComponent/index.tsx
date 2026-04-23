@@ -108,6 +108,7 @@ interface VideoSettingsSidebarProps {
   selectedSceneIds?: string[];
   setSelectedSceneIds?: (ids: string[]) => void;
   onRemoveSelectedScenes?: () => void;
+  onOpenTranslationModal?: () => void;
 
   // Studio-Specific
   galleryPageSize?: number;
@@ -177,6 +178,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     selectedSceneIds,
     setSelectedSceneIds,
     onRemoveSelectedScenes,
+    onOpenTranslationModal,
     // Studio specific
     galleryPageSize,
     setGalleryPageSize,
@@ -374,8 +376,8 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
 
           <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
 
-          {/* Editor Specific: Multi-select Section */}
-          {mode === 'editor' && setIsMultiSelectMode && selectedSceneIds && setSelectedSceneIds && (
+          {/* Multi-select Section (Available in both Editor and Studio) */}
+          {setIsMultiSelectMode && selectedSceneIds && setSelectedSceneIds && (
             <>
               <EditorMultiSelectPanel
                 isMultiSelectMode={Boolean(isMultiSelectMode)}
@@ -385,6 +387,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                 isCollapsed={isMultiSelectCollapsed}
                 setIsCollapsed={setIsMultiSelectCollapsed}
                 onRemoveSelectedScenes={onRemoveSelectedScenes}
+                onOpenTranslationModal={onOpenTranslationModal}
                 draftConfig={draftConfig}
                 setDraftConfig={setDraftConfig}
               />

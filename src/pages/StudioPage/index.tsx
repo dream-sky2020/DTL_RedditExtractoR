@@ -10,9 +10,13 @@ import {
   InputNumber,
   Divider,
   Button,
+  Modal,
+  message,
+  Tag,
 } from 'antd';
 import {
   FileImageOutlined,
+  CheckCircleFilled,
 } from '@ant-design/icons';
 import {
   VideoPreviewPlayer,
@@ -24,6 +28,8 @@ import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/v
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
+import { useDslTranslate } from '@hooks/useDslTranslate';
+import { TranslationModal } from '@components/TranslationModal';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 
@@ -75,6 +81,31 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     quoteBackgroundColor, quoteBorderColor
   });
 
+  const {
+    isModalOpen: isTranslateModalOpen,
+    setIsModalOpen: setIsTranslateModalOpen,
+    chunks: translateChunks,
+    initialValue: translateInitialValue,
+    extractChunks,
+    applyTranslations
+  } = useDslTranslate();
+
+  const handleApplyTranslate = (value: string) => {
+    const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+    const result = applyTranslations(selectedScenes, value);
+    if (result.ok && result.nextScenes) {
+      const newScenes = videoConfig.scenes.map(s => {
+        const updated = result.nextScenes!.find(ns => ns.id === s.id);
+        return updated || s;
+      });
+      setVideoConfig({ ...videoConfig, scenes: newScenes });
+      setIsTranslateModalOpen(false);
+      message.success(`已完成翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
+    } else if (result.error) {
+      message.error(result.error);
+    }
+  };
+
   // ---------------------------------------------------------
   // 原有的组件逻辑
   // ---------------------------------------------------------
@@ -94,6 +125,10 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const [previewLayoutMode, setPreviewLayoutMode] = useState<PreviewLayoutMode>('auto');
   const [previewMinWidth, setPreviewMinWidth] = useState(280);
   const [frameOffset, setFrameOffset] = useState(15);
+  
+  // Multi-select Logic
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
   
   const fps = DEFAULT_PREVIEW_FPS;
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
@@ -117,17 +152,39 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const isPortrait = activeCanvas.height > activeCanvas.width;
   const autoGridMinWidth = Math.max(180, Math.min(520, previewMinWidth));
 
+  // 当 videoConfig.scenes 发生变化时，清理掉已经不存在的选中 ID
   useEffect(() => {
-    const maxPage = Math.max(1, Math.ceil(scenes.length / galleryPageSize));
-    if (galleryPage > maxPage) {
-      setGalleryPage(maxPage);
+    setSelectedSceneIds(prev => prev.filter(id => videoConfig.scenes.some(s => s.id === id)));
+  }, [videoConfig.scenes]);
+
+  // 当关闭多选模式时，清空选中项
+  useEffect(() => {
+    if (!isMultiSelectMode) {
+      setSelectedSceneIds([]);
     }
-  }, [scenes.length, galleryPage, galleryPageSize]);
+  }, [isMultiSelectMode]);
+
+  const removeSelectedScenes = () => {
+    if (selectedSceneIds.length === 0) return;
+    Modal.confirm({
+      title: '确认批量删除',
+      content: `确认删除选中的 ${selectedSceneIds.length} 个画面格吗？`,
+      okText: '确认删除',
+      cancelText: '取消',
+      onOk: () => {
+        const newScenes = videoConfig.scenes.filter(s => !selectedSceneIds.includes(s.id));
+        setVideoConfig({ ...videoConfig, scenes: newScenes });
+        setSelectedSceneIds([]);
+        message.success(`已删除 ${selectedSceneIds.length} 个画面格`);
+      },
+    });
+  };
 
   // 渲染单张画面的播放器组件
-  const FramePlayer = ({ idx }: { idx: number }) => (
+  const FramePlayer = ({ idx, isSelected }: { idx: number; isSelected: boolean }) => (
     <div 
       style={{ 
+        position: 'relative',
         background: 'var(--brand-dark)', 
         borderRadius: 8, 
         overflow: 'hidden',
@@ -135,9 +192,20 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        cursor: onViewScene ? 'pointer' : 'default',
+        cursor: (onViewScene || isMultiSelectMode) ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
+        border: '1px solid transparent',
       }}
-      onClick={() => onViewScene?.(idx)}
+      onClick={() => {
+        const scene = scenes[idx];
+        if (isMultiSelectMode) {
+          setSelectedSceneIds(prev => 
+            prev.includes(scene.id) ? prev.filter(sid => sid !== scene.id) : [...prev, scene.id]
+          );
+        } else {
+          onViewScene?.(idx);
+        }
+      }}
     >
       <VideoPreviewPlayer
         videoConfig={videoConfig}
@@ -148,10 +216,41 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         style={{
           width: '100%',
           aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
+          opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
         }}
         controls={false}
         autoPlay={false}
       />
+      {isSelected && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10,
+          background: 'rgba(255, 255, 255, 0.8)',
+          borderRadius: '50%',
+          width: 64,
+          height: 64,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          pointerEvents: 'none',
+        }}>
+          <CheckCircleFilled style={{ fontSize: 48, color: 'var(--ant-primary-color)' }} />
+        </div>
+      )}
+      {isSelected && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          border: '2px solid var(--ant-primary-color)',
+          borderRadius: 8,
+          pointerEvents: 'none',
+          zIndex: 5
+        }} />
+      )}
     </div>
   );
 
@@ -165,6 +264,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                 <Space>
                   <FileImageOutlined />
                   <span>图库预览 ({activeAspectRatioLabel})</span>
+                  {isMultiSelectMode && <Tag color="blue">多选模式已开启</Tag>}
                 </Space>
               }
               className="panel-card"
@@ -200,9 +300,14 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                     >
                       {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
                         <div key={scene.id} className="gallery-item-wrap">
-                          <FramePlayer idx={sceneIdx} />
+                          <FramePlayer idx={sceneIdx} isSelected={selectedSceneIds.includes(scene.id)} />
                           <div style={{ marginTop: 8, textAlign: 'center' }}>
-                            <Text strong ellipsis style={{ width: '100%', display: 'block', fontSize: '12px' }}>
+                            <Text strong ellipsis style={{ 
+                              width: '100%', 
+                              display: 'block', 
+                              fontSize: '12px',
+                              color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
+                            }}>
                               {sceneIdx + 1}. {scene.title || '未命名画面'}
                             </Text>
                           </div>
@@ -224,9 +329,14 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                         key={scene.id}
                       >
                         <div className="gallery-item-wrap">
-                          <FramePlayer idx={sceneIdx} />
+                          <FramePlayer idx={sceneIdx} isSelected={selectedSceneIds.includes(scene.id)} />
                           <div style={{ marginTop: 8, textAlign: 'center' }}>
-                            <Text strong ellipsis style={{ width: '100%', display: 'block', fontSize: '12px' }}>
+                            <Text strong ellipsis style={{ 
+                              width: '100%', 
+                              display: 'block', 
+                              fontSize: '12px',
+                              color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
+                            }}>
                               {sceneIdx + 1}. {scene.title || '未命名画面'}
                             </Text>
                           </div>
@@ -315,6 +425,23 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         setPreviewLayoutMode={setPreviewLayoutMode}
         previewMinWidth={previewMinWidth}
         setPreviewMinWidth={setPreviewMinWidth}
+        isMultiSelectMode={isMultiSelectMode}
+        setIsMultiSelectMode={setIsMultiSelectMode}
+        selectedSceneIds={selectedSceneIds}
+        setSelectedSceneIds={setSelectedSceneIds}
+        onRemoveSelectedScenes={removeSelectedScenes}
+        onOpenTranslationModal={() => {
+          const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+          extractChunks(selectedScenes);
+        }}
+      />
+      
+      <TranslationModal
+        open={isTranslateModalOpen}
+        onCancel={() => setIsTranslateModalOpen(false)}
+        onOk={handleApplyTranslate}
+        chunks={translateChunks}
+        initialValue={translateInitialValue}
       />
     </div>
   );

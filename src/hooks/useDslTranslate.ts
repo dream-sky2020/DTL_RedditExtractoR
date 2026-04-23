@@ -1,0 +1,123 @@
+import { useState, useCallback } from 'react';
+import { VideoScene } from '@/types';
+import { sceneToDsl, parseSceneDsl } from '@/rendering/sceneDsl';
+
+interface TranslationChunk {
+  id: number;
+  original: string;
+}
+
+export const useDslTranslate = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [chunks, setChunks] = useState<TranslationChunk[]>([]);
+  const [initialValue, setInitialValue] = useState('');
+
+  // 提取可翻译的文本块
+  const extractChunks = useCallback((scenes: VideoScene[]) => {
+    const uniqueChunks = new Set<string>();
+    
+    scenes.forEach(scene => {
+      const dsl = sceneToDsl(scene);
+      
+      // 1. 移除常见的 DSL 标签和结构
+      const contentOnly = dsl.replace(/<scene[^>]*>|<\/scene>|<item[^>]*>|<\/item>/gi, '');
+      
+      const handleRegex = /\[style color=[^\]]+ b\]u\/[^:]+:\[\/style\]/g;
+      const withoutHandles = contentOnly.replace(handleRegex, '');
+
+      const tagRegex = /\[style[^\]]*\]|\[\/style\]|\[quote[^\]]*\]|\[\/quote\]|\[image\][\s\S]*?\[\/image\]|\[\\n\]/g;
+      const stripped = withoutHandles.replace(tagRegex, '\n');
+
+      stripped.split('\n').forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed && trimmed.length > 1 && !/^[0-9\W_]+$/.test(trimmed)) {
+          uniqueChunks.add(trimmed);
+        }
+      });
+    });
+
+    const chunkList = Array.from(uniqueChunks).map((text, index) => ({
+      id: index + 1,
+      original: text
+    }));
+    
+    setChunks(chunkList);
+    
+    const initialInput = chunkList.map(c => `[#${c.id}=<${c.original}>]`).join('\n');
+    setInitialValue(initialInput);
+    setIsModalOpen(true);
+  }, []);
+
+  const applyTranslations = useCallback((scenes: VideoScene[], translationText: string) => {
+    // 解析用户的翻译输入 [#1=<翻译内容>]
+    const translationMap = new Map<string, string>();
+    const replaceRegex = /\[#(\d+)=<([\s\S]*?)>\]/g;
+    let match;
+    
+    const inputMap = new Map<number, string>();
+    while ((match = replaceRegex.exec(translationText)) !== null) {
+      const id = parseInt(match[1], 10);
+      const translated = match[2];
+      inputMap.set(id, translated);
+    }
+
+    // 将 ID 映射回原始文本
+    chunks.forEach(chunk => {
+      if (inputMap.has(chunk.id)) {
+        translationMap.set(chunk.original, inputMap.get(chunk.id)!);
+      }
+    });
+
+    if (translationMap.size === 0) {
+      return { ok: false, error: '未检测到有效的翻译内容，请确保格式正确：[#N=<翻译内容>]' };
+    }
+
+    const nextScenes: VideoScene[] = [];
+    let totalReplacements = 0;
+
+    for (let i = 0; i < scenes.length; i++) {
+      const scene = scenes[i];
+      let dsl = sceneToDsl(scene);
+      let changed = false;
+
+      // 执行替换
+      translationMap.forEach((translated, original) => {
+        // 使用正则全局替换，注意转义原始文本中的正则特殊字符
+        const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedOriginal, 'g');
+        const count = (dsl.match(regex) || []).length;
+        if (count > 0) {
+          dsl = dsl.replace(regex, translated);
+          totalReplacements += count;
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        const parsed = parseSceneDsl(dsl, scene);
+        if (!parsed.ok) {
+          return { ok: false, error: `场景 "${scene.title}" 在替换后解析失败：${parsed.error}` };
+        }
+        nextScenes.push(parsed.scene);
+      } else {
+        nextScenes.push(scene);
+      }
+    }
+
+    return {
+      ok: true,
+      nextScenes,
+      totalReplacements,
+      affectedScenes: nextScenes.filter((s, i) => s !== scenes[i]).length
+    };
+  }, [chunks]);
+
+  return {
+    isModalOpen,
+    setIsModalOpen,
+    chunks,
+    initialValue,
+    extractChunks,
+    applyTranslations
+  };
+};

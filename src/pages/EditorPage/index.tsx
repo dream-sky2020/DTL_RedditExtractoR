@@ -19,6 +19,8 @@ import { SceneFlow } from './components/SceneFlow';
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
+import { useDslTranslate } from '@hooks/useDslTranslate';
+import { TranslationModal } from '@components/TranslationModal';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
@@ -67,6 +69,31 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor,
     quoteBackgroundColor, quoteBorderColor
   });
+
+  const {
+    isModalOpen: isTranslateModalOpen,
+    setIsModalOpen: setIsTranslateModalOpen,
+    chunks: translateChunks,
+    initialValue: translateInitialValue,
+    extractChunks,
+    applyTranslations
+  } = useDslTranslate();
+
+  const handleApplyTranslate = (value: string) => {
+    const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+    const result = applyTranslations(selectedScenes, value);
+    if (result.ok && result.nextScenes) {
+      const newScenes = videoConfig.scenes.map(s => {
+        const updated = result.nextScenes!.find(ns => ns.id === s.id);
+        return updated || s;
+      });
+      setVideoConfig({ ...videoConfig, scenes: newScenes });
+      setIsTranslateModalOpen(false);
+      message.success(`已完成翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
+    } else if (result.error) {
+      message.error(result.error);
+    }
+  };
 
   // ---------------------------------------------------------
   // 原有的组件逻辑
@@ -285,6 +312,18 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         selectedSceneIds={selectedSceneIds}
         setSelectedSceneIds={setSelectedSceneIds}
         onRemoveSelectedScenes={removeSelectedScenes}
+        onOpenTranslationModal={() => {
+          const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+          extractChunks(selectedScenes);
+        }}
+      />
+
+      <TranslationModal
+        open={isTranslateModalOpen}
+        onCancel={() => setIsTranslateModalOpen(false)}
+        onOk={handleApplyTranslate}
+        chunks={translateChunks}
+        initialValue={translateInitialValue}
       />
 
       <Modal

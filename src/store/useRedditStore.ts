@@ -119,6 +119,7 @@ export const useRedditStore = create<RedditState>()(
             authorProfiles: nextProfiles,
           });
 
+          // 更新 Reddit 数据
           set({
             allAuthors: nextAuthors,
             authorProfiles: nextProfiles,
@@ -127,6 +128,25 @@ export const useRedditStore = create<RedditState>()(
             hasStoredRawData: true,
             loading: false
           });
+
+          // 【关键修正】同时更新 VideoStore 中的配置，确保其他页面能看到新数据
+          const videoStore = (await import('./useVideoStore')).useVideoStore.getState();
+          const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();
+          
+          const newConfig = videoStore.buildVideoConfigFromResult(nextResult, {
+            titleAlignment: globalSettings.titleAlignment,
+            titleFontSize: globalSettings.titleFontSize,
+            contentFontSize: globalSettings.contentFontSize,
+            quoteFontSize: globalSettings.quoteFontSize,
+            quoteBackgroundColor: globalSettings.quoteBackgroundColor,
+            quoteBorderColor: globalSettings.quoteBorderColor,
+            maxQuoteDepth: globalSettings.maxQuoteDepth,
+            defaultQuoteMaxLimit: globalSettings.defaultQuoteMaxLimit,
+            sceneBackgroundColor: globalSettings.sceneBackgroundColor,
+            itemBackgroundColor: globalSettings.itemBackgroundColor,
+          });
+          
+          videoStore.setVideoConfig(newConfig);
 
           message.success('数据提取成功');
         } catch (err) {
