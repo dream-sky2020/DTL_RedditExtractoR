@@ -23,11 +23,11 @@ import {
   getTotalFrames,
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
-import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
 import { dialogs } from '../../components/Dialogs';
 import { useDslGlobalReplace } from '@hooks/useDslGlobalReplace';
+import { useVideoStore } from '@/store';
 
 // Components
 import { Filmstrip } from './components/Filmstrip';
@@ -37,19 +37,14 @@ import { DslEditor } from '@components/DslEditor';
 
 const { Text } = Typography;
 
-interface StudioScenePageProps {
-  videoConfig: VideoConfig;
-  setVideoConfig: (config: VideoConfig) => void;
-  initialSceneIdx?: number;
-  onBack: () => void;
-}
-
-export const StudioScenePage: React.FC<StudioScenePageProps> = ({
-  videoConfig,
-  setVideoConfig,
+export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () => void }> = ({
   initialSceneIdx = 0,
   onBack,
 }) => {
+  const {
+    videoConfig,
+    setVideoConfig,
+  } = useVideoStore();
   const PREVIEW_MIN_HEIGHT = 280;
   const PREVIEW_MAX_HEIGHT_MARGIN = 180;
   const PREVIEW_DEFAULT_HEIGHT = 480;

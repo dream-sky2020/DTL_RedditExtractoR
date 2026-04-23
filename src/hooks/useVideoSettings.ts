@@ -19,9 +19,6 @@ import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
 interface VideoSettingsOptions {
   videoConfig: VideoConfig;
   setVideoConfig: (config: VideoConfig) => void;
-  draftConfig: VideoConfig;
-  setDraftConfig: (config: VideoConfig) => void;
-  persistVideoConfig: (config: VideoConfig) => void;
   commentSortMode: CommentSortMode;
   setCommentSortMode: (mode: CommentSortMode) => void;
   replyOrderMode: ReplyOrderMode;
@@ -62,7 +59,7 @@ interface VideoSettingsOptions {
 
 export const useVideoSettings = (opts: VideoSettingsOptions) => {
   const {
-    videoConfig, setVideoConfig, draftConfig, setDraftConfig, persistVideoConfig,
+    videoConfig, setVideoConfig,
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
     rawResult, setResult, colorArrangement, setColorArrangement,
     allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles,
@@ -174,7 +171,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       sortMode,
       replyOrder,
       authorProfiles: profiles,
-      imageLayoutMode: draftConfig.imageLayoutMode,
+      imageLayoutMode: videoConfig.imageLayoutMode,
     });
     const nextConfig = {
       ...buildVideoConfigFromResult(
@@ -182,16 +179,14 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
         titleAlignment,
         titleFontSize,
         contentFontSize,
-        draftConfig.canvas || videoConfig.canvas || createDefaultVideoCanvasConfig()
+        videoConfig.canvas || createDefaultVideoCanvasConfig()
       ),
-      imageLayoutMode: draftConfig.imageLayoutMode,
+      imageLayoutMode: videoConfig.imageLayoutMode,
     };
 
     setResult(nextResult);
     const normalizedConfig = normalizeVideoConfig(nextConfig);
     setVideoConfig(normalizedConfig);
-    setDraftConfig(normalizedConfig);
-    persistVideoConfig(normalizedConfig);
     message.success(successMessage);
   };
 
@@ -241,24 +236,20 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
 
   const handleImageLayoutModeChange = (mode: ImageLayoutMode) => {
     setImageLayoutMode(mode);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, imageLayoutMode: mode });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, imageLayoutMode: mode });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleSceneLayoutChange = (layout: SceneLayoutType) => {
     setSceneLayout(layout);
-    const newScenes = draftConfig.scenes.map(s => ({ ...s, layout }));
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes });
+    const newScenes = videoConfig.scenes.map(s => ({ ...s, layout }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleTitleAlignmentChange = (alignment: TitleAlignmentType) => {
     setTitleAlignment(alignment);
-    const newScenes = draftConfig.scenes.map(scene => {
+    const newScenes = videoConfig.scenes.map(scene => {
       if (scene.type === 'post' && scene.items.length > 0) {
         const newItems = scene.items.map(item => {
           let newContent = item.content;
@@ -273,15 +264,13 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       }
       return scene;
     });
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleAlignment: alignment });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleTitleFontSizeChange = (size: number) => {
     setTitleFontSize(size);
-    const newScenes = draftConfig.scenes.map(scene => {
+    const newScenes = videoConfig.scenes.map(scene => {
       if (scene.type === 'post' && scene.items.length > 0) {
         const newItems = scene.items.map(item => {
           let newContent = item.content;
@@ -296,15 +285,13 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       }
       return scene;
     });
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, titleFontSize: size });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontSize: size });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleContentFontSizeChange = (size: number) => {
     setContentFontSize(size);
-    const newScenes = draftConfig.scenes.map(scene => {
+    const newScenes = videoConfig.scenes.map(scene => {
       const newItems = scene.items.map(item => {
         let newContent = item.content;
         newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
@@ -317,79 +304,61 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       });
       return { ...scene, items: newItems };
     });
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, contentFontSize: size });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontSize: size });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleQuoteFontSizeChange = (size: number) => {
     setQuoteFontSize(size);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, quoteFontSize: size });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontSize: size });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleMaxQuoteDepthChange = (depth: number) => {
     setMaxQuoteDepth(depth);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, maxQuoteDepth: depth });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, maxQuoteDepth: depth });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleDefaultQuoteMaxLimitChange = (limit: number) => {
     setDefaultQuoteMaxLimit(limit);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, defaultQuoteMaxLimit: limit });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, defaultQuoteMaxLimit: limit });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleSceneBackgroundColorChange = (color: string) => {
     setSceneBackgroundColor(color);
-    const newScenes = draftConfig.scenes.map(scene => ({ ...scene, backgroundColor: color }));
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, sceneBackgroundColor: color });
+    const newScenes = videoConfig.scenes.map(scene => ({ ...scene, backgroundColor: color }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, sceneBackgroundColor: color });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleItemBackgroundColorChange = (color: string) => {
     setItemBackgroundColor(color);
-    const newScenes = draftConfig.scenes.map(scene => ({
+    const newScenes = videoConfig.scenes.map(scene => ({
       ...scene,
       items: scene.items.map(item => ({ ...item, backgroundColor: color }))
     }));
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes, itemBackgroundColor: color });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleQuoteBackgroundColorChange = (color: string) => {
     setQuoteBackgroundColor(color);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBackgroundColor: color });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBackgroundColor: color });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const handleQuoteBorderColorChange = (color: string) => {
     setQuoteBorderColor(color);
-    const newConfig = normalizeVideoConfig({ ...draftConfig, quoteBorderColor: color });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBorderColor: color });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   const setAllSceneLayouts = (layout: 'top' | 'center') => {
-    const newScenes = draftConfig.scenes.map((s) => ({ ...s, layout }));
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: newScenes });
+    const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
     message.success(`已将全部画面格布局设为 ${layout}`);
   };
 
@@ -403,10 +372,8 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       duration: 5,
       items: [{ id: 'item-' + Date.now(), author: 'NewUser', content: '' }]
     };
-    const newConfig = normalizeVideoConfig({ ...draftConfig, scenes: [...draftConfig.scenes, newScene] });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] });
     setVideoConfig(newConfig);
-    setDraftConfig(newConfig);
-    persistVideoConfig(newConfig);
   };
 
   return {

@@ -97,7 +97,7 @@ interface VideoSettingsSidebarProps {
   allAuthors: string[];
   authorProfiles: Record<string, AuthorProfile>;
   colorArrangement: ColorArrangementSettings;
-  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
+  setColorArrangement: (settings: ColorArrangementSettings | ((prev: ColorArrangementSettings) => ColorArrangementSettings)) => void;
 
   // Mode-Specific Features
   mode: 'editor' | 'studio';

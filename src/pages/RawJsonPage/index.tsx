@@ -2,19 +2,15 @@ import React from 'react';
 import { Card, Button, Space, Typography, Empty, message } from 'antd';
 import { CopyOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 
+import { useRedditStore } from '@/store';
+
 const { Text } = Typography;
 
-interface RawJsonPageProps {
-  data: any;
-  onBack: () => void;
-  toolDesc: string;
-}
-
-export const RawJsonPage: React.FC<RawJsonPageProps> = ({
-  data,
+export const RawJsonPage: React.FC<{ onBack: () => void; toolDesc: string }> = ({
   onBack,
   toolDesc,
 }) => {
+  const { rawResult: data } = useRedditStore();
   const copyToClipboard = async () => {
     if (!data) return;
     try {

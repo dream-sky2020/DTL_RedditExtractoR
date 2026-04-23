@@ -20,96 +20,59 @@ import {
   getTotalFrames,
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
-import { VideoConfig, VideoScene, ImageLayoutMode, SceneLayoutType, TitleAlignmentType } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
-import { AuthorProfile, CommentSortMode, ReplyOrderMode, ColorArrangementSettings } from '../../types';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
+import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
+import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';
 
-interface StudioPageProps {
-  videoConfig: VideoConfig;
-  setVideoConfig: (config: VideoConfig) => void;
-  draftConfig: VideoConfig;
-  setDraftConfig: (config: VideoConfig) => void;
-  persistVideoConfig: (config: VideoConfig) => void;
-  onViewScene?: (idx: number) => void;
-  
-  commentSortMode: CommentSortMode;
-  setCommentSortMode: React.Dispatch<React.SetStateAction<CommentSortMode>>;
-  replyOrderMode: ReplyOrderMode;
-  setReplyOrderMode: React.Dispatch<React.SetStateAction<ReplyOrderMode>>;
-  
-  rawResult: any;
-  result: any;
-  setResult: React.Dispatch<React.SetStateAction<any>>;
-  
-  colorArrangement: ColorArrangementSettings;
-  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
-  
-  allAuthors: string[];
-  authorProfiles: Record<string, AuthorProfile>;
-  setAuthorProfiles: React.Dispatch<React.SetStateAction<Record<string, AuthorProfile>>>;
-  persistAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
-  
-  imageLayoutMode: ImageLayoutMode;
-  setImageLayoutMode: (mode: ImageLayoutMode) => void;
-  sceneLayout: SceneLayoutType;
-  setSceneLayout: (layout: SceneLayoutType) => void;
-  titleAlignment: TitleAlignmentType;
-  setTitleAlignment: (alignment: TitleAlignmentType) => void;
-  titleFontSize: number;
-  setTitleFontSize: (size: number) => void;
-  contentFontSize: number;
-  setContentFontSize: (size: number) => void;
-  quoteFontSize: number;
-  setQuoteFontSize: (size: number) => void;
-  maxQuoteDepth: number;
-  setMaxQuoteDepth: (depth: number) => void;
-  defaultQuoteMaxLimit: number;
-  setDefaultQuoteMaxLimit: (limit: number) => void;
-  sceneBackgroundColor: string;
-  setSceneBackgroundColor: (color: string) => void;
-  itemBackgroundColor: string;
-  setItemBackgroundColor: (color: string) => void;
-  quoteBackgroundColor: string;
-  setQuoteBackgroundColor: (color: string) => void;
-  quoteBorderColor: string;
-  setQuoteBorderColor: (color: string) => void;
-}
 
-export const StudioPage: React.FC<StudioPageProps> = (props) => {
+export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ onViewScene }) => {
   const {
     videoConfig,
-    onViewScene,
-    commentSortMode,
+    setVideoConfig,
+  } = useVideoStore();
+
+  const {
+    commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
+    imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
+    titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize,
+    contentFontSize, setContentFontSize, quoteFontSize, setQuoteFontSize,
+    maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
+    sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
+    quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
+    colorArrangement, setColorArrangement,
+  } = useSettingsStore();
+
+  const {
     rawResult,
-    colorArrangement,
-    setColorArrangement,
+    result,
+    setResult,
     allAuthors,
     authorProfiles,
-    imageLayoutMode,
-    sceneLayout,
-    titleAlignment,
-    titleFontSize,
-    contentFontSize,
-    quoteFontSize,
-    maxQuoteDepth,
-    defaultQuoteMaxLimit,
-    sceneBackgroundColor,
-    itemBackgroundColor,
-    quoteBackgroundColor,
-    quoteBorderColor,
-  } = props;
+    setAuthorProfiles,
+  } = useRedditStore();
 
   // 使用自定义 Hook 处理视频设置逻辑
   const videoSettingsHandlers = useVideoSettings({
-    ...props,
-    setCommentSortMode: props.setCommentSortMode,
-    setReplyOrderMode: props.setReplyOrderMode,
+    videoConfig, setVideoConfig,
+    commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
+    rawResult, setResult, colorArrangement, setColorArrangement,
+    allAuthors, authorProfiles, setAuthorProfiles, 
+    persistAuthorProfiles: (p) => {
+      setAuthorProfiles(p);
+      localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
+    },
+    setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
+    setContentFontSize, setQuoteFontSize, setMaxQuoteDepth, setDefaultQuoteMaxLimit,
+    setSceneBackgroundColor, setItemBackgroundColor, setQuoteBackgroundColor, setQuoteBorderColor,
+    titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
+    maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor,
+    quoteBackgroundColor, quoteBorderColor
   });
 
   // ---------------------------------------------------------
@@ -307,9 +270,9 @@ export const StudioPage: React.FC<StudioPageProps> = (props) => {
         resetSidebarWidthToDefault={resetSidebarWidthToDefault}
         toolTitle="Studio 操作面板"
         draftConfig={videoConfig}
-        setDraftConfig={props.setVideoConfig}
-        commentSortMode={props.commentSortMode}
-        replyOrderMode={props.replyOrderMode}
+        setDraftConfig={setVideoConfig}
+        commentSortMode={commentSortMode}
+        replyOrderMode={replyOrderMode}
         imageLayoutMode={imageLayoutMode}
         sceneLayout={sceneLayout}
         titleAlignment={titleAlignment}

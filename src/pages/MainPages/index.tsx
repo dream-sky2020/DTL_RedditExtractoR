@@ -37,6 +37,9 @@ import {
   TitleAlignmentType,
   VideoScene
 } from '../../types';
+import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
+import { normalizeVideoConfig } from '@/rendering/videoCanvas';
+import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 
 const { Header, Content } = Layout;
 
@@ -49,67 +52,7 @@ interface MainLayoutProps {
   activeTool: ToolKey;
   setActiveTool: React.Dispatch<React.SetStateAction<ToolKey>>;
   
-  // Data State
-  redditUrl: string;
-  setRedditUrl: React.Dispatch<React.SetStateAction<string>>;
-  loading: boolean;
-  error: string;
-  errorDebug: string;
-  result: any;
-  setResult: React.Dispatch<React.SetStateAction<any>>;
-  rawResult: any;
-  hasStoredRawData: boolean;
-  
-  // Config State
-  videoConfig: VideoConfig;
-  setVideoConfig: React.Dispatch<React.SetStateAction<VideoConfig>>;
-  draftConfig: VideoConfig;
-  setDraftConfig: React.Dispatch<React.SetStateAction<VideoConfig>>;
-  persistVideoConfig: (config: VideoConfig) => void;
-  
-  // Preferences
-  commentSortMode: CommentSortMode;
-  setCommentSortMode: React.Dispatch<React.SetStateAction<CommentSortMode>>;
-  replyOrderMode: ReplyOrderMode;
-  setReplyOrderMode: React.Dispatch<React.SetStateAction<ReplyOrderMode>>;
-  imageLayoutMode: 'gallery' | 'row' | 'single';
-  setImageLayoutMode: React.Dispatch<React.SetStateAction<'gallery' | 'row' | 'single'>>;
-  sceneLayout: 'top' | 'center';
-  setSceneLayout: React.Dispatch<React.SetStateAction<'top' | 'center'>>;
-  titleAlignment: TitleAlignmentType;
-  setTitleAlignment: React.Dispatch<React.SetStateAction<TitleAlignmentType>>;
-  titleFontSize: number;
-  setTitleFontSize: React.Dispatch<React.SetStateAction<number>>;
-  contentFontSize: number;
-  setContentFontSize: React.Dispatch<React.SetStateAction<number>>;
-  quoteFontSize: number;
-  setQuoteFontSize: React.Dispatch<React.SetStateAction<number>>;
-  maxQuoteDepth: number;
-  setMaxQuoteDepth: React.Dispatch<React.SetStateAction<number>>;
-  defaultQuoteMaxLimit: number;
-  setDefaultQuoteMaxLimit: React.Dispatch<React.SetStateAction<number>>;
-  sceneBackgroundColor: string;
-  setSceneBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
-  itemBackgroundColor: string;
-  setItemBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
-  quoteBackgroundColor: string;
-  setQuoteBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
-  quoteBorderColor: string;
-  setQuoteBorderColor: React.Dispatch<React.SetStateAction<string>>;
-  
-  // Profiles
-  allAuthors: string[];
-  authorProfiles: Record<string, AuthorProfile>;
-  setAuthorProfiles: React.Dispatch<React.SetStateAction<Record<string, AuthorProfile>>>;
-  persistAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
-  colorArrangement: ColorArrangementSettings;
-  setColorArrangement: React.Dispatch<React.SetStateAction<ColorArrangementSettings>>;
-  
   // Actions
-  fetchRedditData: () => Promise<void>;
-  clearPersistedRawRedditData: () => void;
-  copyToClipboard: () => Promise<void>;
-  normalizeVideoConfig: (config: VideoConfig) => VideoConfig;
   onMenuSelect: (info: { key: string }) => void;
   
   // Export/Render
@@ -129,20 +72,28 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = (props) => {
   const {
     collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool,
-    redditUrl, setRedditUrl, loading, error, errorDebug, result, setResult, rawResult, hasStoredRawData,
-    videoConfig, setVideoConfig, draftConfig, setDraftConfig, persistVideoConfig,
-    commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode, 
-    imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
-    titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize, contentFontSize, setContentFontSize,
-    quoteFontSize, setQuoteFontSize, maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
-    sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
-    quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
-    allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles, colorArrangement, setColorArrangement,
-    fetchRedditData, clearPersistedRawRedditData, copyToClipboard,
-    normalizeVideoConfig, onMenuSelect,
+    onMenuSelect,
     isExportModalVisible, setIsExportModalVisible, isAutoRendering, autoRenderStatus, renderProgress,
     startAutoRender, downloadVideoConfig, selectedSceneIdx, setSelectedSceneIdx
   } = props;
+
+  const {
+    result,
+    rawResult,
+    allAuthors,
+    authorProfiles,
+    setAuthorProfiles,
+  } = useRedditStore();
+
+  const {
+    videoConfig,
+    setVideoConfig,
+  } = useVideoStore();
+
+  const {
+    commentSortMode, 
+    replyOrderMode, 
+  } = useSettingsStore();
 
   const toolMeta = useMemo(() => {
     switch (activeTool) {
@@ -262,29 +213,10 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
           <Content className="admin-content">
             {activeTool === 'extract' && (
               <ExtractPage 
-                redditUrl={redditUrl}
-                setRedditUrl={setRedditUrl}
-                loading={loading}
-                error={error}
-                errorDebug={errorDebug}
-                result={result}
-                fetchRedditData={fetchRedditData}
-                clearStoredRawData={clearPersistedRawRedditData}
-                hasStoredRawData={hasStoredRawData}
-                copyToClipboard={copyToClipboard}
                 goToEditor={() => setActiveTool('editor')}
                 goToFilteredData={() => setActiveTool('filtered_data')}
                 goToRawData={() => setActiveTool('raw_data')}
                 goToScriptData={() => setActiveTool('script_data')}
-                onSyncDraftScenesToVideo={() => {
-                  const syncedConfig: VideoConfig = {
-                    ...videoConfig,
-                    scenes: draftConfig.scenes,
-                  };
-                  setVideoConfig(syncedConfig);
-                  persistVideoConfig(syncedConfig);
-                  message.success(`已同步 ${draftConfig.scenes.length} 个场景到 Studio`);
-                }}
                 toolDesc={toolMeta.desc}
                 toolButton={toolMeta.button}
               />
@@ -292,52 +224,9 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'editor' && (
               <EditorPage 
-                draftConfig={draftConfig}
-                setDraftConfig={setDraftConfig}
-                videoConfig={videoConfig}
-                setVideoConfig={setVideoConfig}
-                persistVideoConfig={persistVideoConfig}
-                commentSortMode={commentSortMode}
-                setCommentSortMode={setCommentSortMode}
-                replyOrderMode={replyOrderMode}
-                setReplyOrderMode={setReplyOrderMode}
-                rawResult={rawResult}
-                result={result}
-                setResult={setResult}
-                colorArrangement={colorArrangement}
-                setColorArrangement={setColorArrangement}
-                allAuthors={allAuthors}
-                authorProfiles={authorProfiles}
-                setAuthorProfiles={setAuthorProfiles}
-                persistAuthorProfiles={persistAuthorProfiles}
-                imageLayoutMode={imageLayoutMode}
-                setImageLayoutMode={setImageLayoutMode}
-                sceneLayout={sceneLayout}
-                setSceneLayout={setSceneLayout}
-                titleAlignment={titleAlignment}
-                setTitleAlignment={setTitleAlignment}
-                titleFontSize={titleFontSize}
-                setTitleFontSize={setTitleFontSize}
-                contentFontSize={contentFontSize}
-                setContentFontSize={setContentFontSize}
-                quoteFontSize={quoteFontSize}
-                setQuoteFontSize={setQuoteFontSize}
-                maxQuoteDepth={maxQuoteDepth}
-                setMaxQuoteDepth={setMaxQuoteDepth}
-                defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-                setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
-                sceneBackgroundColor={sceneBackgroundColor}
-                setSceneBackgroundColor={setSceneBackgroundColor}
-                itemBackgroundColor={itemBackgroundColor}
-                setItemBackgroundColor={setItemBackgroundColor}
-                quoteBackgroundColor={quoteBackgroundColor}
-                setQuoteBackgroundColor={setQuoteBackgroundColor}
-                quoteBorderColor={quoteBorderColor}
-                setQuoteBorderColor={setQuoteBorderColor}
                 onApply={() => {
-                  const normalizedConfig = normalizeVideoConfig(draftConfig);
+                  const normalizedConfig = normalizeVideoConfig(videoConfig);
                   setVideoConfig(normalizedConfig);
-                  persistVideoConfig(normalizedConfig);
                   setActiveTool('preview');
                   message.success('配置已保存并跳转到预览');
                 }}
@@ -369,64 +258,15 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
             
             {activeTool === 'studio' && (
               <StudioPage 
-                videoConfig={videoConfig}
-                setVideoConfig={setVideoConfig}
-                draftConfig={draftConfig}
-                setDraftConfig={setDraftConfig}
-                persistVideoConfig={persistVideoConfig}
                 onViewScene={(idx) => {
                   setSelectedSceneIdx(idx);
                   setActiveTool('studio_scene');
                 }}
-                commentSortMode={commentSortMode}
-                setCommentSortMode={setCommentSortMode}
-                replyOrderMode={replyOrderMode}
-                setReplyOrderMode={setReplyOrderMode}
-                rawResult={rawResult}
-                result={result}
-                setResult={setResult}
-                colorArrangement={colorArrangement}
-                setColorArrangement={setColorArrangement}
-                allAuthors={allAuthors}
-                authorProfiles={authorProfiles}
-                setAuthorProfiles={setAuthorProfiles}
-                persistAuthorProfiles={persistAuthorProfiles}
-                imageLayoutMode={imageLayoutMode}
-                setImageLayoutMode={setImageLayoutMode}
-                sceneLayout={sceneLayout}
-                setSceneLayout={setSceneLayout}
-                titleAlignment={titleAlignment}
-                setTitleAlignment={setTitleAlignment}
-                titleFontSize={titleFontSize}
-                setTitleFontSize={setTitleFontSize}
-                contentFontSize={contentFontSize}
-                setContentFontSize={setContentFontSize}
-                quoteFontSize={quoteFontSize}
-                setQuoteFontSize={setQuoteFontSize}
-                maxQuoteDepth={maxQuoteDepth}
-                setMaxQuoteDepth={setMaxQuoteDepth}
-                defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-                setDefaultQuoteMaxLimit={setDefaultQuoteMaxLimit}
-                sceneBackgroundColor={sceneBackgroundColor}
-                setSceneBackgroundColor={setSceneBackgroundColor}
-                itemBackgroundColor={itemBackgroundColor}
-                setItemBackgroundColor={setItemBackgroundColor}
-                quoteBackgroundColor={quoteBackgroundColor}
-                setQuoteBackgroundColor={setQuoteBackgroundColor}
-                quoteBorderColor={quoteBorderColor}
-                setQuoteBorderColor={setQuoteBorderColor}
               />
             )}
 
             {activeTool === 'studio_scene' && (
               <StudioScenePage
-                videoConfig={videoConfig}
-                setVideoConfig={(cfg) => {
-                  const normalizedConfig = normalizeVideoConfig(cfg);
-                  setVideoConfig(normalizedConfig);
-                  setDraftConfig(normalizedConfig);
-                  persistVideoConfig(normalizedConfig);
-                }}
                 initialSceneIdx={selectedSceneIdx}
                 onBack={() => setActiveTool('studio')}
               />
@@ -434,7 +274,6 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'filtered_data' && (
               <FilteredJsonPage 
-                data={result}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}
               />
@@ -442,7 +281,6 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'raw_data' && (
               <RawJsonPage 
-                data={rawResult}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}
               />
@@ -450,7 +288,6 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'script_data' && (
               <ScriptJsonPage 
-                config={videoConfig}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}
               />

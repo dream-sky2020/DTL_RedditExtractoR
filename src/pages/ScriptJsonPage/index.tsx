@@ -1,21 +1,15 @@
 import React from 'react';
 import { Card, Button, Space, Typography, Empty, message } from 'antd';
 import { CopyOutlined, ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
-import { VideoConfig } from '../../types';
+import { useVideoStore } from '@/store';
 
 const { Text } = Typography;
 
-interface ScriptJsonPageProps {
-  config: VideoConfig;
-  onBack: () => void;
-  toolDesc: string;
-}
-
-export const ScriptJsonPage: React.FC<ScriptJsonPageProps> = ({
-  config,
+export const ScriptJsonPage: React.FC<{ onBack: () => void; toolDesc: string }> = ({
   onBack,
   toolDesc,
 }) => {
+  const { videoConfig: config } = useVideoStore();
   const copyToClipboard = async () => {
     if (!config) return;
     try {

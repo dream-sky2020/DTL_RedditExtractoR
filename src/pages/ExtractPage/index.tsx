@@ -12,61 +12,67 @@ import {
   Tag,
   Row,
   Col,
-  Divider,
+  message,
 } from 'antd';
 import {
-  LinkOutlined,
   EditOutlined,
   CopyOutlined,
   CodeOutlined,
   DeleteOutlined,
   RocketOutlined,
-  InfoCircleOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
 import { dialogs } from '../../components/Dialogs';
+import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 
 const { Text } = Typography;
 
 interface ExtractPageProps {
-  redditUrl: string;
-  setRedditUrl: (url: string) => void;
-  loading: boolean;
-  error: string;
-  errorDebug: string;
-  result: any;
-  fetchRedditData: () => void;
-  clearStoredRawData: () => void;
-  hasStoredRawData: boolean;
-  copyToClipboard: () => void;
   goToEditor: () => void;
   goToFilteredData: () => void;
   goToRawData: () => void;
   goToScriptData: () => void;
-  onSyncDraftScenesToVideo: () => void;
   toolDesc: string;
   toolButton: string;
 }
 
 export const ExtractPage: React.FC<ExtractPageProps> = ({
-  redditUrl,
-  setRedditUrl,
-  loading,
-  error,
-  errorDebug,
-  result,
-  fetchRedditData,
-  clearStoredRawData,
-  hasStoredRawData,
-  copyToClipboard,
   goToEditor,
   goToFilteredData,
   goToRawData,
   goToScriptData,
-  onSyncDraftScenesToVideo,
   toolDesc,
   toolButton,
 }) => {
+  const {
+    redditUrl,
+    setRedditUrl,
+    loading,
+    error,
+    errorDebug,
+    result,
+    fetchRedditData,
+    clearPersistedData,
+    hasStoredRawData,
+  } = useRedditStore();
+
+  const { commentSortMode, replyOrderMode, colorArrangement } = useSettingsStore();
+  const { videoConfig, setVideoConfig } = useVideoStore();
+
+  const handleFetch = () => {
+    fetchRedditData(commentSortMode, replyOrderMode, colorArrangement);
+  };
+
+  const copyToClipboard = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+      message.success('JSON 已复制到剪贴板');
+    } catch (err) {
+      message.error('复制失败');
+    }
+  };
+
   return (
     <>
       <Card
@@ -132,7 +138,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               placeholder="https://www.reddit.com/r/.../comments/..."
               size="large"
               allowClear
-              onPressEnter={fetchRedditData}
+              onPressEnter={handleFetch}
             />
           </Form.Item>
           <Space>
@@ -141,7 +147,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               size="large"
               loading={loading}
               disabled={!redditUrl.trim()}
-              onClick={fetchRedditData}
+              onClick={handleFetch}
             >
               {toolButton}
             </Button>
@@ -154,7 +160,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
                   title: '确认清除本地缓存？',
                   content: '这将删除所有已提取的 Reddit 原始数据、视频配置和作者配置。此操作不可撤销。',
                   okType: 'danger',
-                  onOk: clearStoredRawData
+                  onOk: clearPersistedData
                 });
               }}
               disabled={!hasStoredRawData}
@@ -193,13 +199,6 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
                   onClick={goToEditor}
                 >
                   进入编辑器
-                </Button>
-                <Button
-                  size="large"
-                  icon={<SyncOutlined />}
-                  onClick={onSyncDraftScenesToVideo}
-                >
-                  同步场景到 Studio
                 </Button>
               </Space>
             )}
