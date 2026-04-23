@@ -19,21 +19,16 @@ export const useDslTranslate = () => {
     scenes.forEach(scene => {
       const dsl = sceneToDsl(scene);
       
-      // 1. 移除常见的 DSL 标签和结构
-      const contentOnly = dsl.replace(/<scene[^>]*>|<\/scene>|<item[^>]*>|<\/item>/gi, '');
-      
-      const handleRegex = /\[style color=[^\]]+ b\]u\/[^:]+:\[\/style\]/g;
-      const withoutHandles = contentOnly.replace(handleRegex, '');
-
-      const tagRegex = /\[style[^\]]*\]|\[\/style\]|\[quote[^\]]*\]|\[\/quote\]|\[image\][\s\S]*?\[\/image\]|\[\\n\]/g;
-      const stripped = withoutHandles.replace(tagRegex, '\n');
-
-      stripped.split('\n').forEach(line => {
-        const trimmed = line.trim();
-        if (trimmed && trimmed.length > 1 && !/^[0-9\W_]+$/.test(trimmed)) {
-          uniqueChunks.add(trimmed);
+      // 使用 <#text#> 标示提取内容
+      const textRegex = /<#text#>([\s\S]*?)<\/#text#>/g;
+      let match;
+      while ((match = textRegex.exec(dsl)) !== null) {
+        const text = match[1].trim();
+        // 过滤掉纯数字或纯符号的短文本
+        if (text && text.length > 0 && !/^[0-9\W_]+$/.test(text)) {
+          uniqueChunks.add(text);
         }
-      });
+      }
     });
 
     const chunkList = Array.from(uniqueChunks).map((text, index) => ({
@@ -84,10 +79,14 @@ export const useDslTranslate = () => {
       translationMap.forEach((translated, original) => {
         // 使用正则全局替换，注意转义原始文本中的正则特殊字符
         const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedOriginal, 'g');
+        
+        // 核心修正：搜索和替换时都带上 <#text#> 标签
+        // 这样可以确保只替换整个翻译块，而不会误伤到包含该单词的其他长句子
+        const regex = new RegExp(`<#text#>${escapedOriginal}<\/#text#>`, 'g');
+        
         const count = (dsl.match(regex) || []).length;
         if (count > 0) {
-          dsl = dsl.replace(regex, translated);
+          dsl = dsl.replace(regex, `<#text#>${translated}</#text#>`);
           totalReplacements += count;
           changed = true;
         }

@@ -23,6 +23,7 @@ import {
   getTotalFrames,
   getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
+import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
 import { dialogs } from '../../components/Dialogs';
@@ -107,6 +108,43 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
     () => getReplaceStats(scenes, replaceFindText),
     [scenes, replaceFindText, getReplaceStats],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 只有在没在输入框（除了 DSL 编辑器，或者根据焦点判断）时，或者使用了 Ctrl+Z
+      // 注意：这里为了不破坏 DSL 编辑器自带的撤销，我们只在非编辑器焦点时或特定逻辑下处理全局撤销
+      // 但对于“全局替换”这种 store 级别的操作，用户可能期望全局 Ctrl+Z 能生效
+      
+      const isEditing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          if (useVideoStore.getState().canRedo()) {
+            useVideoStore.getState().redo();
+            message.info('已重做 (Redo)');
+            return;
+          }
+        } else {
+          // 如果正在编辑 DSL 且编辑器有自己的撤销栈，我们优先让 handleUndo 处理（如果已绑定快捷键）
+          // 但目前 handleUndo 没绑定快捷键，所以我们这里可以逻辑分层
+          if (useVideoStore.getState().canUndo()) {
+            useVideoStore.getState().undo();
+            message.info('已撤销 (Undo)');
+            return;
+          }
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        if (useVideoStore.getState().canRedo()) {
+          useVideoStore.getState().redo();
+          message.info('已重做 (Redo)');
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSave = () => {
     const parsed = parseSceneDsl(dslText, currentScene || undefined);

@@ -1,6 +1,13 @@
 import React from 'react';
 import { Button, Space, Typography, message } from 'antd';
-import { DownOutlined, UpOutlined, SelectOutlined, DeleteOutlined, MergeCellsOutlined, TranslationOutlined } from '@ant-design/icons';
+import { 
+  DownOutlined, 
+  UpOutlined, 
+  SelectOutlined, 
+  DeleteOutlined, 
+  MergeCellsOutlined, 
+  TranslationOutlined
+} from '@ant-design/icons';
 import { VideoConfig } from '../../../types';
 import { mergeSelectedScenes } from '../../../utils/sceneMergeEngine';
 

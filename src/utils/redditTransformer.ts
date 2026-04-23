@@ -58,6 +58,48 @@ const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfil
     return `[style color=${color} b]u/${displayName}:[/style]`;
 };
 
+const wrapText = (text: string) => {
+    if (!text) return '';
+    
+    // 如果已经整体包裹了，说明是合法的，直接返回
+    if (text.startsWith('<#text#>') && text.endsWith('</#text#>')) return text;
+
+    // 常见的 DSL 标签（不应被包裹进翻译标签的）
+    // 注意：我们要把标签作为分隔符，同时保留它们
+    const tagRegex = /(\[image[^\]]*\][\s\S]*?\[\/image\]|\[row[^\]]*\]|\[\/row\]|\[quote[^\]]*\]|\[\/quote\]|\[style[^\]]*\]|\[\/style\]|\[\\n\])/gi;
+
+    // 使用正则分割，同时保留匹配项
+    const parts = text.split(tagRegex);
+
+    const wrappedParts = parts.map(part => {
+        if (!part) return '';
+        
+        // 检查是否是标签部分
+        // 注意：split 出来的匹配项可以直接通过正则测试
+        if (part.match(/^\[(image|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
+            return part;
+        }
+
+        // 文本部分处理
+        const trimmed = part.trim();
+        if (!trimmed) return part; // 纯空白原样返回
+
+        // 检查是否有实质性内容（字母或中文字符）
+        // 排除掉纯数字、纯符号、或者只有 \n 的情况
+        const stripped = trimmed.replace(/[0-9\W_]+/g, '');
+        if (!stripped || stripped.length < 1) return part;
+
+        // 包裹文本，尽量保留原始空白（如果有）
+        const match = part.match(/^(\s*)([\s\S]*?)(\s*)$/);
+        if (match) {
+            return `${match[1]}<#text#>${match[2]}</#text#>${match[3]}`;
+        }
+        return `<#text#>${part}</#text#>`;
+    });
+
+    return wrappedParts.join('');
+};
+
 const stripLeadingAuthorHeader = (content: string) =>
     content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
 
@@ -193,6 +235,8 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
     return {
         ...data,
         author: getAuthorDisplayName(postAuthor, options.authorProfiles),
+        title: wrapText(data.title),
+        // 关键修正：content 已经是处理过的，不需要再次 wrapText
         content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles),
         comments: options.replyOrder === 'global'
             ? sortFlatComments(normalizedComments, options.sortMode)
@@ -227,7 +271,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         // 核心修复：先处理标准图片链接，再处理 Giphy 标签，防止嵌套
         // 1. 处理标准图片链接 (包括 i.redd.it, imgur, giphy.com 等)
         const imgRegex = /https:\/\/(?:preview|i|external-preview)\.redd\.it\/[^\s)"]+|https:\/\/i\.imgur\.com\/[^\s)"]+\.(?:jpe?g|png|gif|webp)|https:\/\/(?:media|i)\.giphy\.com\/[^\s)"]+\.gif/gi;
-        
+
         const matches = text.match(imgRegex);
         if (matches && matches.length > 0) {
             firstImageUrl = matches[0].replace(/&amp;/g, '&');
@@ -279,7 +323,8 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                 // 所以我们不需要在这里额外添加一次，否则会重复
                 const commentAuthor = normalizeAuthor(c.author);
                 const displayAuthor = getAuthorDisplayName(commentAuthor, mergedOptions.authorProfiles);
-                const currentRawContent = cleanText;
+                // 关键修正：评论正文也需要先区分文本和图片再包裹
+                const currentRawContent = wrapText(cleanText);
                 const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles);
 
                 // 祖先引用构建规则：
@@ -289,19 +334,19 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                 let nestedAncestorQuote = '';
                 const MAX_QUOTE_NESTING = 4;
                 const startIdx = Math.max(0, replyChain.length - MAX_QUOTE_NESTING);
-                
+
                 for (let i = startIdx; i < replyChain.length; i++) {
                     const quote = replyChain[i];
                     const level = i + 1;
-                    
+
                     // 核心修改：先放内部嵌套(inner)，再放当前引用层级的内容(quote.content)
                     // 同时在这里手动加入作者抬头，并应用 [style] 标签以便用户控制
                     const quoteAuthor = normalizeAuthor(quote.author);
                     const quoteAuthorName = getAuthorDisplayName(quoteAuthor, mergedOptions.authorProfiles);
                     const quoteAuthorToken = normalizeAuthorToken(quoteAuthorName);
                     const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles)} `;
-                    const contentPart = nestedAncestorQuote 
-                        ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}` 
+                    const contentPart = nestedAncestorQuote
+                        ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}`
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
 
                     const quotedIdAttr = quote.id ? ` id=${quote.id}` : '';
@@ -345,7 +390,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     // 核心改进：多途径提取贴子主图及图集 (统一使用 [image] 标签)
     let postImg = '';
     let postImages: string[] = [];
-    
+
     // 1. 如果是图集 (Gallery)
     if (postDetail.is_gallery && postDetail.media_metadata) {
         Object.keys(postDetail.media_metadata).forEach(key => {
@@ -356,10 +401,10 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             }
         });
         if (postImages.length > 0) postImg = postImages[0];
-    } 
+    }
     // 2. 如果 post_hint 为 image 或者 URL 直接指向图片
     else if (
-        postDetail.post_hint === 'image' || 
+        postDetail.post_hint === 'image' ||
         /\.(jpe?g|png|gif|webp)$/i.test(postDetail.url) ||
         /i\.redd\.it|preview\.redd\.it|i\.imgur\.com/.test(postDetail.url)
     ) {
@@ -377,7 +422,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
 
     // 4. 处理正文文本
     let { imageUrl: bodyImg, cleanText: postText } = processContent(postDetail.selftext || '');
-    
+
     // 如果没有主贴图集，但正文中有图片，使用正文图片
     if (postImages.length === 0 && bodyImg) {
         postImg = bodyImg;
@@ -401,18 +446,23 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         }
 
         if (!postText.includes('[row]')) {
-            postText = `${postText}${multiImageTag}`;
+            // 关键修正：先包装已有的 text，再拼接图片标签
+            postText = `${wrapText(postText)}${multiImageTag}`;
         }
     } else if (postImages.length === 1) {
         // 如果是单图，使用 [image]
         if (!postText.includes(postImages[0])) {
-            postText = `${postText}\n[image]${postImages[0]}[/image]`;
+            // 关键修正：先包装已有的 text，再拼接图片标签
+            postText = `${wrapText(postText)}\n[image]${postImages[0]}[/image]`;
         }
+    } else {
+        // 纯文本情况
+        postText = wrapText(postText);
     }
 
     // 构建最终对象
     return {
-        title: postDetail.title,
+        title: wrapText(postDetail.title),
         content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles),
         image: postImg,
         images: postImages,

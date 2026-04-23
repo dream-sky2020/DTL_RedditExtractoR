@@ -33,6 +33,7 @@ import { QuickActionsPanel } from './panels/QuickActionsPanel';
 import { SidebarWidthSection } from './sections/SidebarWidthSection';
 import { StudioPreviewPanel } from './panels/StudioPreviewPanel';
 import { EditorMultiSelectPanel } from './panels/EditorMultiSelectPanel';
+import { HistoryPanel } from './panels/HistoryPanel';
 
 const { Text } = Typography;
 
@@ -191,6 +192,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
   const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
   const [isMultiSelectCollapsed, setIsMultiSelectCollapsed] = useState(false);
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
 
   return (
     <div
@@ -373,6 +375,14 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
               onUpdateAuthorProfile={onUpdateAuthorProfile}
             />
           )}
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          {/* History Panel (Undo/Redo) */}
+          <HistoryPanel 
+            isCollapsed={isHistoryCollapsed} 
+            setIsCollapsed={setIsHistoryCollapsed} 
+          />
 
           <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
 

@@ -79,17 +79,39 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     applyTranslations
   } = useDslTranslate();
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          if (useVideoStore.getState().canRedo()) {
+            useVideoStore.getState().redo();
+            message.info('已重做 (Redo)');
+          }
+        } else {
+          if (useVideoStore.getState().canUndo()) {
+            useVideoStore.getState().undo();
+            message.info('已撤销 (Undo)');
+          }
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        if (useVideoStore.getState().canRedo()) {
+          useVideoStore.getState().redo();
+          message.info('已重做 (Redo)');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleApplyTranslate = (value: string) => {
-    const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
-    const result = applyTranslations(selectedScenes, value);
+    // 关键改动：传入所有场景进行翻译应用，确保跨场景的相同文本都能被替换
+    const result = applyTranslations(videoConfig.scenes, value);
     if (result.ok && result.nextScenes) {
-      const newScenes = videoConfig.scenes.map(s => {
-        const updated = result.nextScenes!.find(ns => ns.id === s.id);
-        return updated || s;
-      });
-      setVideoConfig({ ...videoConfig, scenes: newScenes });
+      setVideoConfig({ ...videoConfig, scenes: result.nextScenes });
       setIsTranslateModalOpen(false);
-      message.success(`已完成翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
+      message.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
     } else if (result.error) {
       message.error(result.error);
     }

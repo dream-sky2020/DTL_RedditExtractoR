@@ -60,17 +60,21 @@ export const tokenize = (
     const nextRowMatch = subText.match(/\[row[^\]]*\]/);
     const nextRow = nextRowMatch && nextRowMatch.index != null ? currentPos + nextRowMatch.index : -1;
 
+    const nextTextTagMatch = subText.match(/<\/?#text#>/);
+    const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
+
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'textTag' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'textTag' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
     if (nextGallery !== -1) indices.push({ idx: nextGallery, type: 'gallery' });
     if (nextAudio !== -1) indices.push({ idx: nextAudio, type: 'audio' });
     if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
+    if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
 
     indices.sort((a, b) => a.idx - b.idx);
 
@@ -288,6 +292,11 @@ export const tokenize = (
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;
         }
+      }
+    } else if (type === 'textTag') {
+      const match = text.substring(foundIdx).match(/^<\/?#text#>/);
+      if (match) {
+        currentPos = foundIdx + match[0].length;
       }
     }
   }

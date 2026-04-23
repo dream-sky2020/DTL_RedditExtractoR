@@ -6,9 +6,15 @@ import { VIDEO_CONFIG_STORAGE_KEY } from '@/constants/storage';
 
 interface VideoState {
   videoConfig: VideoConfig;
+  past: VideoConfig[];
+  future: VideoConfig[];
   
   // Actions
-  setVideoConfig: (config: VideoConfig) => void;
+  setVideoConfig: (config: VideoConfig, skipHistory?: boolean) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
   
   buildVideoConfigFromResult: (
     nextResult: any,
@@ -26,6 +32,8 @@ interface VideoState {
     }
   ) => VideoConfig;
 }
+
+const HISTORY_LIMIT = 30;
 
 export const useVideoStore = create<VideoState>()(
   persist(
@@ -50,8 +58,60 @@ export const useVideoStore = create<VideoState>()(
           }
         ]
       },
+      past: [],
+      future: [],
 
-      setVideoConfig: (videoConfig) => set({ videoConfig }),
+      setVideoConfig: (videoConfig, skipHistory = false) => {
+        const { videoConfig: currentConfig, past } = get();
+        
+        // 如果数据没变，不处理
+        if (JSON.stringify(currentConfig) === JSON.stringify(videoConfig)) {
+          return;
+        }
+
+        if (skipHistory) {
+          set({ videoConfig });
+          return;
+        }
+
+        const newPast = [currentConfig, ...past].slice(0, HISTORY_LIMIT);
+        set({
+          videoConfig,
+          past: newPast,
+          future: [] // 开启新分支时清空未来
+        });
+      },
+
+      undo: () => {
+        const { past, videoConfig, future } = get();
+        if (past.length === 0) return;
+
+        const previous = past[0];
+        const newPast = past.slice(1);
+        
+        set({
+          videoConfig: previous,
+          past: newPast,
+          future: [videoConfig, ...future].slice(0, HISTORY_LIMIT)
+        });
+      },
+
+      redo: () => {
+        const { future, videoConfig, past } = get();
+        if (future.length === 0) return;
+
+        const next = future[0];
+        const newFuture = future.slice(1);
+
+        set({
+          videoConfig: next,
+          past: [videoConfig, ...past].slice(0, HISTORY_LIMIT),
+          future: newFuture
+        });
+      },
+
+      canUndo: () => get().past.length > 0,
+      canRedo: () => get().future.length > 0,
 
       buildVideoConfigFromResult: (nextResult, globalSettings) => {
         const { 
@@ -107,6 +167,9 @@ export const useVideoStore = create<VideoState>()(
     }),
     {
       name: VIDEO_CONFIG_STORAGE_KEY,
+      partialize: (state) => ({
+        videoConfig: state.videoConfig,
+      }),
     }
   )
 );
