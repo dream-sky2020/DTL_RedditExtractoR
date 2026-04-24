@@ -13,6 +13,7 @@ import {
   VideoConfig, 
   VideoScene, 
 } from '../../types';
+import { mergeSelectedScenes } from '../../utils/sceneMergeEngine';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { SceneFlow } from './components/SceneFlow';
@@ -198,18 +199,34 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
       const sourceIndex = source.index;
       const destinationSceneId = combine.draggableId;
       const sourceScene = videoConfig.scenes[sourceIndex];
-      const newScenes = videoConfig.scenes.filter((_, idx) => idx !== sourceIndex).map(s => {
-        if (s.id === destinationSceneId) {
-          return {
-            ...s,
-            items: [...s.items, ...sourceScene.items],
-            duration: s.duration + sourceScene.duration
-          };
-        }
-        return s;
+      
+      // 使用统一的合并引擎
+      const mergeResult = mergeSelectedScenes({
+        scenes: videoConfig.scenes,
+        selectedSceneIds: [destinationSceneId, sourceScene.id],
+        primarySceneId: destinationSceneId,
+        strategy: 'auto', // 优先尝试智能合并（如引用吸收）
       });
-      setVideoConfig({ ...videoConfig, scenes: newScenes });
-      message.success('已合并两个画面格');
+
+      if (mergeResult.ok) {
+        setVideoConfig({ ...videoConfig, scenes: mergeResult.scenes });
+        message.success(mergeResult.message || '已完成智能合并');
+      } else {
+        // 如果智能合并未命中，则执行强制追加合并（即原有的 combine 行为）
+        const forceResult = mergeSelectedScenes({
+          scenes: videoConfig.scenes,
+          selectedSceneIds: [destinationSceneId, sourceScene.id],
+          primarySceneId: destinationSceneId,
+          strategy: 'force-append-merge',
+        });
+        
+        if (forceResult.ok) {
+          setVideoConfig({ ...videoConfig, scenes: forceResult.scenes });
+          message.success('已合并两个画面格');
+        } else {
+          message.error(forceResult.message || '合并失败');
+        }
+      }
       return;
     }
 

@@ -239,6 +239,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
           width: '100%',
           aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
           opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
+          pointerEvents: isMultiSelectMode ? 'none' : 'auto',
         }}
         controls={false}
         autoPlay={false}

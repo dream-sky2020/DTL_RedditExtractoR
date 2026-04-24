@@ -2,6 +2,7 @@ import { SceneMergeInput, SceneMergeResult, SceneMergeRule } from './sceneMergeT
 import { parallelItemPackMergeRule } from './mergeRules/parallelItemPackMerge';
 import { quoteAbsorbMergeRule } from './mergeRules/quoteAbsorbMerge';
 import { quoteSiblingStitchMergeRule } from './mergeRules/quoteSiblingStitchMerge';
+import { forceAppendMergeRule } from './mergeRules/forceAppendMerge';
 
 const DEFAULT_OPTIONS: Required<NonNullable<SceneMergeInput['options']>> = {
   allowQuotedItemsInParallelPack: false,
@@ -11,6 +12,7 @@ const RULES: SceneMergeRule[] = [
   quoteAbsorbMergeRule,
   quoteSiblingStitchMergeRule,
   parallelItemPackMergeRule,
+  forceAppendMergeRule,
 ].sort((a, b) => b.priority - a.priority);
 
 const pickPrimarySceneId = (input: SceneMergeInput): string | null => {

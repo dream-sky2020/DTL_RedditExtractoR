@@ -3,7 +3,8 @@ import { VideoScene } from '../types';
 export type MergeRuleId =
   | 'quote-absorb-merge'
   | 'quote-sibling-stitch-merge'
-  | 'parallel-item-pack-merge';
+  | 'parallel-item-pack-merge'
+  | 'force-append-merge';
 
 export type MergeStrategy = MergeRuleId | 'auto';
 

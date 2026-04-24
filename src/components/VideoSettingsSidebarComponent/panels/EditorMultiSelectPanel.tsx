@@ -130,7 +130,27 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     setSelectedSceneIds([]);
                     message.success(result.message || '合并成功');
                   } else {
-                    message.error(result.message || '合并失败');
+                    // 自动合并失败，尝试强制合并
+                    Modal.confirm({
+                      title: '自动合并未命中',
+                      content: '选中的画面格不符合自动合并规则（如引用关系等），是否要强制将它们合并（内容直接追加到主场景末尾）？',
+                      okText: '强制合并',
+                      cancelText: '取消',
+                      onOk: () => {
+                        const forceResult = mergeSelectedScenes({
+                          scenes: draftConfig.scenes,
+                          selectedSceneIds,
+                          strategy: 'force-append-merge',
+                        });
+                        if (forceResult.ok) {
+                          setDraftConfig({ ...draftConfig, scenes: forceResult.scenes });
+                          setSelectedSceneIds([]);
+                          message.success(forceResult.message || '强制合并成功');
+                        } else {
+                          message.error(forceResult.message || '强制合并失败');
+                        }
+                      }
+                    });
                   }
                 }}
                 style={{
