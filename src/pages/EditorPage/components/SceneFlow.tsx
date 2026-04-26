@@ -3,6 +3,7 @@ import { Space, Typography, Pagination } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { SceneCard } from '../../../components/SceneCard';
 import { VideoConfig, VideoScene } from '../../../types';
+import { useSettingsStore } from '@/store';
 
 interface SceneFlowProps {
   videoConfig: VideoConfig;
@@ -41,6 +42,8 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
   selectedSceneIds,
   onToggleSceneSelection,
 }) => {
+  const { sceneDisplayMode } = useSettingsStore();
+
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -82,6 +85,7 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
                         isMultiSelectMode={isMultiSelectMode}
                         isSelected={selectedSceneIds.includes(scene.id)}
                         onToggleSelection={() => onToggleSceneSelection(scene.id)}
+                        displayMode={sceneDisplayMode}
                       />
                     )}
                   </Draggable>

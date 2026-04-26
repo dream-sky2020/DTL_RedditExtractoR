@@ -32,6 +32,7 @@ export interface GlobalSettings {
   itemBackgroundColor: string;
   quoteBackgroundColor: string;
   quoteBorderColor: string;
+  sceneDisplayMode: SceneDisplayMode;
 }
 
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -49,6 +50,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   itemBackgroundColor: 'transparent',
   quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
   quoteBorderColor: '#e0e0e0',
+  sceneDisplayMode: 'normal',
 };
 
 export type ToolKey = 'extract' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
@@ -71,6 +73,7 @@ export type ItemAnimationType =
 export type SceneLayoutType = 'top' | 'center';
 export type TitleAlignmentType = 'left' | 'right' | 'center';
 export type ImageLayoutMode = 'gallery' | 'row' | 'single';
+export type SceneDisplayMode = 'normal' | 'compact';
 export type VideoCanvasPreset = 'landscape' | 'portrait';
 
 export interface VideoCanvasPresetSize {

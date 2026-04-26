@@ -9,6 +9,7 @@ import {
   removeScenesByIds,
   replaceSceneById,
   safeConcatBlocks,
+  stripOuterStyle,
   textsLookEquivalent,
   updateItemContent,
 } from '../sceneMergeHelpers';
@@ -37,8 +38,9 @@ export const quoteSiblingStitchMergeRule: SceneMergeRule = {
 
     for (const candidate of candidates) {
       for (const candidateItem of candidate.items) {
-        const candidateSignature = buildQuoteSignature(candidateItem.content);
-        const candidateTail = getContentAfterFirstQuote(candidateItem.content);
+        const candidateContentInner = stripOuterStyle(candidateItem.content);
+        const candidateSignature = buildQuoteSignature(candidateContentInner);
+        const candidateTail = getContentAfterFirstQuote(candidateContentInner);
         if (!candidateSignature || !candidateTail.trim()) continue;
 
         for (const primaryItem of primaryItems) {
@@ -70,8 +72,9 @@ export const quoteSiblingStitchMergeRule: SceneMergeRule = {
       let candidateMerged = false;
 
       for (const candidateItem of candidate.items) {
-        const candidateSignature = buildQuoteSignature(candidateItem.content);
-        const candidateTail = getContentAfterFirstQuote(candidateItem.content);
+        const candidateContentInner = stripOuterStyle(candidateItem.content);
+        const candidateSignature = buildQuoteSignature(candidateContentInner);
+        const candidateTail = getContentAfterFirstQuote(candidateContentInner);
         if (!candidateSignature || !candidateTail.trim()) continue;
 
         for (let i = 0; i < primary.items.length; i += 1) {

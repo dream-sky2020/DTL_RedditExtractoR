@@ -10,6 +10,7 @@ export interface QuoteBlock {
 
 const INLINE_ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
 const QUOTE_OPEN_TAG_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/g;
+const STYLE_OPEN_TAG_RE = /\[style(?:\s[^\]]*)?\]/g;
 const DSL_LINE_BREAK_TOKEN = '[\\n]';
 
 export const normalizeDslText = (text: string): string =>
@@ -59,29 +60,37 @@ export const parseQuoteStartTag = (startTag: string): Record<string, string> => 
   return attrs;
 };
 
-const findMatchingQuoteEnd = (content: string, startTagEnd: number): number => {
+const findMatchingTagEnd = (content: string, startTagEnd: number, openTagRegex: RegExp, closeTag: string): number => {
   let depth = 1;
   let cursor = startTagEnd;
 
   while (depth > 0 && cursor < content.length) {
-    QUOTE_OPEN_TAG_RE.lastIndex = cursor;
-    const nextOpen = QUOTE_OPEN_TAG_RE.exec(content);
+    openTagRegex.lastIndex = cursor;
+    const nextOpen = openTagRegex.exec(content);
     const nextOpenIdx = nextOpen?.index ?? -1;
-    const nextCloseIdx = content.indexOf('[/quote]', cursor);
+    const nextCloseIdx = content.indexOf(closeTag, cursor);
 
     if (nextCloseIdx < 0) return -1;
     if (nextOpenIdx >= 0 && nextOpenIdx < nextCloseIdx) {
       depth += 1;
-      cursor = nextOpenIdx + (nextOpen?.[0].length || 6);
+      cursor = nextOpenIdx + (nextOpen?.[0].length || 1);
       continue;
     }
 
     depth -= 1;
     if (depth === 0) return nextCloseIdx;
-    cursor = nextCloseIdx + 8;
+    cursor = nextCloseIdx + closeTag.length;
   }
 
   return -1;
+};
+
+const findMatchingQuoteEnd = (content: string, startTagEnd: number): number => {
+  return findMatchingTagEnd(content, startTagEnd, QUOTE_OPEN_TAG_RE, '[/quote]');
+};
+
+const findMatchingStyleEnd = (content: string, startTagEnd: number): number => {
+  return findMatchingTagEnd(content, startTagEnd, STYLE_OPEN_TAG_RE, '[/style]');
 };
 
 export const extractTopLevelQuoteBlocks = (content: string): QuoteBlock[] => {
@@ -191,11 +200,41 @@ export const textsLookEquivalent = (left: string, right: string): boolean => {
   return false;
 };
 
+export const getOuterStyleOpener = (content: string): string | null => {
+  const source = (content || '').trim();
+  if (!source.startsWith('[style')) return null;
+
+  const openMatch = source.match(/^\[style[^\]]*\]/);
+  if (!openMatch) return null;
+
+  const openTag = openMatch[0];
+  const endIdx = findMatchingStyleEnd(source, openTag.length);
+  if (endIdx === source.length - 8) {
+    return openTag;
+  }
+  return null;
+};
+
+export const stripOuterStyle = (content: string): string => {
+  const source = (content || '').trim();
+  const opener = getOuterStyleOpener(source);
+  if (!opener) return source;
+  return source.slice(opener.length, -8).trim();
+};
+
 export const safeConcatBlocks = (base: string, append: string): string => {
   const left = (base || '').trimEnd();
   const right = (append || '').trim();
   if (!left) return right;
   if (!right) return left;
+
+  const baseOpener = getOuterStyleOpener(left);
+  if (baseOpener) {
+    const baseInner = stripOuterStyle(left);
+    const appendInner = stripOuterStyle(right);
+    return `${baseOpener}${baseInner}\n${appendInner}[/style]`;
+  }
+
   return `${left}\n${right}`;
 };
 

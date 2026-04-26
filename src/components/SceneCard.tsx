@@ -13,7 +13,7 @@ import {
   EyeOutlined,
   HolderOutlined,
 } from '@ant-design/icons';
-import { VideoConfig, VideoScene } from '@/types';
+import { VideoConfig, VideoScene, SceneDisplayMode } from '@/types';
 import { useScenePreviewMetrics } from '@hooks/useScenePreviewMetrics';
 import { useSceneDsl } from '@hooks/useSceneDsl';
 import { SceneDslEditor } from '@components/SceneCardComponent/SceneDslEditor';
@@ -41,6 +41,7 @@ interface SceneCardProps {
   isMultiSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  displayMode?: SceneDisplayMode;
 }
 
 export const SceneCard: React.FC<SceneCardProps> = ({
@@ -61,6 +62,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   isMultiSelectMode = false,
   isSelected = false,
   onToggleSelection,
+  displayMode = 'normal',
 }) => {
   const previewShellRef = useRef<HTMLDivElement | null>(null);
   const previewContentRef = useRef<HTMLDivElement | null>(null);
@@ -68,18 +70,23 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   const dsl = useSceneDsl({ scene, onReplaceScene });
   const previewMetrics = useScenePreviewMetrics(scene, videoConfig, previewShellRef, previewContentRef);
 
+  const isCompact = displayMode === 'compact';
+
   return (
     <div
       id={`scene-card-wrapper-${scene.id}`}
       ref={innerRef}
       {...draggableProps}
-      style={{ ...draggableProps?.style, marginBottom: 20 }}
+      style={{ ...draggableProps?.style, marginBottom: isCompact ? 8 : 20 }}
     >
       <Card
         id={`scene-card-${scene.id}`}
         size="small"
         className={`scene-card ${isExpanded ? 'expanded' : 'collapsed'} ${isSelected ? 'selected' : ''}`}
         variant="outlined"
+        styles={{ 
+          body: isCompact ? { padding: '4px 8px' } : undefined 
+        }}
         style={{ 
           borderLeft: scene.type === 'post' ? '6px solid var(--scene-post-border)' : '6px solid var(--scene-comment-border)',
           boxShadow: isDragging ? '0 12px 32px var(--scene-card-shadow-dragging)' : (isExpanded ? '0 8px 24px var(--scene-card-shadow-expanded)' : '0 2px 8px var(--scene-card-shadow)'),
@@ -87,6 +94,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           borderRadius: 12,
           cursor: isMultiSelectMode ? 'pointer' : 'default',
           border: isSelected ? '2px solid var(--brand-primary)' : '1px solid transparent',
+          minHeight: isCompact ? 'auto' : undefined
         }}
         onClick={() => {
           if (isMultiSelectMode && onToggleSelection) {
@@ -107,11 +115,15 @@ export const SceneCard: React.FC<SceneCardProps> = ({
             <div id={`scene-card-drag-handle-${scene.id}`} {...dragHandleProps}>
               <HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} />
             </div>
+            <Text strong style={{ fontSize: isCompact ? 12 : 14 }}>
+              画面格 {index + 1} {scene.title ? `- ${scene.title}` : ''}
+              {isCompact && <Text type="secondary" style={{ marginLeft: 8, fontSize: 11 }}>时长: {scene.duration}s</Text>}
+            </Text>
           </Space>
         }
         extra={
           <Space id={`scene-card-actions-${scene.id}`} size="middle">
-            {!isMultiSelectMode && (
+            {!isMultiSelectMode && !isCompact && (
               <>
                 <ColorPicker
                   size="small"
@@ -126,7 +138,12 @@ export const SceneCard: React.FC<SceneCardProps> = ({
                 <Button id={`scene-card-delete-btn-${scene.id}`} name="delete-scene-btn" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); onRemoveScene(); }} />
               </>
             )}
-            {isMultiSelectMode && (
+            {isCompact && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {scene.items.length} 条内容项
+              </Text>
+            )}
+            {isMultiSelectMode && !isCompact && (
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {isSelected ? '已选中' : '未选中'}
               </Text>
@@ -134,34 +151,38 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           </Space>
         }
       >
-        {dsl.isSceneEditorVisible && (
-          <SceneDslEditor
-            sceneId={scene.id}
-            sceneEditorText={dsl.sceneEditorText}
-            autoApplySceneDsl={dsl.autoApplySceneDsl}
-            onTextChange={(text) => {
-              dsl.setSceneEditorText(text);
-              if (dsl.autoApplySceneDsl) {
-                dsl.tryApplySceneEditor(text, true);
-              }
-            }}
-            onAutoApplyChange={dsl.setAutoApplySceneDsl}
-            onReload={dsl.reloadDsl}
-            onRollback={dsl.rollbackDsl}
-            onApply={dsl.applySceneEditor}
-            onSave={dsl.saveSceneEditor}
-          />
-        )}
+        {!isCompact && (
+          <>
+            {dsl.isSceneEditorVisible && (
+              <SceneDslEditor
+                sceneId={scene.id}
+                sceneEditorText={dsl.sceneEditorText}
+                autoApplySceneDsl={dsl.autoApplySceneDsl}
+                onTextChange={(text) => {
+                  dsl.setSceneEditorText(text);
+                  if (dsl.autoApplySceneDsl) {
+                    dsl.tryApplySceneEditor(text, true);
+                  }
+                }}
+                onAutoApplyChange={dsl.setAutoApplySceneDsl}
+                onReload={dsl.reloadDsl}
+                onRollback={dsl.rollbackDsl}
+                onApply={dsl.applySceneEditor}
+                onSave={dsl.saveSceneEditor}
+              />
+            )}
 
-        <ScenePreview
-          scene={scene}
-          videoConfig={videoConfig}
-          previewShellRef={previewShellRef}
-          previewContentRef={previewContentRef}
-          previewMetrics={previewMetrics}
-          isMultiSelectMode={isMultiSelectMode || false}
-          onUpdateScene={onUpdateScene}
-        />
+            <ScenePreview
+              scene={scene}
+              videoConfig={videoConfig}
+              previewShellRef={previewShellRef}
+              previewContentRef={previewContentRef}
+              previewMetrics={previewMetrics}
+              isMultiSelectMode={isMultiSelectMode || false}
+              onUpdateScene={onUpdateScene}
+            />
+          </>
+        )}
       </Card>
 
       <SceneModals

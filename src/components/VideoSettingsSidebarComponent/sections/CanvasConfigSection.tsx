@@ -1,5 +1,5 @@
 import React from 'react';
-import { Row, Col, Form, Typography, Space, Radio, InputNumber, Button } from 'antd';
+import { Row, Col, Form, Typography, Space, Radio, InputNumber, Button, Divider } from 'antd';
 import { VideoConfig, VideoCanvasPreset } from '../../../types';
 import {
   DEFAULT_VIDEO_CANVAS_PRESETS,

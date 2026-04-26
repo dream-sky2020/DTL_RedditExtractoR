@@ -28,6 +28,7 @@ import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/v
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
+import { useSceneDeletion } from '@hooks/useSceneDeletion';
 import { useDslTranslate } from '@hooks/useDslTranslate';
 import { TranslationModal } from '@components/TranslationModal';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
@@ -52,6 +53,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
     colorArrangement, setColorArrangement,
+    sceneDisplayMode,
   } = useSettingsStore();
 
   const {
@@ -152,12 +154,19 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
   
+  const { removeSelectedScenes } = useSceneDeletion({
+    selectedSceneIds,
+    setSelectedSceneIds,
+  });
+  
   const fps = DEFAULT_PREVIEW_FPS;
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
   const scenes = videoConfig.scenes;
   const hasScenes = scenes && scenes.length > 0;
   const totalFrames = getTotalFrames(videoConfig, fps);
+
+  const isCompact = sceneDisplayMode === 'compact';
 
   const galleryStartIndex = (galleryPage - 1) * galleryPageSize;
   const visibleGalleryScenes = useMemo(
@@ -172,7 +181,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   );
 
   const isPortrait = activeCanvas.height > activeCanvas.width;
-  const autoGridMinWidth = Math.max(180, Math.min(520, previewMinWidth));
+  const autoGridMinWidth = isCompact ? 160 : Math.max(180, Math.min(520, previewMinWidth));
 
   // 当 videoConfig.scenes 发生变化时，清理掉已经不存在的选中 ID
   useEffect(() => {
@@ -186,37 +195,22 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     }
   }, [isMultiSelectMode]);
 
-  const removeSelectedScenes = () => {
-    if (selectedSceneIds.length === 0) return;
-    Modal.confirm({
-      title: '确认批量删除',
-      content: `确认删除选中的 ${selectedSceneIds.length} 个画面格吗？`,
-      okText: '确认删除',
-      cancelText: '取消',
-      onOk: () => {
-        const newScenes = videoConfig.scenes.filter(s => !selectedSceneIds.includes(s.id));
-        setVideoConfig({ ...videoConfig, scenes: newScenes });
-        setSelectedSceneIds([]);
-        message.success(`已删除 ${selectedSceneIds.length} 个画面格`);
-      },
-    });
-  };
-
   // 渲染单张画面的播放器组件
   const FramePlayer = ({ idx, isSelected }: { idx: number; isSelected: boolean }) => (
     <div 
       style={{ 
         position: 'relative',
-        background: 'var(--brand-dark)', 
+        background: isCompact ? 'var(--brand-bg-subtle)' : 'var(--brand-dark)', 
         borderRadius: 8, 
         overflow: 'hidden',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        boxShadow: isCompact ? 'none' : '0 2px 8px rgba(0,0,0,0.2)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         cursor: (onViewScene || isMultiSelectMode) ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
-        border: '1px solid transparent',
+        border: isSelected ? '2px solid var(--ant-primary-color)' : '1px solid var(--brand-border)',
+        height: isCompact ? 60 : 'auto',
       }}
       onClick={() => {
         const scene = scenes[idx];
@@ -229,22 +223,29 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         }
       }}
     >
-      <VideoPreviewPlayer
-        videoConfig={videoConfig}
-        durationInFrames={totalFrames}
-        fps={fps}
-        initialFrame={getSceneStartFrame(videoConfig, idx, fps) + frameOffset}
-        key={`studio-scene-${idx}-${frameOffset}`}
-        style={{
-          width: '100%',
-          aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
-          opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
-          pointerEvents: isMultiSelectMode ? 'none' : 'auto',
-        }}
-        controls={false}
-        autoPlay={false}
-      />
-      {isSelected && (
+      {!isCompact ? (
+        <VideoPreviewPlayer
+          videoConfig={videoConfig}
+          durationInFrames={totalFrames}
+          fps={fps}
+          initialFrame={getSceneStartFrame(videoConfig, idx, fps) + frameOffset}
+          key={`studio-scene-${idx}-${frameOffset}`}
+          style={{
+            width: '100%',
+            aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
+            opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
+            pointerEvents: isMultiSelectMode ? 'none' : 'auto',
+          }}
+          controls={false}
+          autoPlay={false}
+        />
+      ) : (
+        <div style={{ padding: '0 12px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text strong style={{ fontSize: 13 }}>#{idx + 1}</Text>
+          <Tag color="blue" style={{ margin: 0 }}>{scenes[idx].duration}s</Tag>
+        </div>
+      )}
+      {isSelected && !isCompact && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -324,16 +325,18 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                       {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
                         <div key={scene.id} className="gallery-item-wrap">
                           <FramePlayer idx={sceneIdx} isSelected={selectedSceneIds.includes(scene.id)} />
-                          <div style={{ marginTop: 8, textAlign: 'center' }}>
-                            <Text strong ellipsis style={{ 
-                              width: '100%', 
-                              display: 'block', 
-                              fontSize: '12px',
-                              color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
-                            }}>
-                              {sceneIdx + 1}. {scene.title || '未命名画面'}
-                            </Text>
-                          </div>
+                          {!isCompact && (
+                            <div style={{ marginTop: 8, textAlign: 'center' }}>
+                              <Text strong ellipsis style={{ 
+                                width: '100%', 
+                                display: 'block', 
+                                fontSize: '12px',
+                                color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
+                              }}>
+                                {sceneIdx + 1}. {scene.title || '未命名画面'}
+                              </Text>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

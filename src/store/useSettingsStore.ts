@@ -32,6 +32,7 @@ interface SettingsState extends GlobalSettings {
   setItemBackgroundColor: (color: string) => void;
   setQuoteBackgroundColor: (color: string) => void;
   setQuoteBorderColor: (color: string) => void;
+  setSceneDisplayMode: (mode: SceneDisplayMode) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -69,6 +70,7 @@ export const useSettingsStore = create<SettingsState>()(
       setItemBackgroundColor: (itemBackgroundColor) => set({ itemBackgroundColor }),
       setQuoteBackgroundColor: (quoteBackgroundColor) => set({ quoteBackgroundColor }),
       setQuoteBorderColor: (quoteBorderColor) => set({ quoteBorderColor }),
+      setSceneDisplayMode: (sceneDisplayMode) => set({ sceneDisplayMode }),
     }),
     {
       name: GLOBAL_CONFIG_STORAGE_KEY,

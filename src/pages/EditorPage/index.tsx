@@ -9,17 +9,19 @@ import {
 import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
-import { 
-  VideoConfig, 
-  VideoScene, 
+import {
+  VideoConfig,
+  VideoScene,
 } from '../../types';
-import { mergeSelectedScenes } from '../../utils/sceneMergeEngine';
+import { useSceneMerge } from '../../hooks/useSceneMerge';
+import { useSceneReorder } from '../../hooks/useSceneReorder';
 import { VideoPreviewPlayer, DEFAULT_PREVIEW_FPS } from '../../components/VideoPreviewPlayer';
 import { DropResult } from '@hello-pangea/dnd';
 import { SceneFlow } from './components/SceneFlow';
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
 import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
+import { useSceneDeletion } from '@hooks/useSceneDeletion';
 import { useDslTranslate } from '@hooks/useDslTranslate';
 import { TranslationModal } from '@components/TranslationModal';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
@@ -58,7 +60,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     videoConfig, setVideoConfig,
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
     rawResult, setResult, colorArrangement, setColorArrangement,
-    allAuthors, authorProfiles, setAuthorProfiles, 
+    allAuthors, authorProfiles, setAuthorProfiles,
     persistAuthorProfiles: (p) => {
       setAuthorProfiles(p);
       localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
@@ -137,7 +139,15 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
   const [pageSize, setPageSize] = useState(10);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
-  
+
+  const { removeScene, removeSelectedScenes } = useSceneDeletion({
+    selectedSceneIds,
+    setSelectedSceneIds,
+  });
+
+  const { mergeScenes } = useSceneMerge();
+  const { reorderScenes } = useSceneReorder();
+
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const activeAspectRatioLabel = getAspectRatioLabel(activeCanvas.width, activeCanvas.height);
   const previewModalWidth = activeCanvas.width >= activeCanvas.height ? 800 : 560;
@@ -155,7 +165,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
   };
 
   const updateScene = (sceneId: string, updates: Partial<VideoScene>) => {
-    const newScenes = videoConfig.scenes.map(s => 
+    const newScenes = videoConfig.scenes.map(s =>
       s.id === sceneId ? { ...s, ...updates } : s
     );
     setVideoConfig({ ...videoConfig, scenes: newScenes });
@@ -171,75 +181,31 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     return { ok: true, message: '场景 JSON 已应用到画面格' };
   };
 
-  const removeScene = (id: string) => {
-    const newScenes = videoConfig.scenes.filter(s => s.id !== id);
-    setVideoConfig({ ...videoConfig, scenes: newScenes });
-  };
-
-  const removeSelectedScenes = () => {
-    if (selectedSceneIds.length === 0) return;
-    Modal.confirm({
-      title: '确认批量删除',
-      content: `确认删除选中的 ${selectedSceneIds.length} 个画面格吗？`,
-      okText: '确认删除',
-      cancelText: '取消',
-      onOk: () => {
-        const newScenes = videoConfig.scenes.filter(s => !selectedSceneIds.includes(s.id));
-        setVideoConfig({ ...videoConfig, scenes: newScenes });
-        setSelectedSceneIds([]);
-        message.success(`已删除 ${selectedSceneIds.length} 个画面格`);
-      },
-    });
-  };
-
   const onDragEnd = (result: DropResult) => {
     const { source, destination, combine, type } = result;
 
+    // 1. 处理场景合并 (拖动场景到另一个场景上)
     if (combine && type === 'scene') {
       const sourceIndex = source.index;
       const destinationSceneId = combine.draggableId;
       const sourceScene = videoConfig.scenes[sourceIndex];
-      
-      // 使用统一的合并引擎
-      const mergeResult = mergeSelectedScenes({
-        scenes: videoConfig.scenes,
-        selectedSceneIds: [destinationSceneId, sourceScene.id],
-        primarySceneId: destinationSceneId,
-        strategy: 'auto', // 优先尝试智能合并（如引用吸收）
-      });
 
-      if (mergeResult.ok) {
-        setVideoConfig({ ...videoConfig, scenes: mergeResult.scenes });
-        message.success(mergeResult.message || '已完成智能合并');
-      } else {
-        // 如果智能合并未命中，则执行强制追加合并（即原有的 combine 行为）
-        const forceResult = mergeSelectedScenes({
-          scenes: videoConfig.scenes,
-          selectedSceneIds: [destinationSceneId, sourceScene.id],
-          primarySceneId: destinationSceneId,
-          strategy: 'force-append-merge',
-        });
-        
-        if (forceResult.ok) {
-          setVideoConfig({ ...videoConfig, scenes: forceResult.scenes });
-          message.success('已合并两个画面格');
-        } else {
-          message.error(forceResult.message || '合并失败');
-        }
-      }
+      mergeScenes([destinationSceneId, sourceScene.id], {
+        primarySceneId: destinationSceneId,
+        interactive: false,
+      });
       return;
     }
 
     if (!destination) return;
 
+    // 2. 处理场景排序 (调用专门的排序 Hook 函数)
     if (type === 'scene') {
-      const newScenes = [...videoConfig.scenes];
-      const [moved] = newScenes.splice(source.index, 1);
-      newScenes.splice(destination.index, 0, moved);
-      setVideoConfig({ ...videoConfig, scenes: newScenes });
+      reorderScenes(source.index, destination.index);
       return;
     }
 
+    // 3. 处理内容项移动 (Item -> Scene)
     if (type === 'item') {
       const sourceSceneId = source.droppableId;
       const destSceneId = destination.droppableId;
@@ -279,7 +245,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
           isMultiSelectMode={isMultiSelectMode}
           selectedSceneIds={selectedSceneIds}
           onToggleSceneSelection={(id) => {
-            setSelectedSceneIds(prev => 
+            setSelectedSceneIds(prev =>
               prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
             );
           }}
