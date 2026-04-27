@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Input, Button, Space, Card, Tooltip, Divider } from 'antd';
 import {
   BoldOutlined,
@@ -18,7 +18,10 @@ import {
   LayoutOutlined,
   EnterOutlined,
   SearchOutlined,
+  CodeOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
+import { dialogs } from './Dialogs';
 
 const { TextArea } = Input;
 
@@ -28,6 +31,7 @@ interface DslEditorProps {
   placeholder?: string;
   rows?: number;
   onOpenGlobalReplace?: (selectedText: string) => void;
+  onPreviewLayout?: () => void;
 }
 
 /**
@@ -37,6 +41,7 @@ interface DslEditorProps {
  * 1. 快捷工具栏：快速插入加粗、字号、对齐等标签。
  * 2. 文本区域：支持光标定位插入。
  * 3. 实时同步：通过 onChange 回传最新的文本内容。
+ * 4. 预览布局：支持预览渲染后的 HTML 代码。
  */
 export const DslEditor: React.FC<DslEditorProps> = ({
   value,
@@ -44,6 +49,7 @@ export const DslEditor: React.FC<DslEditorProps> = ({
   placeholder = '请输入内容或使用上方工具栏插入标签...',
   rows = 8,
   onOpenGlobalReplace,
+  onPreviewLayout,
 }) => {
   const textAreaRef = useRef<any>(null);
 
@@ -83,6 +89,66 @@ export const DslEditor: React.FC<DslEditorProps> = ({
     const end = textarea.selectionEnd ?? 0;
     const selectedText = value.substring(start, end);
     onOpenGlobalReplace?.(selectedText);
+  };
+
+  const handleOpenImageHelper = () => {
+    const textarea = textAreaRef.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
+    let initialUrl = '';
+    let initialValues: any = {};
+
+    if (textarea) {
+      const start = textarea.selectionStart ?? 0;
+      const end = textarea.selectionEnd ?? 0;
+      const selectedText = value.substring(start, end).trim();
+
+      // Case 1: Raw URL
+      if (selectedText.startsWith('http')) {
+        initialUrl = selectedText;
+      } 
+      // Case 2: [image ...] DSL
+      else if (selectedText.startsWith('[image') && selectedText.endsWith('[/image]')) {
+        const match = selectedText.match(/^\[image([^\]]*)\]([\s\S]*?)\[\/image\]/);
+        if (match) {
+          const attrStr = match[1];
+          initialUrl = match[2].trim();
+          
+          // Parse attributes
+          const wMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
+          if (wMatch) initialValues.width = isNaN(Number(wMatch[2])) ? wMatch[2] : Number(wMatch[2]);
+          
+          const mhMatch = attrStr.match(/\b(mh|max-height)=([^ \]]+)/);
+          if (mhMatch) initialValues.maxHeight = Number(mhMatch[2]);
+          
+          const hMatch = attrStr.match(/\bh=([^ \]]+)/);
+          if (hMatch && !mhMatch) initialValues.maxHeight = Number(hMatch[2]); 
+
+          const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
+          if (modeMatch) initialValues.mode = modeMatch[1];
+          
+          const posMatch = attrStr.match(/\bpos="([^"]+)"/);
+          if (posMatch) {
+            initialValues.pos = posMatch[1];
+          } else {
+            const posSimpleMatch = attrStr.match(/\bpos=([^ \]]+)/);
+            if (posSimpleMatch) initialValues.pos = posSimpleMatch[1].replace(/_/g, ' ');
+          }
+          
+          const mtMatch = attrStr.match(/\bmt=([^ \]]+)/);
+          if (mtMatch) initialValues.marginTop = Number(mtMatch[2]);
+          
+          const mbMatch = attrStr.match(/\bmb=([^ \]]+)/);
+          if (mbMatch) initialValues.marginBottom = Number(mbMatch[2]);
+        }
+      }
+    }
+    
+    dialogs.showImageHelper({
+      initialUrl,
+      initialValues,
+      onInsert: (dsl) => {
+        insertText(dsl);
+      }
+    });
   };
 
   return (
@@ -125,8 +191,16 @@ export const DslEditor: React.FC<DslEditorProps> = ({
           </Space>
 
           <Space size={2}>
-            <Tooltip title="图片 [image]url[/image]">
+            <Tooltip title="快速插入图片 [image]url[/image]">
               <Button size="small" icon={<FileImageOutlined />} onClick={() => insertText('[image]', '[/image]')} />
+            </Tooltip>
+            <Tooltip title="图片助手 (可视化裁剪/边距)">
+              <Button 
+                size="small" 
+                icon={<SettingOutlined />} 
+                onClick={handleOpenImageHelper}
+                style={{ color: '#1890ff', borderColor: '#91d5ff' }}
+              />
             </Tooltip>
             <Tooltip title="图集 [gallery]url1|2.5,url2|2.5[/gallery]">
               <Button size="small" icon={<AppstoreOutlined />} onClick={() => insertText('[gallery]', '[/gallery]')} />
@@ -157,6 +231,14 @@ export const DslEditor: React.FC<DslEditorProps> = ({
             </Tooltip>
             <Tooltip title="全局替换（先选中文本更方便）">
               <Button size="small" icon={<SearchOutlined />} onClick={handleOpenGlobalReplace} />
+            </Tooltip>
+            <Tooltip title="布局预览 (Debug)">
+              <Button 
+                size="small" 
+                icon={<CodeOutlined />} 
+                onClick={onPreviewLayout}
+                style={{ color: '#722ed1', borderColor: '#d3adf7' }}
+              />
             </Tooltip>
           </Space>
         </Space>

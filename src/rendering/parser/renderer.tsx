@@ -75,14 +75,27 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     if (val.includes('%')) maxHeight = 'none';
   }
 
+  let isHeightSet = false;
   const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
   if (heightMatch) {
     const val = heightMatch[2];
     mediaStyle.height = isNaN(Number(val)) ? val : `${val}px`;
     maxHeight = 'none';
+    isHeightSet = true;
+  }
+
+  const maxHeightMatch = attrStr.match(/\b(mh|max-height)=([^ \]]+)/);
+  if (maxHeightMatch) {
+    const val = maxHeightMatch[2];
+    maxHeight = isNaN(Number(val)) ? val : `${val}px`;
   }
 
   mediaStyle.maxHeight = maxHeight;
+
+  const mtMatch = attrStr.match(/\bmt=([^ \]]+)/);
+  const mbMatch = attrStr.match(/\bmb=([^ \]]+)/);
+  const marginTop = mtMatch ? (isNaN(Number(mtMatch[1])) ? mtMatch[1] : `${mtMatch[1]}px`) : (inRow ? '0' : '12px');
+  const marginBottom = mbMatch ? (isNaN(Number(mbMatch[1])) ? mbMatch[1] : `${mbMatch[1]}px`) : (inRow ? '0' : '12px');
 
   const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
   if (scaleMatch) {
@@ -97,8 +110,21 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     mediaStyle.objectFit = modeMatch[1] as any;
   }
 
+  const posMatch = attrStr.match(/\bpos="([^"]+)"/);
+  if (posMatch) {
+    mediaStyle.objectPosition = posMatch[1];
+  } else {
+    const posSimpleMatch = attrStr.match(/\bpos=([^ \]]+)/);
+    if (posSimpleMatch) {
+      mediaStyle.objectPosition = posSimpleMatch[1].replace(/_/g, ' ');
+    }
+  }
+
   const wrapperStyle: React.CSSProperties = {
-    margin: inRow ? '0' : '12px auto',
+    marginTop,
+    marginBottom,
+    marginLeft: 'auto',
+    marginRight: 'auto',
     textAlign: 'center',
     display: 'block',
     width: mediaStyle.width || 'auto',
@@ -106,7 +132,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     position: 'relative',
   };
 
-  return { mediaStyle, wrapperStyle };
+  return { mediaStyle, wrapperStyle, isHeightSet };
 };
 
 // --- Components ---
@@ -138,7 +164,7 @@ const MediaContent: React.FC<{
   );
   const currentIndex = mediaItems.length <= 1 ? 0 : (showControls ? manualIndex : autoIndex);
   const currentItem = mediaItems[currentIndex] || mediaItems[0];
-  const { mediaStyle, wrapperStyle } = buildMediaStyles(attrStr, inRow);
+  const { mediaStyle, wrapperStyle, isHeightSet } = buildMediaStyles(attrStr, inRow);
   
   const navButtonStyle: React.CSSProperties = {
     width: 36,
@@ -177,7 +203,7 @@ const MediaContent: React.FC<{
             src={item.url}
             style={{
               ...mediaStyle,
-              width: '100%',
+              width: mediaStyle.width || (isHeightSet ? 'auto' : '100%'),
               display: index === currentIndex ? 'block' : 'none',
               visibility: index === currentIndex && !loadedUrls.has(item.url) ? 'hidden' : 'visible'
             }}

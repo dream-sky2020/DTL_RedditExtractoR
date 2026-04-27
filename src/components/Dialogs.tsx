@@ -6,8 +6,10 @@ import {
   QuestionCircleOutlined, 
   InfoCircleOutlined, 
   CheckCircleOutlined,
-  CloseCircleOutlined 
+  CloseCircleOutlined,
+  FileImageOutlined 
 } from '@ant-design/icons';
+import { ImageConfigContent } from './ImageConfigContent';
 
 interface DialogOptions {
   title: string;
@@ -19,6 +21,19 @@ interface DialogOptions {
   okType?: 'primary' | 'danger' | 'default';
   width?: number | string;
   centered?: boolean;
+}
+
+interface ImageHelperOptions {
+  initialUrl?: string;
+  initialValues?: {
+    width?: number | string;
+    maxHeight?: number;
+    mode?: 'contain' | 'cover' | 'fill';
+    pos?: string;
+    marginTop?: number;
+    marginBottom?: number;
+  };
+  onInsert: (dsl: string) => void;
 }
 
 // 这是一个单例引用，将在 App 组件初始化时被赋值
@@ -108,6 +123,31 @@ export const dialogs = {
       centered: options.centered ?? true,
       width: options.width,
       onOk: options.onOk,
+    });
+  },
+
+  showImageHelper: (options: ImageHelperOptions) => {
+    if (!modal) return;
+    
+    let currentDsl = '';
+
+    modal.confirm({
+      title: '图片配置助手 (Visual Config)',
+      icon: <FileImageOutlined style={{ color: '#1890ff' }} />,
+      width: 900,
+      centered: true,
+      okText: '插入 DSL 代码',
+      cancelText: '取消',
+      content: (
+        <ImageConfigContent 
+          initialUrl={options.initialUrl} 
+          initialValues={options.initialValues}
+          onChange={(dsl) => { currentDsl = dsl; }} 
+        />
+      ),
+      onOk: () => {
+        options.onInsert(currentDsl);
+      },
     });
   }
 };

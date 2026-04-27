@@ -84,11 +84,6 @@ const wrapText = (text: string) => {
         const trimmed = part.trim();
         if (!trimmed) return part; // 纯空白原样返回
 
-        // 检查是否有实质性内容（字母或中文字符）
-        // 排除掉纯数字、纯符号、或者只有 \n 的情况
-        const stripped = trimmed.replace(/[0-9\W_]+/g, '');
-        if (!stripped || stripped.length < 1) return part;
-
         // 包裹文本，尽量保留原始空白（如果有）
         const match = part.match(/^(\s*)([\s\S]*?)(\s*)$/);
         if (match) {

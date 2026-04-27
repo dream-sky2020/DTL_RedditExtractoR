@@ -24,8 +24,7 @@ export const useDslTranslate = () => {
       let match;
       while ((match = textRegex.exec(dsl)) !== null) {
         const text = match[1].trim();
-        // 过滤掉纯数字或纯符号的短文本
-        if (text && text.length > 0 && !/^[0-9\W_]+$/.test(text)) {
+        if (text && text.length > 0) {
           uniqueChunks.add(text);
         }
       }

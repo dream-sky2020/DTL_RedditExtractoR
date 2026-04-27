@@ -26,6 +26,11 @@ import {
 import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
+import { tokenize } from '../../rendering/parser/tokenizer';
+import { enrich } from '../../rendering/parser/enricher';
+import { renderAST } from '../../rendering/parser/renderer';
+import { normalize } from '../../rendering/parser/preprocessor';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { dialogs } from '../../components/Dialogs';
 import { useDslGlobalReplace } from '@hooks/useDslGlobalReplace';
 import { useVideoStore } from '@/store';
@@ -246,6 +251,63 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
     }
 
     message.success(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景。`);
+  };
+
+  const handlePreviewLayout = () => {
+    try {
+      // 1. 预处理
+      const normalized = normalize(dslText);
+      
+      // 2. 词法分析 (获取 AST)
+      const ast = tokenize(normalized, {
+        defaultMaxLimit: 150,
+        maxQuoteDepth: 4,
+        authorPath: [],
+      }, 0);
+
+      // 3. 渲染
+      const rendered = renderAST(ast, {
+        showMediaControls: false,
+        hideAudio: true,
+      });
+
+      // 4. 转换为 HTML 字符串
+      const htmlString = renderToStaticMarkup(<>{rendered}</>);
+
+      // 5. 格式化 HTML (简单处理，添加换行缩进以便阅读)
+      const formattedHtml = htmlString
+        .replace(/></g, '>\n<')
+        .replace(/(<[^/][^>]*>)/g, (match) => match) // 可以在这里做更复杂的缩进逻辑
+        
+      dialogs.info({
+        title: '布局代码预览 (Debug)',
+        width: 800,
+        content: (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>
+              <Text type="secondary">渲染后的 HTML 结构（用于排查边距和布局问题）：</Text>
+            </div>
+            <Input.TextArea
+              value={formattedHtml}
+              readOnly
+              autoSize={{ minRows: 10, maxRows: 25 }}
+              style={{
+                fontFamily: "'Fira Code', 'Courier New', monospace",
+                fontSize: '12px',
+                backgroundColor: '#f5f5f5',
+                color: '#333'
+              }}
+            />
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary" size="small">提示：如果发现意外的间距，请检查 HTML 标签之间的 white-space 或 line-height。</Text>
+            </div>
+          </div>
+        )
+      });
+    } catch (err) {
+      console.error('预览布局失败:', err);
+      message.error('预览布局失败，请检查 DSL 语法是否正确。');
+    }
   };
 
   const updatePreviewHeightByInput = (value: number | null) => {
@@ -489,6 +551,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
                   rows={12}
                   placeholder="编辑当前场景的 DSL 脚本..."
                   onOpenGlobalReplace={handleOpenGlobalReplace}
+                  onPreviewLayout={handlePreviewLayout}
                 />
               </div>
             </div>
