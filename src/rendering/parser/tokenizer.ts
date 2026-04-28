@@ -101,7 +101,7 @@ export const tokenize = (
         continue;
       }
 
-      const { fullTag, author, maxLimit, itemId, customStyle } = parsed;
+      const { fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride } = parsed;
       const startTagEnd = foundIdx + fullTag.length;
 
       // Find closing tag with nesting support
@@ -135,6 +135,7 @@ export const tokenize = (
           customStyle,
           children: tokenize(text.substring(startTagEnd, endTagIdx), {
             ...options,
+            maxQuoteDepth: maxQuoteDepthOverride ?? options.maxQuoteDepth,
             authorPath: [...authorPath, author]
           }, currentDepth + 1)
         });

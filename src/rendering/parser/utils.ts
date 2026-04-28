@@ -20,7 +20,7 @@ export const parseInlineAttrs = (input: string): Record<string, string> => {
 export const parseQuoteStartTag = (
   source: string,
   defaultMaxLimit: number
-): { fullTag: string; author: string; maxLimit: number; itemId: string; customStyle: React.CSSProperties } | null => {
+): { fullTag: string; author: string; maxLimit: number; itemId: string; customStyle: React.CSSProperties; maxQuoteDepthOverride?: number } | null => {
   const startTagMatch = source.match(/^\[quote(?:=[^\]]*|\s[^\]]*)?\]/);
   if (!startTagMatch) return null;
 
@@ -42,6 +42,10 @@ export const parseQuoteStartTag = (
   const maxFromAttr = Number(attrs.max);
   const maxLimit = Number.isFinite(maxFromAttr) && maxFromAttr > 0 ? maxFromAttr : defaultMaxLimit;
   const itemId = (attrs.id || '').trim();
+  
+  // 新增：解析 depth 属性作为嵌套深度覆盖
+  const depthFromAttr = Number(attrs.depth);
+  const maxQuoteDepthOverride = Number.isFinite(depthFromAttr) && depthFromAttr > 0 ? depthFromAttr : undefined;
 
   const customStyle: React.CSSProperties = {};
   if (attrs.size) {
@@ -54,7 +58,7 @@ export const parseQuoteStartTag = (
   if (attrs.bold === 'true' || attrs.bold === '') customStyle.fontWeight = 'bold';
   if (attrs.italic === 'true' || attrs.italic === '') customStyle.fontStyle = 'italic';
 
-  return { fullTag, author, maxLimit, itemId, customStyle };
+  return { fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride };
 };
 
 export const parseMediaSequence = (source: string, defaultDuration: number = 2.5): MediaItem[] =>
