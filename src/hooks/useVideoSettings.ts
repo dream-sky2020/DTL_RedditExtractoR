@@ -376,6 +376,20 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setVideoConfig(newConfig);
   };
 
+  const setAllSceneDurations = (duration: number) => {
+    const newScenes = videoConfig.scenes.map((s) => ({
+      ...s,
+      duration,
+      items: s.items.map((item) => ({
+        ...item,
+        exitAt: duration,
+      })),
+    }));
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
+    setVideoConfig(newConfig);
+    message.success(`已将全部画面格及元素时长统一设为 ${duration}s`);
+  };
+
   return {
     handleApplyCommentSort, handleRandomizeAliasesAndApply, handleClearAliasesAndApply,
     handleRearrangeColorsAndApply, updateAuthorProfile, handleImageLayoutModeChange,
@@ -383,6 +397,6 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleContentFontSizeChange, handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
     handleDefaultQuoteMaxLimitChange, handleSceneBackgroundColorChange,
     handleItemBackgroundColorChange, handleQuoteBackgroundColorChange,
-    handleQuoteBorderColorChange, setAllSceneLayouts, addScene
+    handleQuoteBorderColorChange, setAllSceneLayouts, addScene, setAllSceneDurations
   };
 };

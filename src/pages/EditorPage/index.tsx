@@ -306,6 +306,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
         onSetAllSceneLayouts={videoSettingsHandlers.setAllSceneLayouts}
+        onSetAllSceneDurations={videoSettingsHandlers.setAllSceneDurations}
         onAddScene={videoSettingsHandlers.addScene}
         canApplyCommentSort={!!rawResult}
         allAuthors={allAuthors}

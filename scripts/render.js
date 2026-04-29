@@ -3,6 +3,19 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import os from 'node:os';
 
+function getArgValue(flag, fallback) {
+  const prefix = `${flag}=`;
+  const direct = process.argv.find((arg) => arg.startsWith(prefix));
+  if (direct) {
+    return direct.slice(prefix.length);
+  }
+  const index = process.argv.findIndex((arg) => arg === flag);
+  if (index >= 0 && process.argv[index + 1]) {
+    return process.argv[index + 1];
+  }
+  return fallback;
+}
+
 /**
  * 检查 FFmpeg 是否安装
  */
@@ -49,6 +62,10 @@ function getLocalChromePath() {
  */
 async function main() {
   console.log('🚀 开始渲染准备...');
+  const configFileArg = getArgValue('--config', 'video-config.json');
+  const outputFileArg = getArgValue('--output', 'out/video.mp4');
+  const configPath = resolve(process.cwd(), configFileArg);
+  const outputPath = resolve(process.cwd(), outputFileArg);
 
   // 1. 检查 FFmpeg
   if (!checkFFmpeg()) {
@@ -63,7 +80,6 @@ async function main() {
   }
 
   // 2. 检查配置文件
-  const configPath = resolve(process.cwd(), 'video-config.json');
   let props = {};
   
   if (existsSync(configPath)) {
@@ -87,8 +103,8 @@ async function main() {
     'render',
     'src/remotion/index.tsx',
     'MyVideo',
-    'out/video.mp4',
-    '--props=video-config.json',
+    outputFileArg,
+    `--props=${configFileArg}`,
     `--concurrency=${concurrency}`, // 启用多线程并发渲染
     '--gl=angle', // Windows 下使用 ANGLE 硬件加速渲染 CSS
     '--chromium-flags=--disable-dev-shm-usage --no-sandbox', // 提高 Chromium 运行稳定性
@@ -159,7 +175,7 @@ async function main() {
 
     renderProcess.on('close', (code) => {
       if (code === 0) {
-        const fullPath = resolve(process.cwd(), 'out/video.mp4');
+        const fullPath = outputPath;
         console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
         resolvePromise(true);
       } else {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout, Menu, Button } from 'antd';
 import {
   AppstoreOutlined,
+  FolderOutlined,
   LinkOutlined,
   CodeOutlined,
   MenuFoldOutlined,
@@ -65,6 +66,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: 'Reddit 链接提取',
           },
           {
+            key: 'projects',
+            icon: <FolderOutlined />,
+            label: '项目管理',
+          },
+          {
             key: 'editor',
             icon: <EditOutlined />,
             label: '视频脚本编辑',
@@ -72,7 +78,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {
             key: 'preview',
             icon: <VideoCameraOutlined />,
-            label: '视频预览与导出',
+            label: '视频预览',
+          },
+          {
+            key: 'render_tasks',
+            icon: <VideoCameraOutlined />,
+            label: '导出与渲染队列',
           },
           {
             key: 'studio',
@@ -116,11 +127,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '废弃页面',
             icon: <EyeInvisibleOutlined />,
             children: [
-              {
-                key: 'editor',
-                icon: <EditOutlined />,
-                label: '视频脚本编辑',
-              },
               {
                 key: 'static_preview',
                 icon: <FileImageOutlined />,

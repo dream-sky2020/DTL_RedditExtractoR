@@ -6,15 +6,10 @@ import {
   Row,
   Col,
   Typography,
-  Divider,
-  Modal,
-  Alert,
-  Progress,
 } from 'antd';
 import {
   EditOutlined,
-  VideoCameraOutlined,
-  DownloadOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { VideoPreviewPlayer, getTotalFrames } from '../../components/VideoPreviewPlayer';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
@@ -26,25 +21,13 @@ import { VideoConfig } from '../../types';
 interface VideoPreviewPageProps {
   videoConfig: VideoConfig;
   onBackToEditor: () => void;
-  isExportModalVisible: boolean;
-  setIsExportModalVisible: (visible: boolean) => void;
-  isAutoRendering: boolean;
-  autoRenderStatus: any;
-  renderProgress: { percent: number, task: string, detail?: string } | null;
-  startAutoRender: () => void;
-  downloadVideoConfig: () => void;
+  onGoToRenderTasks: () => void;
 }
 
 export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
   videoConfig,
   onBackToEditor,
-  isExportModalVisible,
-  setIsExportModalVisible,
-  isAutoRendering,
-  autoRenderStatus,
-  renderProgress,
-  startAutoRender,
-  downloadVideoConfig,
+  onGoToRenderTasks,
 }) => {
   const totalFrames = getTotalFrames(videoConfig);
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
@@ -84,94 +67,15 @@ export const VideoPreviewPage: React.FC<VideoPreviewPageProps> = ({
             <Button
               type="primary"
               size="large"
-              icon={<DownloadOutlined />}
-              onClick={() => setIsExportModalVisible(true)}
+              icon={<ExportOutlined />}
+              onClick={onGoToRenderTasks}
             >
-              导出本地 MP4
+              前往导出与任务管理
             </Button>
-            <Text type="secondary">导出功能需在本地运行渲染脚本</Text>
+            <Text type="secondary">渲染任务已独立到专属页面管理</Text>
           </Space>
         </Card>
       </Col>
-
-      <Modal
-        title="导出视频"
-        open={isExportModalVisible}
-        onCancel={() => !isAutoRendering && setIsExportModalVisible(false)}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => setIsExportModalVisible(false)}
-            disabled={isAutoRendering}
-          >
-            {isAutoRendering ? '正在导出中...' : '关闭'}
-          </Button>
-        ]}
-        width={700}
-      >
-        <div style={{ padding: '10px 0' }}>
-          <Alert
-            type="success"
-            message="✨ 一键全自动导出 (推荐)"
-            description={
-              <div>
-                <p>如果你已经开启了 Python 后端，可以直接点击下方按钮全自动生成视频。</p>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<VideoCameraOutlined />}
-                    loading={isAutoRendering}
-                    onClick={startAutoRender}
-                  >
-                    立即在本地生成 MP4
-                  </Button>
-                  {renderProgress && (
-                    <div style={{ marginTop: 15 }}>
-                      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <Text strong>{renderProgress.task}</Text>
-                        <Text type="secondary">{renderProgress.percent}%</Text>
-                      </div>
-                      <Progress
-                        percent={renderProgress.percent}
-                        status={isAutoRendering ? "active" : "success"}
-                        strokeColor={{
-                          '0%': '#108ee9',
-                          '100%': '#87d068',
-                        }}
-                      />
-                      {renderProgress.detail && (
-                        <div style={{ marginTop: 4 }}>
-                          <Text type="secondary">{renderProgress.detail}</Text>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {autoRenderStatus && (
-                    <Alert
-                      type={autoRenderStatus.type}
-                      message={autoRenderStatus.message}
-                      showIcon
-                    />
-                  )}
-                </Space>
-              </div>
-            }
-            style={{ marginBottom: 20 }}
-          />
-
-          <Divider orientation="left" plain>手动模式 (备选)</Divider>
-          <p>如果 Python 后端不可用，你可以手动操作：</p>
-          <Space direction="vertical">
-            <Button icon={<DownloadOutlined />} onClick={downloadVideoConfig}>
-              下载配置文件
-            </Button>
-            <Text type="secondary">
-              下载后放入根目录并运行：<code>node scripts/render.js</code>
-            </Text>
-          </Space>
-        </div>
-      </Modal>
     </Row>
   );
 };

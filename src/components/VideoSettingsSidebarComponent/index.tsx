@@ -91,6 +91,7 @@ interface VideoSettingsSidebarProps {
   onQuoteBackgroundColorChange: (color: string) => void;
   onQuoteBorderColorChange: (color: string) => void;
   onSetAllSceneLayouts: (layout: 'top' | 'center') => void;
+  onSetAllSceneDurations: (duration: number) => void;
   onAddScene: () => void;
 
   // Shared Data
@@ -166,6 +167,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     onQuoteBackgroundColorChange,
     onQuoteBorderColorChange,
     onSetAllSceneLayouts,
+    onSetAllSceneDurations,
     onAddScene,
     canApplyCommentSort,
     allAuthors,
@@ -419,6 +421,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
             onRandomizeAliasesAndApply={onRandomizeAliasesAndApply}
             onClearAliasesAndApply={onClearAliasesAndApply}
             setAllSceneLayouts={onSetAllSceneLayouts}
+            setAllSceneDurations={onSetAllSceneDurations}
             addScene={onAddScene}
           />
         </div>

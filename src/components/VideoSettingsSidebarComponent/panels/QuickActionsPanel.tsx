@@ -1,7 +1,8 @@
 import React from 'react';
-import { Space, Button, Row, Col } from 'antd';
+import { Space, Button, Row, Col, InputNumber } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { CommentSortMode, ReplyOrderMode } from '../../../types';
+import { dialogs } from '../../Dialogs';
 
 interface QuickActionsPanelProps {
   idPrefix?: string;
@@ -13,6 +14,7 @@ interface QuickActionsPanelProps {
   onRandomizeAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   onClearAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
   setAllSceneLayouts: (layout: 'top' | 'center') => void;
+  setAllSceneDurations: (duration: number) => void;
   addScene: () => void;
 }
 
@@ -26,9 +28,36 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   onRandomizeAliasesAndApply,
   onClearAliasesAndApply,
   setAllSceneLayouts,
+  setAllSceneDurations,
   addScene,
 }) => {
   const getId = (suffix: string) => `${idPrefix}-${suffix}`;
+
+  const handleSetAllDurations = () => {
+    let duration = 5;
+    dialogs.confirm({
+      title: '统一修改全部时长',
+      content: (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ marginBottom: 8 }}>请输入统一的时长（秒）：</div>
+          <InputNumber
+            min={0.1}
+            step={0.5}
+            defaultValue={5}
+            style={{ width: '100%' }}
+            onChange={(val) => {
+              if (val !== null) duration = val;
+            }}
+          />
+        </div>
+      ),
+      onOk: () => {
+        if (duration > 0) {
+          setAllSceneDurations(duration);
+        }
+      },
+    });
+  };
 
   return (
     <Space id={getId('quick-actions-space')} direction="vertical" style={{ width: '100%' }}>
@@ -90,6 +119,15 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           </Button>
         </Space.Compact>
       </div>
+      <Button
+        id={getId('set-all-durations-btn')}
+        name="set-all-durations-btn"
+        block
+        onClick={handleSetAllDurations}
+        style={{ marginBottom: 8, color: 'var(--text-light-blue)', borderColor: 'var(--btn-primary-border)', background: 'transparent' }}
+      >
+        统一全部时长
+      </Button>
       <Button
         id={getId('add-scene-btn')}
         name="add-scene-btn"

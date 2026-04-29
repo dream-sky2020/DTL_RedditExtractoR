@@ -26,6 +26,8 @@ import { StudioPage } from '../StudioPage/index';
 import { AudioPreviewPage } from '../AudioPreviewPage/index';
 import { ComponentTestPage } from '../ComponentTestPage/index';
 import { StudioScenePage } from '../StudioScenePage/index';
+import { RenderTasksPage } from '../RenderTasksPage/index';
+import { ProjectsPage } from '../ProjectsPage/index';
 
 import { 
   ToolKey, 
@@ -40,6 +42,7 @@ import {
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { normalizeVideoConfig } from '@/rendering/videoCanvas';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
+import { RenderTask } from '@/hooks/useVideoRender';
 
 const { Header, Content } = Layout;
 
@@ -51,17 +54,22 @@ interface MainLayoutProps {
   setHeaderHidden: React.Dispatch<React.SetStateAction<boolean>>;
   activeTool: ToolKey;
   setActiveTool: React.Dispatch<React.SetStateAction<ToolKey>>;
+  currentProjectId: string | null;
   
   // Actions
   onMenuSelect: (info: { key: string }) => void;
   
   // Export/Render
-  isExportModalVisible: boolean;
-  setIsExportModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   isAutoRendering: boolean;
+  isSubmittingTask: boolean;
   autoRenderStatus: any;
   renderProgress: { percent: number; task: string; detail?: string } | null;
+  renderTasks: RenderTask[];
+  activeTaskId: string | null;
   startAutoRender: () => Promise<void>;
+  cancelRenderTask: (taskId: string) => Promise<void>;
+  removeRenderTask: (taskId: string) => Promise<void>;
+  clearFinishedTasks: (statuses?: Array<'success' | 'error' | 'cancelled'>) => Promise<void>;
   downloadVideoConfig: () => void;
   
   // Studio
@@ -71,10 +79,10 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = (props) => {
   const {
-    collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool,
+    collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool, currentProjectId,
     onMenuSelect,
-    isExportModalVisible, setIsExportModalVisible, isAutoRendering, autoRenderStatus, renderProgress,
-    startAutoRender, downloadVideoConfig, selectedSceneIdx, setSelectedSceneIdx
+    isAutoRendering, isSubmittingTask, autoRenderStatus, renderProgress,
+    renderTasks, activeTaskId, startAutoRender, cancelRenderTask, removeRenderTask, clearFinishedTasks, downloadVideoConfig, selectedSceneIdx, setSelectedSceneIdx
   } = props;
 
   const {
@@ -109,11 +117,23 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
           desc: '在此微调视频的文字内容、作者信息等任务脚本。',
           button: '保存并前往预览',
         };
+      case 'projects':
+        return {
+          title: '项目管理',
+          desc: '创建、切换和维护本地项目。',
+          button: '',
+        };
       case 'preview':
         return {
-          title: '动画预览与导出 (Video)',
-          desc: '查看动态视频效果并生成导出任务。',
-          button: '生成视频',
+          title: '动画预览 (Video)',
+          desc: '查看动态视频效果。',
+          button: '',
+        };
+      case 'render_tasks':
+        return {
+          title: '导出与渲染任务',
+          desc: '统一管理导出任务、进度与取消/清理。',
+          button: '',
         };
       case 'static_preview':
         return {
@@ -210,7 +230,7 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
         />
 
         <Layout>
-          <Content className="admin-content">
+          <Content className="admin-content" key={currentProjectId || 'no-project'}>
             {activeTool === 'extract' && (
               <ExtractPage 
                 goToEditor={() => setActiveTool('editor')}
@@ -235,16 +255,30 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
               />
             )}
 
+            {activeTool === 'projects' && (
+              <ProjectsPage />
+            )}
+
             {activeTool === 'preview' && (
               <VideoPreviewPage
                 videoConfig={videoConfig}
                 onBackToEditor={() => setActiveTool('editor')}
-                isExportModalVisible={isExportModalVisible}
-                setIsExportModalVisible={setIsExportModalVisible}
+                onGoToRenderTasks={() => setActiveTool('render_tasks')}
+              />
+            )}
+
+            {activeTool === 'render_tasks' && (
+              <RenderTasksPage
                 isAutoRendering={isAutoRendering}
+                isSubmittingTask={isSubmittingTask}
                 autoRenderStatus={autoRenderStatus}
                 renderProgress={renderProgress}
+                renderTasks={renderTasks}
+                activeTaskId={activeTaskId}
                 startAutoRender={startAutoRender}
+                cancelRenderTask={cancelRenderTask}
+                removeRenderTask={removeRenderTask}
+                clearFinishedTasks={clearFinishedTasks}
                 downloadVideoConfig={downloadVideoConfig}
               />
             )}

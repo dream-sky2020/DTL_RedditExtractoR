@@ -13,6 +13,7 @@ import {
   Row,
   Col,
   message,
+  Collapse,
 } from 'antd';
 import {
   EditOutlined,
@@ -58,9 +59,10 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
 
   const { commentSortMode, replyOrderMode, colorArrangement } = useSettingsStore();
   const { videoConfig, setVideoConfig } = useVideoStore();
+  const [redditCookieInput, setRedditCookieInput] = React.useState('');
 
   const handleFetch = () => {
-    fetchRedditData(commentSortMode, replyOrderMode, colorArrangement);
+    fetchRedditData(commentSortMode, replyOrderMode, colorArrangement, redditCookieInput);
   };
 
   const copyToClipboard = async () => {
@@ -141,6 +143,29 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               onPressEnter={handleFetch}
             />
           </Form.Item>
+          <Collapse
+            size="small"
+            style={{ marginBottom: 12 }}
+            items={[
+              {
+                key: 'advanced-auth',
+                label: '高级设置（Reddit Cookie，可选）',
+                children: (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Input.TextArea
+                      value={redditCookieInput}
+                      onChange={(e) => setRedditCookieInput(e.target.value)}
+                      rows={4}
+                      placeholder="可粘贴 Cookie 字符串（name=value; name2=value2）或浏览器导出的 Cookie JSON 数组"
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      仅本次会话内使用，不会写入项目持久化数据。用于绕过 Reddit 风控（403）时携带登录态。
+                    </Text>
+                  </Space>
+                )
+              }
+            ]}
+          />
           <Space>
             <Button
               type="primary"

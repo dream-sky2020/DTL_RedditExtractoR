@@ -31,6 +31,11 @@ interface VideoState {
       itemBackgroundColor: string;
     }
   ) => VideoConfig;
+
+  getProjectState: () => {
+    videoConfig: VideoConfig;
+  };
+  applyProjectState: (payload: { videoConfig: VideoConfig }) => void;
 }
 
 const HISTORY_LIMIT = 30;
@@ -163,6 +168,18 @@ export const useVideoStore = create<VideoState>()(
           itemBackgroundColor,
           canvas: createDefaultVideoCanvasConfig(),
         };
+      },
+
+      getProjectState: () => ({
+        videoConfig: get().videoConfig,
+      }),
+
+      applyProjectState: (payload) => {
+        set({
+          videoConfig: payload.videoConfig,
+          past: [],
+          future: [],
+        });
       },
     }),
     {

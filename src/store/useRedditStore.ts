@@ -41,7 +41,8 @@ interface RedditState {
   fetchRedditData: (
     commentSortMode: CommentSortMode,
     replyOrderMode: ReplyOrderMode,
-    colorArrangement: ColorArrangementSettings
+    colorArrangement: ColorArrangementSettings,
+    redditCookieInput?: string
   ) => Promise<void>;
   
   clearPersistedData: () => void;
@@ -52,6 +53,23 @@ interface RedditState {
     settings: ColorArrangementSettings,
     overwriteColors?: boolean
   ) => Record<string, AuthorProfile>;
+
+  getProjectState: () => {
+    redditUrl: string;
+    result: any;
+    rawResult: any;
+    allAuthors: string[];
+    authorProfiles: Record<string, AuthorProfile>;
+    hasStoredRawData: boolean;
+  };
+  applyProjectState: (payload: {
+    redditUrl: string;
+    result: any;
+    rawResult: any;
+    allAuthors: string[];
+    authorProfiles: Record<string, AuthorProfile>;
+    hasStoredRawData: boolean;
+  }) => void;
 }
 
 const buildColorWithSettings = (index: number, settings: ColorArrangementSettings) => {
@@ -99,16 +117,51 @@ export const useRedditStore = create<RedditState>()(
         return nextProfiles;
       },
 
-      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement) => {
+      getProjectState: () => {
+        const state = get();
+        return {
+          redditUrl: state.redditUrl,
+          result: state.result,
+          rawResult: state.rawResult,
+          allAuthors: state.allAuthors,
+          authorProfiles: state.authorProfiles,
+          hasStoredRawData: state.hasStoredRawData,
+        };
+      },
+
+      applyProjectState: (payload) => {
+        set({
+          redditUrl: payload.redditUrl || '',
+          result: payload.result ?? null,
+          rawResult: payload.rawResult ?? null,
+          allAuthors: Array.isArray(payload.allAuthors) ? payload.allAuthors : [],
+          authorProfiles: payload.authorProfiles || {},
+          hasStoredRawData: Boolean(payload.hasStoredRawData),
+          loading: false,
+          error: '',
+          errorDebug: '',
+        });
+      },
+
+      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement, redditCookieInput) => {
         const { redditUrl, authorProfiles, buildProfilesForAuthors } = get();
         if (!redditUrl.trim()) return;
 
         set({ loading: true, error: '', errorDebug: '', result: null, rawResult: null });
 
         try {
-          const jsonUrl = `${redditUrl.trim().replace(/\/$/, '')}.json`;
+          const inputUrl = redditUrl.trim();
+          const parsed = new URL(inputUrl);
+          const cleanPath = parsed.pathname.replace(/\/$/, '');
+          parsed.pathname = cleanPath.endsWith('.json') ? cleanPath : `${cleanPath}.json`;
+          parsed.searchParams.set('raw_json', '1');
+          const jsonUrl = parsed.toString();
           const proxyUrl = `http://localhost:5000/fetch_reddit?url=${encodeURIComponent(jsonUrl)}`;
-          const response = await axios.get(proxyUrl);
+          const headers: Record<string, string> = {};
+          if ((redditCookieInput || '').trim()) {
+            headers['X-Reddit-Cookie'] = redditCookieInput!.trim();
+          }
+          const response = await axios.get(proxyUrl, { headers });
           
           const nextAuthors = extractAuthorsFromRawData(response.data);
           const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);

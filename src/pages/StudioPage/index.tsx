@@ -439,6 +439,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
         onSetAllSceneLayouts={videoSettingsHandlers.setAllSceneLayouts}
+        onSetAllSceneDurations={videoSettingsHandlers.setAllSceneDurations}
         onAddScene={videoSettingsHandlers.addScene}
         canApplyCommentSort={!!rawResult}
         allAuthors={allAuthors}
