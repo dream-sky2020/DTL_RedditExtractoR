@@ -599,127 +599,33 @@ def fetch_reddit():
     if not target_url:
         return jsonify({"success": False, "message": "未提供目标 URL"}), 400
 
-    def normalize_cookie_input(raw_cookie):
-        if not raw_cookie:
-            return ''
-        text = str(raw_cookie).strip()
-        if not text:
-            return ''
-        # 兼容浏览器导出的 Cookie JSON 数组
-        if text.startswith('['):
-            try:
-                data = json.loads(text)
-                if isinstance(data, list):
-                    pairs = []
-                    for item in data:
-                        if not isinstance(item, dict):
-                            continue
-                        name = str(item.get('name', '')).strip()
-                        value = str(item.get('value', '')).strip()
-                        if name:
-                            pairs.append(f"{name}={value}")
-                    return '; '.join(pairs)
-            except Exception:
-                pass
-        return text
-
-    def normalize_reddit_json_url(url):
-        parsed = urlparse(url)
-        path = (parsed.path or '').rstrip('/')
-        if path and not path.endswith('.json'):
-            path = f"{path}.json"
-        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
-        if "raw_json" not in query:
-            query["raw_json"] = "1"
-        return urlunparse(parsed._replace(path=path or parsed.path, query=urlencode(query)))
-
-    def with_old_reddit(url):
-        parsed = urlparse(url)
-        host = parsed.netloc.lower()
-        if host.startswith('www.reddit.com'):
-            return urlunparse(parsed._replace(netloc='old.reddit.com'))
-        if host == 'reddit.com':
-            return urlunparse(parsed._replace(netloc='old.reddit.com'))
-        return url
-
     try:
-        normalized_url = normalize_reddit_json_url(target_url)
-        print(f"📡 正在代理抓取: {normalized_url}")
+        # 简单处理 URL，确保以 .json 结尾
+        if '.json' not in target_url:
+            if '?' in target_url:
+                parts = target_url.split('?', 1)
+                target_url = parts[0].rstrip('/') + '.json?' + parts[1]
+            else:
+                target_url = target_url.rstrip('/') + '.json'
+        
+        print(f"📡 正在代理抓取: {target_url}")
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'application/json,text/plain;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
         }
-        # 优先使用前端传入的 Cookie（便于临时调试），其次使用环境变量
-        reddit_cookie = normalize_cookie_input(request.headers.get('X-Reddit-Cookie', ''))
-        if not reddit_cookie:
-            reddit_cookie = os.environ.get('REDDIT_COOKIE', '').strip()
-        reddit_bearer = os.environ.get('REDDIT_BEARER_TOKEN', '').strip()
+        
+        # 仅在有环境变量时添加 Cookie
+        reddit_cookie = os.environ.get('REDDIT_COOKIE', '').strip()
         if reddit_cookie:
             headers['Cookie'] = reddit_cookie
-        if reddit_bearer:
-            headers['Authorization'] = f'Bearer {reddit_bearer}'
-        response = requests.get(normalized_url, headers=headers, timeout=15, allow_redirects=True)
-        content_type = response.headers.get('content-type', '')
-        is_html = 'text/html' in content_type.lower()
-
-        # 如果拿到 HTML（常见于 www.reddit.com 返回前端页面），尝试 old.reddit.com 兜底
-        if response.status_code == 200 and is_html:
-            fallback_url = with_old_reddit(normalized_url)
-            if fallback_url != normalized_url:
-                print(f"↪️ JSON 抓取回退至: {fallback_url}")
-                fallback_response = requests.get(fallback_url, headers=headers, timeout=15, allow_redirects=True)
-                if fallback_response.status_code == 200:
-                    try:
-                        return jsonify(fallback_response.json())
-                    except Exception:
-                        response = fallback_response
-                        content_type = response.headers.get('content-type', '')
-
-        body_text = response.text or ''
-        body_preview = body_text[:300].replace('\n', ' ').replace('\r', ' ')
-
-        blocked_by_security = (
-            response.status_code in (401, 403, 429)
-            and (
-                'blocked by network security' in body_text.lower()
-                or 'whoa there, pardner' in body_text.lower()
-                or 'you\'ve been blocked' in body_text.lower()
-            )
-        )
-
-        if response.status_code >= 400:
-            if blocked_by_security:
-                return jsonify({
-                    "success": False,
-                    "message": "Reddit 风控拦截（网络安全策略）。可尝试切换网络，或在后端环境变量设置 REDDIT_COOKIE / REDDIT_BEARER_TOKEN 后重试。",
-                    "statusCode": response.status_code,
-                    "contentType": content_type,
-                    "url": normalized_url,
-                    "bodyPreview": body_preview,
-                }), 502
-            return jsonify({
-                "success": False,
-                "message": f"Reddit 返回 HTTP {response.status_code}，可能触发限流或风控。",
-                "statusCode": response.status_code,
-                "contentType": content_type,
-                "url": normalized_url,
-                "bodyPreview": body_preview,
-            }), 502
-
-        try:
-            payload = response.json()
-        except Exception as parse_err:
-            return jsonify({
-                "success": False,
-                "message": f"Reddit 返回内容不是有效 JSON: {str(parse_err)}",
-                "statusCode": response.status_code,
-                "contentType": content_type,
-                "url": normalized_url,
-                "bodyPreview": body_preview,
-            }), 502
-
-        return jsonify(payload)
+            
+        response = requests.get(target_url, headers=headers, timeout=15)
+        response.raise_for_status()
+        
+        # 检查是否返回了 HTML（被拦截）
+        if 'text/html' in response.headers.get('Content-Type', ''):
+            return jsonify({"success": False, "message": "Reddit 拦截了请求（返回了 HTML）。请检查网络或 Cookie。"}), 403
+            
+        return jsonify(response.json())
     except Exception as e:
         print(f"❌ 抓取失败: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
