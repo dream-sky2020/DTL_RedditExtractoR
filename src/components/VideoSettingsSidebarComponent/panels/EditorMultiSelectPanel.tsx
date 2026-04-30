@@ -7,7 +7,10 @@ import {
   DeleteOutlined,
   MergeCellsOutlined,
   TranslationOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  CheckSquareOutlined,
+  BorderInnerOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { VideoConfig } from '../../../types';
 import { useSceneMerge } from '../../../hooks/useSceneMerge';
@@ -28,6 +31,8 @@ interface EditorMultiSelectPanelProps {
   onOpenTranslationModal?: () => void;
   draftConfig: VideoConfig;
   setDraftConfig: (config: VideoConfig) => void;
+  galleryPage?: number;
+  galleryPageSize?: number;
 }
 
 export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
@@ -41,11 +46,64 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   onOpenTranslationModal,
   draftConfig,
   setDraftConfig,
+  galleryPage,
+  galleryPageSize,
 }) => {
   const { mergeScenes } = useSceneMerge({
     selectedSceneIds,
     setSelectedSceneIds,
   });
+
+  const handleSelectAll = () => {
+    setSelectedSceneIds(draftConfig.scenes.map(s => s.id));
+    toast.success(`已全选 ${draftConfig.scenes.length} 个场景`);
+  };
+
+  const handleSelectCurrentPage = () => {
+    if (galleryPage === undefined || galleryPageSize === undefined) {
+      // 如果没有分页信息，则退回到全选
+      handleSelectAll();
+      return;
+    }
+    const startIndex = (galleryPage - 1) * galleryPageSize;
+    const currentPageScenes = draftConfig.scenes.slice(startIndex, startIndex + galleryPageSize);
+    setSelectedSceneIds(currentPageScenes.map(s => s.id));
+    toast.success(`已全选当前页面 ${currentPageScenes.length} 个场景`);
+  };
+
+  const handleClearQuotes = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const newItems = scene.items.map(item => {
+        let newContent = item.content;
+        
+        // 循环移除最内层的 quote，直到没有 quote 为止
+        // [quote=... id=... #... | ...] ... [/quote]
+        const innermostQuoteRegex = /\[quote=[^\]]*?\]((?:(?!\[quote=)[\s\S])*?)\[\/quote\]/g;
+        let prevContent;
+        do {
+          prevContent = newContent;
+          newContent = newContent.replace(innermostQuoteRegex, '');
+        } while (newContent !== prevContent);
+
+        // 清理由于移除引用可能产生的多余换行
+        // 匹配 [\n] 且后面跟着 [\n] 或 [style
+        newContent = newContent.replace(/\[\\n\]\s*(?=\[\\n\]|\[style)/g, '');
+        // 清理开头和结尾的 [\n]
+        newContent = newContent.replace(/^\[\\n\]+/, '').replace(/\[\\n\]+$/, '');
+
+        return { ...item, content: newContent };
+      });
+
+      return { ...scene, items: newItems };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已清理 ${selectedSceneIds.length} 个场景中的引用内容`);
+  };
 
   return (
     <>
@@ -104,6 +162,35 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                   <Text style={{ fontSize: 12, color: 'var(--text-primary)' }}>批量操作</Text>
                 </div>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <Button
+                      size="small"
+                      icon={<CheckSquareOutlined />}
+                      onClick={handleSelectAll}
+                    >
+                      全选
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<BorderInnerOutlined />}
+                      onClick={handleSelectCurrentPage}
+                    >
+                      全选本页
+                    </Button>
+                  </div>
+                  <Button
+                    block
+                    icon={<ClearOutlined />}
+                    disabled={selectedSceneIds.length === 0}
+                    onClick={handleClearQuotes}
+                    style={{
+                      backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                      color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                      borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                    }}
+                  >
+                    清理引用
+                  </Button>
                   <Button
                     block
                     icon={<DeleteOutlined />}

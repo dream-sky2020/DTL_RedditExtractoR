@@ -16,13 +16,10 @@ import {
 } from 'antd';
 import {
   FileImageOutlined,
-  CheckCircleFilled,
 } from '@ant-design/icons';
 import {
-  VideoPreviewPlayer,
   DEFAULT_PREVIEW_FPS,
   getTotalFrames,
-  getSceneStartFrame,
 } from '../../components/VideoPreviewPlayer';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { VideoSettingsSidebar } from 'VideoSettingsSidebarComponent_panel_compont';
@@ -31,12 +28,12 @@ import { useVideoSettings } from '@hooks/useVideoSettings';
 import { useSceneDeletion } from '@hooks/useSceneDeletion';
 import { useDslTranslate } from '@hooks/useDslTranslate';
 import { TranslationModal } from '@components/TranslationModal';
+import { StudioFramePlayer } from '../../components/StudioFramePlayer';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';
-
 
 export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ onViewScene }) => {
   const {
@@ -195,89 +192,6 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     }
   }, [isMultiSelectMode]);
 
-  // 渲染单张画面的播放器组件
-  const FramePlayer = ({ idx, isSelected }: { idx: number; isSelected: boolean }) => (
-    <div 
-      style={{ 
-        position: 'relative',
-        background: isCompact ? 'var(--brand-bg-subtle)' : 'var(--brand-dark)', 
-        borderRadius: 8, 
-        overflow: 'hidden',
-        boxShadow: isCompact ? 'none' : '0 2px 8px rgba(0,0,0,0.2)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        cursor: (onViewScene || isMultiSelectMode) ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
-        border: isSelected ? '2px solid var(--ant-primary-color)' : '1px solid var(--brand-border)',
-        height: isCompact ? 60 : 'auto',
-      }}
-      onClick={() => {
-        const scene = scenes[idx];
-        if (isMultiSelectMode) {
-          setSelectedSceneIds(prev => 
-            prev.includes(scene.id) ? prev.filter(sid => sid !== scene.id) : [...prev, scene.id]
-          );
-        } else {
-          onViewScene?.(idx);
-        }
-      }}
-    >
-      {!isCompact ? (
-        <VideoPreviewPlayer
-          videoConfig={videoConfig}
-          durationInFrames={totalFrames}
-          fps={fps}
-          initialFrame={getSceneStartFrame(videoConfig, idx, fps) + frameOffset}
-          key={`studio-scene-${idx}-${frameOffset}`}
-          style={{
-            width: '100%',
-            aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
-            opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
-            pointerEvents: isMultiSelectMode ? 'none' : 'auto',
-          }}
-          controls={false}
-          autoPlay={false}
-        />
-      ) : (
-        <div style={{ padding: '0 12px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text strong style={{ fontSize: 13 }}>#{idx + 1}</Text>
-          <Tag color="blue" style={{ margin: 0 }}>{scenes[idx].duration}s</Tag>
-        </div>
-      )}
-      {isSelected && !isCompact && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 10,
-          background: 'rgba(255, 255, 255, 0.8)',
-          borderRadius: '50%',
-          width: 64,
-          height: 64,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          pointerEvents: 'none',
-        }}>
-          <CheckCircleFilled style={{ fontSize: 48, color: 'var(--ant-primary-color)' }} />
-        </div>
-      )}
-      {isSelected && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          border: '2px solid var(--ant-primary-color)',
-          borderRadius: 8,
-          pointerEvents: 'none',
-          zIndex: 5
-        }} />
-      )}
-    </div>
-  );
-
   return (
     <div id="studio-page-root" className="editor-page-container" style={{ position: 'relative' }}>
       <div id="studio-page-main-content" style={{ paddingRight: sidebarWidth + 24, paddingBottom: 40 }}>
@@ -324,7 +238,21 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                     >
                       {visibleGalleryScenes.map(({ scene, sceneIdx }) => (
                         <div key={scene.id} className="gallery-item-wrap">
-                          <FramePlayer idx={sceneIdx} isSelected={selectedSceneIds.includes(scene.id)} />
+                          <StudioFramePlayer 
+                            idx={sceneIdx} 
+                            isSelected={selectedSceneIds.includes(scene.id)} 
+                            selectionIndex={selectedSceneIds.indexOf(scene.id) + 1}
+                            isCompact={isCompact}
+                            videoConfig={videoConfig}
+                            totalFrames={totalFrames}
+                            fps={fps}
+                            frameOffset={frameOffset}
+                            activeCanvas={activeCanvas}
+                            isMultiSelectMode={isMultiSelectMode}
+                            onViewScene={onViewScene}
+                            setSelectedSceneIds={setSelectedSceneIds}
+                            scenes={scenes}
+                          />
                           {!isCompact && (
                             <div style={{ marginTop: 8, textAlign: 'center' }}>
                               <Text strong ellipsis style={{ 
@@ -355,7 +283,21 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                         key={scene.id}
                       >
                         <div className="gallery-item-wrap">
-                          <FramePlayer idx={sceneIdx} isSelected={selectedSceneIds.includes(scene.id)} />
+                          <StudioFramePlayer 
+                            idx={sceneIdx} 
+                            isSelected={selectedSceneIds.includes(scene.id)} 
+                            selectionIndex={selectedSceneIds.indexOf(scene.id) + 1}
+                            isCompact={isCompact}
+                            videoConfig={videoConfig}
+                            totalFrames={totalFrames}
+                            fps={fps}
+                            frameOffset={frameOffset}
+                            activeCanvas={activeCanvas}
+                            isMultiSelectMode={isMultiSelectMode}
+                            onViewScene={onViewScene}
+                            setSelectedSceneIds={setSelectedSceneIds}
+                            scenes={scenes}
+                          />
                           <div style={{ marginTop: 8, textAlign: 'center' }}>
                             <Text strong ellipsis style={{ 
                               width: '100%', 
@@ -446,6 +388,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         authorProfiles={authorProfiles}
         colorArrangement={colorArrangement}
         setColorArrangement={setColorArrangement}
+        galleryPage={galleryPage}
         galleryPageSize={galleryPageSize}
         setGalleryPageSize={setGalleryPageSize}
         previewLayoutMode={previewLayoutMode}

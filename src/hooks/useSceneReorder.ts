@@ -72,19 +72,64 @@ export const useSceneReorder = () => {
 
   /**
    * 按属性自动排序
+   * @param type 排序类型
+   * @param selectedIds 可选，如果传入则仅在选中的场景间进行局部排序
    */
-  const sortScenes = (type: 'duration' | 'textLength') => {
-    const newScenes = [...videoConfig.scenes];
+  const sortScenes = (type: 'duration' | 'textLength' | 'selectionOrder', selectedIds?: string[]) => {
+    const allScenes = [...videoConfig.scenes];
+    
+    // 如果指定了局部排序
+    if (selectedIds && selectedIds.length > 1) {
+      // 1. 获取选中场景原本占据的索引位置（从小到大排序）
+      const selectedIndices: number[] = [];
+      allScenes.forEach((scene, index) => {
+        if (selectedIds.includes(scene.id)) {
+          selectedIndices.push(index);
+        }
+      });
+
+      // 2. 准备参与排序的场景对象
+      let selectedScenes: any[] = [];
+      if (type === 'selectionOrder') {
+        // 如果是按选择顺序排序，直接按 selectedIds 的顺序提取场景
+        selectedScenes = selectedIds.map(id => allScenes.find(s => s.id === id)).filter(Boolean);
+      } else {
+        // 否则先按原位置提取，再进行属性排序
+        selectedScenes = selectedIndices.map(index => allScenes[index]);
+        if (type === 'duration') {
+          selectedScenes.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+        } else if (type === 'textLength') {
+          selectedScenes.sort((a, b) => {
+            const textA = a.items.map((i: any) => i.content).join('').length;
+            const textB = b.items.map((i: any) => i.content).join('').length;
+            return textA - textB;
+          });
+        }
+      }
+
+      // 3. 将排序后的场景写回原位置
+      const nextScenes = [...allScenes];
+      selectedIndices.forEach((originalIndex, i) => {
+        nextScenes[originalIndex] = selectedScenes[i];
+      });
+
+      setVideoConfig({ ...videoConfig, scenes: nextScenes });
+      return;
+    }
+
+    // 默认逻辑：对所有场景进行全局排序（selectionOrder 在全局模式下无效）
+    if (type === 'selectionOrder') return;
+
     if (type === 'duration') {
-      newScenes.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+      allScenes.sort((a, b) => (a.duration || 0) - (b.duration || 0));
     } else if (type === 'textLength') {
-      newScenes.sort((a, b) => {
+      allScenes.sort((a, b) => {
         const textA = a.items.map(i => i.content).join('').length;
         const textB = b.items.map(i => i.content).join('').length;
         return textA - textB;
       });
     }
-    setVideoConfig({ ...videoConfig, scenes: newScenes });
+    setVideoConfig({ ...videoConfig, scenes: allScenes });
   };
 
   return {

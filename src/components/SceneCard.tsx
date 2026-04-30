@@ -40,6 +40,7 @@ interface SceneCardProps {
   previewDisabled?: boolean;
   isMultiSelectMode?: boolean;
   isSelected?: boolean;
+  selectionIndex?: number;
   onToggleSelection?: () => void;
   displayMode?: SceneDisplayMode;
 }
@@ -61,6 +62,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
   previewDisabled = false,
   isMultiSelectMode = false,
   isSelected = false,
+  selectionIndex,
   onToggleSelection,
   displayMode = 'normal',
 }) => {
@@ -104,13 +106,32 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         title={
           <Space>
             {isMultiSelectMode && (
-              <Checkbox 
-                checked={isSelected} 
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onToggleSelection?.();
-                }} 
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Checkbox 
+                  checked={isSelected} 
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleSelection?.();
+                  }} 
+                />
+                {isSelected && selectionIndex !== undefined && (
+                  <div style={{
+                    background: '#f0f0f0',
+                    color: '#595959', // 灰色数字
+                    borderRadius: '50%',
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    border: '1px solid #d9d9d9',
+                  }}>
+                    {selectionIndex}
+                  </div>
+                )}
+              </div>
             )}
             <div id={`scene-card-drag-handle-${scene.id}`} {...dragHandleProps}>
               <HolderOutlined style={{ color: 'var(--scene-holder-icon)' }} />

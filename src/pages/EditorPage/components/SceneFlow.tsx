@@ -84,6 +84,7 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
                         isDragging={snapshot.isDragging}
                         isMultiSelectMode={isMultiSelectMode}
                         isSelected={selectedSceneIds.includes(scene.id)}
+                        selectionIndex={selectedSceneIds.includes(scene.id) ? selectedSceneIds.indexOf(scene.id) + 1 : undefined}
                         onToggleSelection={() => onToggleSceneSelection(scene.id)}
                         displayMode={sceneDisplayMode}
                       />

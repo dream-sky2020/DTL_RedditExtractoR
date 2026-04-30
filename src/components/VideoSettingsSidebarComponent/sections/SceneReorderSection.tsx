@@ -6,6 +6,7 @@ import {
   ArrowRightOutlined,
   ClockCircleOutlined,
   FontSizeOutlined,
+  OrderedListOutlined,
 } from '@ant-design/icons';
 import { useSceneReorder } from '../../../hooks/useSceneReorder';
 import { toast } from '@components/Toast';
@@ -101,10 +102,14 @@ export const SceneReorderSection: React.FC<SceneReorderSectionProps> = ({
             </Select>
             <Button 
               size="small" 
-              type="primary" 
               icon={<ArrowRightOutlined />}
               disabled={selectedSceneIds.length === 0}
               onClick={handleMoveToIndex}
+              style={{
+                backgroundColor: selectedSceneIds.length > 0 ? '#fff' : '#f5f5f5',
+                color: selectedSceneIds.length > 0 ? '#000' : '#bfbfbf',
+                borderColor: selectedSceneIds.length > 0 ? '#d9d9d9' : '#d9d9d9',
+              }}
             />
           </div>
         </Space>
@@ -114,33 +119,52 @@ export const SceneReorderSection: React.FC<SceneReorderSectionProps> = ({
 
       <div>
         <div style={{ marginBottom: 8 }}>
-          <Text style={{ fontSize: 12, color: 'var(--text-primary)' }}>排序建议</Text>
+          <Text style={{ fontSize: 12, color: 'var(--text-primary)' }}>排序建议 {selectedSceneIds.length > 0 ? '(仅对选中项)' : '(全局)'}</Text>
         </div>
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Tooltip title="按场景时长从短到长排序">
+        <Space style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <Tooltip title={selectedSceneIds.length > 0 ? "按场景时长对选中项排序" : "按场景时长对所有项排序"}>
             <Button 
               size="small" 
               icon={<ClockCircleOutlined />} 
               onClick={() => {
-                sortScenes('duration');
-                toast.success('已按时长排序');
+                sortScenes('duration', selectedSceneIds);
+                toast.success(selectedSceneIds.length > 0 ? '已对选中场景按时长排序' : '已按时长排序');
               }}
             >
               时长排序
             </Button>
           </Tooltip>
-          <Tooltip title="按场景文本总字数排序">
+          <Tooltip title={selectedSceneIds.length > 0 ? "按文本字数对选中项排序" : "按文本字数对所有项排序"}>
             <Button 
               size="small" 
               icon={<FontSizeOutlined />} 
               onClick={() => {
-                sortScenes('textLength');
-                toast.success('已按字数排序');
+                sortScenes('textLength', selectedSceneIds);
+                toast.success(selectedSceneIds.length > 0 ? '已对选中场景按字数排序' : '已按字数排序');
               }}
             >
               字数排序
             </Button>
           </Tooltip>
+          {selectedSceneIds.length >= 2 && (
+            <Tooltip title="根据你点击选择的先后顺序重新排列选中项的位置">
+              <Button 
+                size="small" 
+                icon={<OrderedListOutlined />} 
+                onClick={() => {
+                  sortScenes('selectionOrder', selectedSceneIds);
+                  toast.success('已根据选择顺序重新排列');
+                }}
+                style={{
+                  backgroundColor: '#e6f7ff',
+                  borderColor: '#91d5ff',
+                  color: '#1890ff'
+                }}
+              >
+                选择顺序
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       </div>
     </Space>

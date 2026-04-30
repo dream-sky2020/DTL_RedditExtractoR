@@ -113,6 +113,7 @@ interface VideoSettingsSidebarProps {
   onOpenTranslationModal?: () => void;
 
   // Studio-Specific
+  galleryPage?: number;
   galleryPageSize?: number;
   setGalleryPageSize?: (size: number) => void;
   previewLayoutMode?: 'auto' | 'fixed';
@@ -183,6 +184,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     onRemoveSelectedScenes,
     onOpenTranslationModal,
     // Studio specific
+    galleryPage,
     galleryPageSize,
     setGalleryPageSize,
     previewLayoutMode,
@@ -402,6 +404,8 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                 onOpenTranslationModal={onOpenTranslationModal}
                 draftConfig={draftConfig}
                 setDraftConfig={setDraftConfig}
+                galleryPage={galleryPage}
+                galleryPageSize={galleryPageSize}
               />
               <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
             </>
