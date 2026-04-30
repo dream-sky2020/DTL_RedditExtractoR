@@ -41,8 +41,7 @@ interface RedditState {
   fetchRedditData: (
     commentSortMode: CommentSortMode,
     replyOrderMode: ReplyOrderMode,
-    colorArrangement: ColorArrangementSettings,
-    redditCookieInput?: string
+    colorArrangement: ColorArrangementSettings
   ) => Promise<void>;
   
   clearPersistedData: () => void;
@@ -143,7 +142,7 @@ export const useRedditStore = create<RedditState>()(
         });
       },
 
-      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement, redditCookieInput) => {
+      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement) => {
         const { redditUrl, authorProfiles, buildProfilesForAuthors } = get();
         if (!redditUrl.trim()) return;
 
@@ -157,11 +156,8 @@ export const useRedditStore = create<RedditState>()(
           parsed.searchParams.set('raw_json', '1');
           const jsonUrl = parsed.toString();
           const proxyUrl = `http://localhost:5000/fetch_reddit?url=${encodeURIComponent(jsonUrl)}`;
-          const headers: Record<string, string> = {};
-          if ((redditCookieInput || '').trim()) {
-            headers['X-Reddit-Cookie'] = redditCookieInput!.trim();
-          }
-          const response = await axios.get(proxyUrl, { headers });
+          
+          const response = await axios.get(proxyUrl);
           
           const nextAuthors = extractAuthorsFromRawData(response.data);
           const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
