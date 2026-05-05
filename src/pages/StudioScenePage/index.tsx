@@ -26,11 +26,7 @@ import {
 import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
-import { tokenize } from '../../rendering/parser/tokenizer';
-import { enrich } from '../../rendering/parser/enricher';
-import { renderAST } from '../../rendering/parser/renderer';
-import { normalize } from '../../rendering/parser/preprocessor';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { SceneRenderer } from '../../remotion/MyVideo';
 import { dialogs } from '../../components/Dialogs';
 import { useDslGlobalReplace } from '@hooks/useDslGlobalReplace';
 import { useVideoStore } from '@/store';
@@ -119,9 +115,9 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
       // 只有在没在输入框（除了 DSL 编辑器，或者根据焦点判断）时，或者使用了 Ctrl+Z
       // 注意：这里为了不破坏 DSL 编辑器自带的撤销，我们只在非编辑器焦点时或特定逻辑下处理全局撤销
       // 但对于“全局替换”这种 store 级别的操作，用户可能期望全局 Ctrl+Z 能生效
-      
+
       const isEditing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
-      
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         if (e.shiftKey) {
           if (useVideoStore.getState().canRedo()) {
@@ -255,51 +251,60 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
 
   const handlePreviewLayout = () => {
     try {
-      // 1. 预处理
-      const normalized = normalize(dslText);
-      
-      // 2. 词法分析 (获取 AST)
-      const ast = tokenize(normalized, {
-        defaultMaxLimit: 150,
-        maxQuoteDepth: 4,
-        authorPath: [],
-      }, 0);
+      const parseResult = parseSceneDsl(dslText, currentScene || undefined);
+      if (!parseResult.ok) {
+        message.error(`解析失败: ${parseResult.error}`);
+        return;
+      }
 
-      // 3. 渲染
-      const rendered = renderAST(ast, {
-        showMediaControls: false,
-        hideAudio: true,
-      });
+      const previewScale = 0.6; // 预览缩放比例
 
-      // 4. 转换为 HTML 字符串
-      const htmlString = renderToStaticMarkup(<>{rendered}</>);
-
-      // 5. 格式化 HTML (简单处理，添加换行缩进以便阅读)
-      const formattedHtml = htmlString
-        .replace(/></g, '>\n<')
-        .replace(/(<[^/][^>]*>)/g, (match) => match) // 可以在这里做更复杂的缩进逻辑
-        
       dialogs.info({
-        title: '布局代码预览 (Debug)',
-        width: 800,
+        title: '场景实时预览 (1:1 原始渲染)',
+        width: 1000,
         content: (
-          <div style={{ marginTop: 16 }}>
+          <div style={{
+            marginTop: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12
+          }}>
             <div style={{ marginBottom: 8 }}>
-              <Text type="secondary">渲染后的 HTML 结构（用于排查边距和布局问题）：</Text>
+              <Text type="secondary">基于当前 DSL 实时渲染的画面（预览缩放 {previewScale * 100}%）：</Text>
             </div>
-            <Input.TextArea
-              value={formattedHtml}
-              readOnly
-              autoSize={{ minRows: 10, maxRows: 25 }}
-              style={{
-                fontFamily: "'Fira Code', 'Courier New', monospace",
-                fontSize: '12px',
-                backgroundColor: '#f5f5f5',
-                color: '#333'
-              }}
-            />
-            <div style={{ marginTop: 12 }}>
-              <Text type="secondary" size="small">提示：如果发现意外的间距，请检查 HTML 标签之间的 white-space 或 line-height。</Text>
+
+            <div style={{
+              width: activeCanvas.width * previewScale,
+              height: activeCanvas.height * previewScale,
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              border: '1px solid #d9d9d9',
+              backgroundColor: '#000'
+            }}>
+              <div style={{
+                width: activeCanvas.width,
+                height: activeCanvas.height,
+                transform: `scale(${previewScale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }}>
+                <SceneRenderer
+                  scene={parseResult.scene}
+                  frame={frameOffset}
+                  fps={fps}
+                  config={videoConfig}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                提示：此预览使用与最终视频完全一致的渲染引擎。如果发现布局问题，请调整 DSL 中的 layout 或 style 标签。
+              </Text>
             </div>
           </div>
         )

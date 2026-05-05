@@ -1,7 +1,8 @@
 import React from 'react';
 import { Typography, Tag } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
-import { VideoPreviewPlayer, getSceneStartFrame } from './VideoPreviewPlayer';
+import { SceneRenderer } from '../remotion/MyVideo';
+import { getSceneStartFrame } from './VideoPreviewPlayer';
 import { VideoConfig, VideoScene } from '../types';
 
 const { Text } = Typography;
@@ -38,6 +39,17 @@ export const StudioFramePlayer: React.FC<StudioFramePlayerProps> = ({
   selectionIndex,
 }) => {
   const scene = scenes[idx];
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scale, setScale] = React.useState(0.2);
+
+  React.useEffect(() => {
+    if (containerRef.current) {
+      const width = containerRef.current.offsetWidth;
+      if (width > 0 && activeCanvas.width > 0) {
+        setScale(width / activeCanvas.width);
+      }
+    }
+  }, [activeCanvas.width, activeCanvas.height]);
 
   return (
     <div
@@ -68,21 +80,36 @@ export const StudioFramePlayer: React.FC<StudioFramePlayerProps> = ({
       }}
     >
       {!isCompact ? (
-        <VideoPreviewPlayer
-          videoConfig={videoConfig}
-          durationInFrames={totalFrames}
-          fps={fps}
-          initialFrame={getSceneStartFrame(videoConfig, idx, fps) + frameOffset}
-          key={`studio-scene-${idx}-${frameOffset}`}
+        <div 
+          ref={containerRef}
           style={{
             width: '100%',
             aspectRatio: `${activeCanvas.width} / ${activeCanvas.height}`,
+            position: 'relative',
+            overflow: 'hidden',
             opacity: isMultiSelectMode && !isSelected ? 0.7 : 1,
             pointerEvents: isMultiSelectMode ? 'none' : 'auto',
+            background: '#000'
           }}
-          controls={false}
-          autoPlay={false}
-        />
+        >
+          <div style={{
+            width: activeCanvas.width,
+            height: activeCanvas.height,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0
+          }}>
+            <SceneRenderer 
+              scene={scene}
+              frame={frameOffset}
+              fps={fps}
+              config={videoConfig}
+              isRemotion={false}
+            />
+          </div>
+        </div>
       ) : (
         <div style={{ padding: '0 12px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text strong style={{ fontSize: 13 }}>#{idx + 1}</Text>

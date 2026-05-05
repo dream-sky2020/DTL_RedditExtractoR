@@ -67,6 +67,7 @@ interface SceneItemProps {
   defaultItemBackgroundColor?: string;
   quoteBackgroundColor?: string;
   quoteBorderColor?: string;
+  isRemotion?: boolean; // 新增：是否在 Remotion 环境下
 }
 
 const SceneItem: React.FC<SceneItemProps> = ({ 
@@ -80,6 +81,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
   defaultItemBackgroundColor,
   quoteBackgroundColor,
   quoteBorderColor,
+  isRemotion = false,
 }) => {
   const audioTags = useMemo(() => parseAudioTags(item.content), [item.content]);
 
@@ -140,7 +142,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
         transformOrigin: 'center center',
       }}
     >
-      {audioTags.map((tag, tagIdx) => {
+      {/* 只有在 Remotion 环境下才渲染音频序列，避免在普通 React 环境下崩溃 */}
+      {isRemotion && audioTags.map((tag, tagIdx) => {
         const audioStartFrame = enterFrame + Math.floor(tag.start * fps);
         return (
           <Sequence
@@ -173,53 +176,37 @@ const SceneItem: React.FC<SceneItemProps> = ({
   );
 };
 
-export interface MyVideoProps extends VideoConfig {
-  focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
+export interface SceneRendererProps {
+  scene: VideoScene;
+  frame: number;
+  fps: number;
+  config: Partial<VideoConfig>;
+  isRemotion?: boolean; // 新增
 }
 
-export const MyVideo: React.FC<MyVideoProps> = ({ 
-  scenes = [], 
-  focusedSceneId,
-  quoteFontSize,
-  maxQuoteDepth,
-  defaultQuoteMaxLimit,
-  itemBackgroundColor,
-  quoteBackgroundColor,
-  quoteBorderColor,
+/**
+ * SceneRenderer 组件
+ * 纯视觉渲染组件，不依赖 Remotion 环境 Hook。
+ * 可用于 Remotion 渲染，也可用于普通 React 弹窗预览。
+ */
+export const SceneRenderer: React.FC<SceneRendererProps> = ({
+  scene,
+  frame,
+  fps,
+  config,
+  isRemotion = false,
 }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  // 计算每个分段的起止帧
-  let currentStartFrame = 0;
-  const sceneFrames = scenes.map((scene) => {
-    const start = currentStartFrame;
-    const end = start + scene.duration * fps;
-    currentStartFrame = end;
-    return { start, end, ...scene };
-  });
-
-  // 如果提供了 focusedSceneId，则只渲染该画面格（从第 0 帧开始）
-  let activeScene: (VideoScene & { start: number; end: number }) | undefined;
-  let relativeFrame: number;
-
-  if (focusedSceneId) {
-    activeScene = sceneFrames.find(s => s.id === focusedSceneId);
-    relativeFrame = frame;
-  } else {
-    activeScene = sceneFrames.find(
-      (s) => frame >= s.start && frame < s.end
-    );
-    relativeFrame = frame - (activeScene?.start || 0);
-  }
-
-  if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
-  const layoutMode = activeScene.layout === 'center' ? 'center' : 'top';
-  const bgColor = activeScene.backgroundColor || '#ffffff';
+  const layoutMode = scene.layout === 'center' ? 'center' : 'top';
+  const bgColor = scene.backgroundColor || '#ffffff';
 
   return (
-    <AbsoluteFill
+    <div
       style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: bgColor,
         padding: 28,
         fontFamily: 'Inter, -apple-system, sans-serif',
@@ -236,24 +223,72 @@ export const MyVideo: React.FC<MyVideoProps> = ({
             minHeight: '100%',
           }}
         >
-          {activeScene.items.map((item: VideoContentItem) => (
+          {scene.items.map((item: VideoContentItem) => (
             <SceneItem
               key={item.id}
               item={item}
-              sceneDuration={activeScene!.duration}
-              relativeFrame={relativeFrame}
+              sceneDuration={scene.duration}
+              relativeFrame={frame}
               fps={fps}
-              quoteFontSize={quoteFontSize}
-              maxQuoteDepth={maxQuoteDepth}
-              maxQuoteDepth={maxQuoteDepth}
-              defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-              defaultItemBackgroundColor={itemBackgroundColor}
-              quoteBackgroundColor={quoteBackgroundColor}
-              quoteBorderColor={quoteBorderColor}
+              quoteFontSize={config.quoteFontSize}
+              maxQuoteDepth={config.maxQuoteDepth}
+              defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+              defaultItemBackgroundColor={config.itemBackgroundColor}
+              quoteBackgroundColor={config.quoteBackgroundColor}
+              quoteBorderColor={config.quoteBorderColor}
+              isRemotion={isRemotion}
             />
           ))}
         </div>
       </div>
-    </AbsoluteFill>
+    </div>
   );
 };
+
+
+export interface MyVideoProps extends VideoConfig {
+  focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
+}
+
+export const MyVideo: React.FC<MyVideoProps> = (props) => {
+  const { scenes = [] } = props;
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // 计算每个分段的起止帧
+  let currentStartFrame = 0;
+  const sceneFrames = scenes.map((scene) => {
+    const start = currentStartFrame;
+    const end = start + scene.duration * fps;
+    currentStartFrame = end;
+    return { start, end, ...scene };
+  });
+
+  // 如果提供了 focusedSceneId，则只渲染该画面格（从第 0 帧开始）
+  let activeScene: (VideoScene & { start: number; end: number }) | undefined;
+  let relativeFrame: number;
+
+  if (props.focusedSceneId) {
+    activeScene = sceneFrames.find(s => s.id === props.focusedSceneId);
+    relativeFrame = frame;
+  } else {
+    activeScene = sceneFrames.find(
+      (s) => frame >= s.start && frame < s.end
+    );
+    relativeFrame = frame - (activeScene?.start || 0);
+  }
+
+  if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
+
+  return (
+    <SceneRenderer 
+      scene={activeScene} 
+      frame={relativeFrame} 
+      fps={fps} 
+      config={props} 
+      isRemotion={true}
+    />
+  );
+};
+
+

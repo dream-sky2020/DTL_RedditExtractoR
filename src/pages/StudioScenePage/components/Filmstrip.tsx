@@ -61,6 +61,7 @@ export const Filmstrip: React.FC<FilmstripProps> = ({
         >
           <FramePlayer
             videoConfig={videoConfig}
+            scene={scene}
             totalFrames={totalFrames}
             fps={fps}
             seekFrame={getSeekFrame(idx)}
