@@ -1,5 +1,5 @@
 import React from 'react';
-import { ASTNode, TextNode, QuoteNode, ImageNode, GalleryNode, StyleNode, AudioNode, RowNode, DepthLimitNode } from './types';
+import { ASTNode, TextNode, QuoteNode, ImageNode, GalleryNode, StyleNode, AudioNode, RowNode, DepthLimitNode, AnimateNode, EasingType } from './types';
 import { 
   QUOTE_OPEN_TAG_RE, 
   QUOTE_OPEN_TAG_GLOBAL_RE,
@@ -60,20 +60,24 @@ export const tokenize = (
     const nextRowMatch = subText.match(/\[row[^\]]*\]/);
     const nextRow = nextRowMatch && nextRowMatch.index != null ? currentPos + nextRowMatch.index : -1;
 
+    const nextAnimateMatch = subText.match(/\[animate[^\]]*\]/);
+    const nextAnimate = nextAnimateMatch && nextAnimateMatch.index != null ? currentPos + nextAnimateMatch.index : -1;
+
     const nextTextTagMatch = subText.match(/<\/?#text#>/);
     const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
 
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'textTag' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'animate' | 'textTag' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'textTag' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'animate' | 'textTag' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
     if (nextGallery !== -1) indices.push({ idx: nextGallery, type: 'gallery' });
     if (nextAudio !== -1) indices.push({ idx: nextAudio, type: 'audio' });
     if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
+    if (nextAnimate !== -1) indices.push({ idx: nextAnimate, type: 'animate' });
     if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
 
     indices.sort((a, b) => a.idx - b.idx);
@@ -289,6 +293,63 @@ export const tokenize = (
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
           currentPos = endTagIdx + 6;
+        } else {
+          nodes.push({ type: 'text', content: match[0] });
+          currentPos = startTagEnd;
+        }
+      }
+    } else if (type === 'animate') {
+      const match = text.substring(foundIdx).match(/^\[animate([^\]]*)\]/);
+      if (match) {
+        const attrStr = match[1];
+        const startTagEnd = foundIdx + match[0].length;
+        
+        let depth = 1;
+        let searchPos = startTagEnd;
+        let endTagIdx = -1;
+        while (depth > 0 && searchPos < text.length) {
+          const nextStart = text.indexOf('[animate', searchPos);
+          const nextEnd = text.indexOf('[/animate]', searchPos);
+          if (nextEnd === -1) break;
+          if (nextStart !== -1 && nextStart < nextEnd) {
+            depth++;
+            searchPos = nextStart + 8;
+          } else {
+            depth--;
+            if (depth === 0) endTagIdx = nextEnd;
+            else searchPos = nextEnd + 10;
+          }
+        }
+
+        if (endTagIdx !== -1) {
+          const attrs = parseInlineAttrs(attrStr);
+          
+          const parseStyleStr = (str: string): React.CSSProperties => {
+            const style: React.CSSProperties = {};
+            if (!str) return style;
+            str.split(';').forEach(pair => {
+              const [key, val] = pair.split(':').map(s => s.trim());
+              if (key && val) {
+                if (key === 'x') style.left = isNaN(Number(val)) ? val : `${val}px`;
+                else if (key === 'y') style.top = isNaN(Number(val)) ? val : `${val}px`;
+                else if (key === 'scale') (style as any).scale = val;
+                else if (key === 'opacity') style.opacity = val;
+                else (style as any)[key] = val;
+              }
+            });
+            return style;
+          };
+
+          nodes.push({
+            type: 'animate',
+            from: parseStyleStr(attrs.from || ''),
+            to: parseStyleStr(attrs.to || ''),
+            start: parseFloat(attrs.start || '0'),
+            duration: parseFloat(attrs.duration || '1'),
+            easing: (attrs.easing || 'ease-out') as EasingType,
+            children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
+          });
+          currentPos = endTagIdx + 10;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;

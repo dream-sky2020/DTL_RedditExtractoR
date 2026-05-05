@@ -47,7 +47,7 @@ const ITEM_ANIMATION_SET: ReadonlySet<ItemAnimationType> = new Set([
   'zoom-out',
 ]);
 
-const SCENE_LAYOUT_SET: ReadonlySet<SceneLayoutType> = new Set(['top', 'center']);
+const SCENE_LAYOUT_SET: ReadonlySet<SceneLayoutType> = new Set(['top', 'center', 'bottom']);
 
 const parseOptionalSeconds = (value: string | undefined): number | undefined => {
   if (value == null || value.trim() === '') return undefined;
@@ -89,6 +89,12 @@ export const sceneToDsl = (scene: VideoScene): string => {
     sceneAttrs.push(`bg="${escapeAttr(scene.backgroundColor)}"`);
   }
 
+  if (scene.animateFrom) sceneAttrs.push(`animateFrom="${escapeAttr(scene.animateFrom)}"`);
+  if (scene.animateTo) sceneAttrs.push(`animateTo="${escapeAttr(scene.animateTo)}"`);
+  if (scene.animateStart !== undefined) sceneAttrs.push(`animateStart=${scene.animateStart}`);
+  if (scene.animateDuration !== undefined) sceneAttrs.push(`animateDuration=${scene.animateDuration}`);
+  if (scene.animateEasing) sceneAttrs.push(`animateEasing="${escapeAttr(scene.animateEasing)}"`);
+
   const itemBlocks = scene.items
     .map((item) => {
       const itemAttrs = [`id="${escapeAttr(item.id)}"`, `author="${escapeAttr(item.author)}"`];
@@ -104,6 +110,12 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.backgroundColor) {
         itemAttrs.push(`bg="${escapeAttr(item.backgroundColor)}"`);
       }
+      if (item.animateFrom) itemAttrs.push(`animateFrom="${escapeAttr(item.animateFrom)}"`);
+      if (item.animateTo) itemAttrs.push(`animateTo="${escapeAttr(item.animateTo)}"`);
+      if (item.animateStart !== undefined) itemAttrs.push(`animateStart=${item.animateStart}`);
+      if (item.animateDuration !== undefined) itemAttrs.push(`animateDuration=${item.animateDuration}`);
+      if (item.animateEasing) itemAttrs.push(`animateEasing="${escapeAttr(item.animateEasing)}"`);
+      
       const content = encodeDslLineBreaks((item.content || '').trim());
       return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
     })
@@ -167,6 +179,13 @@ export const parseSceneDsl = (
 
   const title = sceneAttrs.title ?? fallbackScene?.title ?? '';
   const backgroundColor = sceneAttrs.bg || sceneAttrs.backgroundColor || fallbackScene?.backgroundColor || '';
+  
+  const animateFrom = sceneAttrs.animateFrom || sceneAttrs.af;
+  const animateTo = sceneAttrs.animateTo || sceneAttrs.at;
+  const animateStart = parseOptionalSeconds(sceneAttrs.animateStart || sceneAttrs.as);
+  const animateDuration = parseOptionalSeconds(sceneAttrs.animateDuration || sceneAttrs.ad);
+  const animateEasing = sceneAttrs.animateEasing || sceneAttrs.ae;
+
   const layoutRaw = (sceneAttrs.layout ?? '').trim();
   const fallbackLayout = fallbackScene?.layout;
   let layout: SceneLayoutType;
@@ -231,7 +250,14 @@ export const parseSceneDsl = (
     const enterAnimation = parsedEnterAnimation ?? fallbackItem?.enterAnimation;
     const exitAnimation = parsedExitAnimation ?? fallbackItem?.exitAnimation;
     const itemBackgroundColor = itemAttrs.bg || itemAttrs.backgroundColor || fallbackItem?.backgroundColor || '';
-    if (itemAttrs.enterAnimation != null && parsedEnterAnimation == null) {
+    
+    const animateFrom = itemAttrs.animateFrom || itemAttrs.af;
+    const animateTo = itemAttrs.animateTo || itemAttrs.at;
+    const animateStart = parseOptionalSeconds(itemAttrs.animateStart || itemAttrs.as);
+    const animateDuration = parseOptionalSeconds(itemAttrs.animateDuration || itemAttrs.ad);
+    const animateEasing = itemAttrs.animateEasing || itemAttrs.ae;
+
+    if (itemAttrs.exitAnimation != null && parsedExitAnimation == null) {
       warnings.push({
         message: `第 ${index + 1} 个 <item> 的 enterAnimation="${itemAttrs.enterAnimation}" 无效，已自动回退。`,
         suggestion: 'enterAnimation 可选值：none/fade/slide-up/slide-left/zoom-in 等。',
@@ -254,6 +280,11 @@ export const parseSceneDsl = (
       enterAnimation,
       exitAnimation,
       backgroundColor: itemBackgroundColor,
+      animateFrom,
+      animateTo,
+      animateStart,
+      animateDuration,
+      animateEasing,
     });
     index += 1;
   }
@@ -286,6 +317,11 @@ export const parseSceneDsl = (
       backgroundColor,
       duration,
       items,
+      animateFrom,
+      animateTo,
+      animateStart,
+      animateDuration,
+      animateEasing,
     },
     warnings,
   };

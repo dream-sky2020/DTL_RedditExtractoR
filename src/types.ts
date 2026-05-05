@@ -70,7 +70,7 @@ export type ItemAnimationType =
   | 'zoom-in'
   | 'zoom-out';
 
-export type SceneLayoutType = 'top' | 'center';
+export type SceneLayoutType = 'top' | 'center' | 'bottom';
 export type TitleAlignmentType = 'left' | 'right' | 'center';
 export type ImageLayoutMode = 'gallery' | 'row' | 'single';
 export type SceneDisplayMode = 'normal' | 'compact';
@@ -100,6 +100,11 @@ export interface VideoContentItem {
   enterAnimation?: ItemAnimationType; // 进入动画
   exitAnimation?: ItemAnimationType; // 退出动画
   backgroundColor?: string; // 项背景颜色
+  animateFrom?: string;
+  animateTo?: string;
+  animateStart?: number;
+  animateDuration?: number;
+  animateEasing?: string;
 }
 
 export interface VideoScene {
@@ -110,6 +115,11 @@ export interface VideoScene {
   backgroundColor?: string; // 场景背景颜色
   duration: number; // 整个画面的显示时间 (秒)
   items: VideoContentItem[]; // 画面中包含的内容项 (评论)
+  animateFrom?: string;
+  animateTo?: string;
+  animateStart?: number;
+  animateDuration?: number;
+  animateEasing?: string;
 }
 
 export interface VideoConfig {

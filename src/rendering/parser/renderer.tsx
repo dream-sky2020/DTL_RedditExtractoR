@@ -2,8 +2,9 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { Typography, Tooltip } from 'antd';
 import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { interpolate, Easing } from 'remotion';
 import { toast } from '../../components/Toast';
-import { ASTNode, MediaItem } from './types';
+import { ASTNode, MediaItem, EasingType } from './types';
 
 const { Text } = Typography;
 
@@ -51,6 +52,81 @@ const resolvePlaybackIndex = (items: MediaItem[], playbackSeconds: number): numb
     cursor -= itemDuration;
   }
   return 0;
+};
+
+const getEasingFunction = (easing: EasingType) => {
+  switch (easing) {
+    case 'ease-in': return Easing.in(Easing.ease);
+    case 'ease-out': return Easing.out(Easing.ease);
+    case 'ease-in-out': return Easing.inOut(Easing.ease);
+    case 'bounce': return Easing.bounce;
+    case 'elastic': return Easing.elastic(1);
+    case 'linear':
+    default:
+      return Easing.linear;
+  }
+};
+
+const AnimateContent: React.FC<{
+  from: React.CSSProperties;
+  to: React.CSSProperties;
+  start: number;
+  duration: number;
+  easing: EasingType;
+  children: React.ReactNode;
+}> = ({ from, to, start, duration, easing, children }) => {
+  const { playbackFrame, fps } = usePlaybackContext();
+  const currentTime = playbackFrame != null && fps ? playbackFrame / fps : 0;
+
+  const progress = interpolate(
+    currentTime,
+    [start, start + duration],
+    [0, 1],
+    {
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+      easing: getEasingFunction(easing),
+    }
+  );
+
+  const animatedStyle: React.CSSProperties = { ...from };
+  const keys = new Set([...Object.keys(from), ...Object.keys(to)]);
+
+  keys.forEach((key) => {
+    const fromVal = (from as any)[key];
+    const toVal = (to as any)[key];
+
+    if (fromVal === undefined || toVal === undefined) return;
+
+    // Handle numeric values
+    const fromNum = parseFloat(fromVal);
+    const toNum = parseFloat(toVal);
+
+    if (!isNaN(fromNum) && !isNaN(toNum)) {
+      const currentNum = interpolate(progress, [0, 1], [fromNum, toNum]);
+      const unit = String(fromVal).replace(/[0-9.-]/g, '') || String(toVal).replace(/[0-9.-]/g, '');
+      (animatedStyle as any)[key] = `${currentNum}${unit}`;
+    } else {
+      // Non-numeric values (like colors or display) - switch at 0.5 progress
+      (animatedStyle as any)[key] = progress < 0.5 ? fromVal : toVal;
+    }
+  });
+
+  // Special handling for scale and translate if specified as x, y
+  const transforms: string[] = [];
+  if ((animatedStyle as any).scale !== undefined) {
+    transforms.push(`scale(${(animatedStyle as any).scale})`);
+    delete (animatedStyle as any).scale;
+  }
+
+  // If left/top are used for x/y in animate node, we might want to use translate for better performance
+  // but for now we'll stick to what the user provides in from/to.
+
+  if (transforms.length > 0) {
+    animatedStyle.transform = transforms.join(' ');
+  }
+
+  return <div style={{ position: 'relative', ...animatedStyle, transition: 'none' }}>{children}</div>;
 };
 
 const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
@@ -165,7 +241,7 @@ const MediaContent: React.FC<{
   const currentIndex = mediaItems.length <= 1 ? 0 : (showControls ? manualIndex : autoIndex);
   const currentItem = mediaItems[currentIndex] || mediaItems[0];
   const { mediaStyle, wrapperStyle, isHeightSet } = buildMediaStyles(attrStr, inRow);
-  
+
   const navButtonStyle: React.CSSProperties = {
     width: 36,
     height: 36,
@@ -410,6 +486,20 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
           <div key={index} style={node.style} className="script-row">
             {renderAST(node.children, { ...options, inRow: true })}
           </div>
+        );
+
+      case 'animate':
+        return (
+          <AnimateContent
+            key={index}
+            from={node.from}
+            to={node.to}
+            start={node.start}
+            duration={node.duration}
+            easing={node.easing}
+          >
+            {renderAST(node.children, options)}
+          </AnimateContent>
         );
 
       default:

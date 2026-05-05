@@ -10,7 +10,12 @@ import {
   CloseCircleOutlined,
   CheckSquareOutlined,
   BorderInnerOutlined,
-  ClearOutlined
+  ClearOutlined,
+  VerticalAlignTopOutlined,
+  VerticalAlignBottomOutlined,
+  AlignCenterOutlined,
+  CommentOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import { VideoConfig } from '../../../types';
 import { useSceneMerge } from '../../../hooks/useSceneMerge';
@@ -49,6 +54,8 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   galleryPage,
   galleryPageSize,
 }) => {
+  const [historyLimit, setHistoryLimit] = useState<number>(2);
+
   const { mergeScenes } = useSceneMerge({
     selectedSceneIds,
     setSelectedSceneIds,
@@ -103,6 +110,56 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     toast.success(`已清理 ${selectedSceneIds.length} 个场景中的引用内容`);
+  };
+
+  const handleBatchLayoutChange = (layout: 'top' | 'center' | 'bottom') => {
+    if (selectedSceneIds.length === 0) return;
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+      return { ...scene, layout };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已将 ${selectedSceneIds.length} 个场景的布局改为 ${layout}`);
+  };
+
+  const handleChatFlow = (direction: 'top' | 'bottom') => {
+    if (selectedSceneIds.length === 0) return;
+
+    // 1. 获取选中场景的原始数据（按在配置中的顺序）
+    const selectedScenes = draftConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+    
+    // 2. 提取每个场景的“消息块”（假设每个场景的 items 作为一个整体消息）
+    const messageBlocks = selectedScenes.map(s => s.items);
+
+    // 3. 构建新的场景列表
+    const newScenes = draftConfig.scenes.map(scene => {
+      const selectedIdx = selectedScenes.findIndex(s => s.id === scene.id);
+      if (selectedIdx === -1) return scene;
+
+      // 计算当前场景应该包含哪些历史消息块
+      const startIdx = Math.max(0, selectedIdx - historyLimit + 1);
+      const blocksToShow = messageBlocks.slice(startIdx, selectedIdx + 1);
+
+      let finalItems: any[] = [];
+      if (direction === 'top') {
+        // 最新在上：逆序排列
+        for (let i = blocksToShow.length - 1; i >= 0; i--) {
+          finalItems = [...finalItems, ...blocksToShow[i]];
+        }
+      } else {
+        // 最新在下：顺序排列
+        for (let i = 0; i < blocksToShow.length; i++) {
+          finalItems = [...finalItems, ...blocksToShow[i]];
+        }
+      }
+
+      return { ...scene, items: finalItems };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`聊天流处理完成（${direction === 'top' ? '最新在上' : '最新在下'}，K=${historyLimit}）`);
   };
 
   return (
@@ -178,6 +235,105 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                       全选本页
                     </Button>
                   </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <Button
+                      size="small"
+                      icon={<VerticalAlignTopOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={() => handleBatchLayoutChange('top')}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                      }}
+                    >
+                      全部top
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<AlignCenterOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={() => handleBatchLayoutChange('center')}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                      }}
+                    >
+                      全部center
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<VerticalAlignBottomOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={() => handleBatchLayoutChange('bottom')}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                      }}
+                    >
+                      全部bottom
+                    </Button>
+                  </div>
+
+                  <Divider style={{ margin: '8px 0' }} />
+
+                  <div>
+                    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ fontSize: 12, color: 'var(--text-primary)' }}>聊天流处理</Text>
+                      <Tooltip title="设置每个场景中保留的最大历史消息数">
+                        <HistoryOutlined style={{ fontSize: 12, color: 'var(--text-secondary)' }} />
+                      </Tooltip>
+                    </div>
+                    
+                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>最大历史数 K:</Text>
+                        <Select
+                          size="small"
+                          value={historyLimit}
+                          onChange={setHistoryLimit}
+                          style={{ width: 80 }}
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
+                            <Option key={val} value={val}>{val}</Option>
+                          ))}
+                        </Select>
+                      </div>
+                      
+                      <Button
+                        block
+                        size="small"
+                        icon={<CommentOutlined />}
+                        disabled={selectedSceneIds.length === 0}
+                        onClick={() => handleChatFlow('top')}
+                        style={{
+                          backgroundColor: selectedSceneIds.length > 0 ? '#1890ff' : '#fff',
+                          color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                          borderColor: selectedSceneIds.length > 0 ? '#1890ff' : '#d9d9d9',
+                        }}
+                      >
+                        聊天流格式处理（最新在上）
+                      </Button>
+                      
+                      <Button
+                        block
+                        size="small"
+                        icon={<CommentOutlined />}
+                        disabled={selectedSceneIds.length === 0}
+                        onClick={() => handleChatFlow('bottom')}
+                        style={{
+                          backgroundColor: selectedSceneIds.length > 0 ? '#1890ff' : '#fff',
+                          color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                          borderColor: selectedSceneIds.length > 0 ? '#1890ff' : '#d9d9d9',
+                        }}
+                      >
+                        聊天流格式处理（最新在下）
+                      </Button>
+                    </Space>
+                  </div>
+
                   <Button
                     block
                     icon={<ClearOutlined />}

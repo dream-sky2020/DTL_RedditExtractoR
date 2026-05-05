@@ -35,8 +35,8 @@ export const enrich = (nodes: ASTNode[], parentMaxLimit: number = -1): ASTNode[]
         children: enrichedChildren
       });
       // 根据老代码逻辑，quote 内部文字不计入当前层级的 currentLevelChars
-    } else if (node.type === 'style' || node.type === 'row') {
-      // 对于 style 和 row，递归处理。
+    } else if (node.type === 'style' || node.type === 'row' || node.type === 'animate') {
+      // 对于 style, row 和 animate，递归处理。
       // 传递 parentMaxLimit（如果 parentMaxLimit 为 -1，则子层 text 也不会被截断）
       const enrichedChildren = enrich(node.children, parentMaxLimit);
       enrichedNodes.push({

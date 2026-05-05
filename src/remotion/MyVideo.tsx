@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Audio, staticFile, Sequence } from 'remotion';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Audio, staticFile, Sequence, Easing } from 'remotion';
 import { ItemAnimationType, VideoConfig, VideoScene, VideoContentItem } from '../types';
 import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
 
@@ -130,9 +130,83 @@ const SceneItem: React.FC<SceneItemProps> = ({
   const exitTransform = getExitTransform(exitAnimation, exitProgress);
   if (exitTransform !== 'none') transforms.push(exitTransform);
 
+  // --- 新增：Item 级别的自定义动画 (animateFrom, animateTo) ---
+  const itemAnimateStyle: React.CSSProperties = {};
+  if (item.animateFrom && item.animateTo && item.animateStart !== undefined) {
+    const ad = item.animateDuration || 1;
+    const ae = item.animateEasing || 'ease-out';
+    
+    const getEasing = (e: string) => {
+      if (e === 'ease-in') return Easing.in(Easing.ease);
+      if (e === 'ease-out') return Easing.out(Easing.ease);
+      if (e === 'ease-in-out') return Easing.inOut(Easing.ease);
+      if (e === 'bounce') return Easing.bounce;
+      if (e === 'elastic') return Easing.elastic(1);
+      return Easing.linear;
+    };
+
+    const parseStyle = (str: string) => {
+      const res: Record<string, any> = {};
+      str.split(';').forEach(p => {
+        const [k, v] = p.split(':').map(s => s.trim());
+        if (k && v) {
+          let finalVal = v;
+          // 自动补全 px 单位
+          if ((k === 'x' || k === 'y' || k === 'top' || k === 'left') && !isNaN(Number(v)) && v !== '0') {
+            finalVal = v + 'px';
+          }
+          if (k === 'x') res.left = finalVal;
+          else if (k === 'y') res.top = finalVal;
+          else res[k] = finalVal;
+        }
+      });
+      return res;
+    };
+
+    const fromStyles = parseStyle(item.animateFrom);
+    const toStyles = parseStyle(item.animateTo);
+    // 使用相对于 Item 进入的时间
+    const itemCurrentTime = (relativeFrame - enterFrame) / fps;
+    const progress = interpolate(
+      itemCurrentTime,
+      [item.animateStart, item.animateStart + ad],
+      [0, 1],
+      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: getEasing(ae) }
+    );
+
+    const allKeys = new Set([...Object.keys(fromStyles), ...Object.keys(toStyles)]);
+    allKeys.forEach(key => {
+      const fv = fromStyles[key];
+      const tv = toStyles[key];
+      if (fv === undefined || tv === undefined) return;
+      
+      const fn = parseFloat(fv);
+      const tn = parseFloat(tv);
+      if (!isNaN(fn) && !isNaN(tn)) {
+        const val = interpolate(progress, [0, 1], [fn, tn]);
+        let unit = String(fv).replace(/[0-9.-]/g, '') || String(tv).replace(/[0-9.-]/g, '');
+        
+        // 针对位移属性，如果没有单位则默认为 px
+        if (!unit && (key === 'top' || key === 'left')) {
+          unit = 'px';
+        }
+        
+        (itemAnimateStyle as any)[key] = `${val}${unit}`;
+      } else {
+        (itemAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
+      }
+    });
+
+    if ((itemAnimateStyle as any).scale !== undefined) {
+      transforms.push(`scale(${(itemAnimateStyle as any).scale})`);
+      delete (itemAnimateStyle as any).scale;
+    }
+  }
+
   return (
     <div
       style={{
+        position: 'relative',
         background: item.backgroundColor || defaultItemBackgroundColor || '#f8f9fa',
         border: '1px dashed #d9d9d9',
         borderRadius: 8,
@@ -140,6 +214,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
         opacity,
         transform: transforms.length > 0 ? transforms.join(' ') : undefined,
         transformOrigin: 'center center',
+        ...itemAnimateStyle,
       }}
     >
       {/* 只有在 Remotion 环境下才渲染音频序列，避免在普通 React 环境下崩溃 */}
@@ -196,8 +271,68 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   config,
   isRemotion = false,
 }) => {
-  const layoutMode = scene.layout === 'center' ? 'center' : 'top';
+  const layoutMode = scene.layout === 'center' ? 'center' : (scene.layout === 'bottom' ? 'bottom' : 'top');
   const bgColor = scene.backgroundColor || '#ffffff';
+
+  // --- 新增：Scene 级别的动画逻辑 ---
+  const sceneAnimateStyle: React.CSSProperties = {};
+  if (scene.animateFrom && scene.animateTo && scene.animateStart !== undefined) {
+    const ad = scene.animateDuration || 1;
+    const ae = scene.animateEasing || 'ease-out';
+    
+    const getEasing = (e: string) => {
+      if (e === 'ease-in') return Easing.in(Easing.ease);
+      if (e === 'ease-out') return Easing.out(Easing.ease);
+      if (e === 'ease-in-out') return Easing.inOut(Easing.ease);
+      if (e === 'bounce') return Easing.bounce;
+      if (e === 'elastic') return Easing.elastic(1);
+      return Easing.linear;
+    };
+
+    const parseStyle = (str: string) => {
+      const res: Record<string, any> = {};
+      str.split(';').forEach(p => {
+        const [k, v] = p.split(':').map(s => s.trim());
+        if (k && v) {
+          let finalVal = v;
+          if ((k === 'x' || k === 'y' || k === 'top' || k === 'left') && !isNaN(Number(v)) && v !== '0') {
+            finalVal = v + 'px';
+          }
+          if (k === 'x') res.left = finalVal;
+          else if (k === 'y') res.top = finalVal;
+          else res[k] = finalVal;
+        }
+      });
+      return res;
+    };
+
+    const fromStyles = parseStyle(scene.animateFrom);
+    const toStyles = parseStyle(scene.animateTo);
+    const progress = interpolate(
+      frame / fps,
+      [scene.animateStart, scene.animateStart + ad],
+      [0, 1],
+      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: getEasing(ae) }
+    );
+
+    const allKeys = new Set([...Object.keys(fromStyles), ...Object.keys(toStyles)]);
+    allKeys.forEach(key => {
+      const fv = fromStyles[key];
+      const tv = toStyles[key];
+      if (fv === undefined || tv === undefined) return;
+      
+      const fn = parseFloat(fv);
+      const tn = parseFloat(tv);
+      if (!isNaN(fn) && !isNaN(tn)) {
+        const val = interpolate(progress, [0, 1], [fn, tn]);
+        let unit = String(fv).replace(/[0-9.-]/g, '') || String(tv).replace(/[0-9.-]/g, '');
+        if (!unit && (key === 'top' || key === 'left')) unit = 'px';
+        (sceneAnimateStyle as any)[key] = `${val}${unit}`;
+      } else {
+        (sceneAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
+      }
+    });
+  }
 
   return (
     <div
@@ -212,15 +347,22 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         fontFamily: 'Inter, -apple-system, sans-serif',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100%',
+        position: 'relative',
+        ...sceneAnimateStyle
+      }}>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: layoutMode === 'center' ? 'center' : 'flex-start',
+            justifyContent: layoutMode === 'center' ? 'center' : (layoutMode === 'bottom' ? 'flex-end' : 'flex-start'),
             gap: 12,
             padding: '4px 8px',
-            minHeight: '100%',
+            height: '100%',
+            overflow: 'hidden',
           }}
         >
           {scene.items.map((item: VideoContentItem) => (

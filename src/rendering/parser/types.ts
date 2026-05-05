@@ -1,9 +1,21 @@
 import React from 'react';
 
-export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'audio' | 'row' | 'depthLimit';
+export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'audio' | 'row' | 'depthLimit' | 'animate';
+
+export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic';
 
 export interface BaseNode {
   type: NodeType;
+}
+
+export interface AnimateNode extends BaseNode {
+  type: 'animate';
+  from: React.CSSProperties;
+  to: React.CSSProperties;
+  start: number;
+  duration: number;
+  easing: EasingType;
+  children: ASTNode[];
 }
 
 export interface TextNode extends BaseNode {
@@ -69,4 +81,5 @@ export type ASTNode =
   | GalleryNode 
   | StyleNode 
   | AudioNode 
-  | RowNode;
+  | RowNode
+  | AnimateNode;
