@@ -10,6 +10,8 @@ import {
   FileImageOutlined 
 } from '@ant-design/icons';
 import { ImageConfigContent } from './ImageConfigContent';
+import { PropertyConfigContent } from './PropertyConfigContent';
+import { SettingOutlined } from '@ant-design/icons';
 
 interface DialogOptions {
   title: string;
@@ -33,6 +35,13 @@ interface ImageHelperOptions {
     marginTop?: number;
     marginBottom?: number;
   };
+  onInsert: (dsl: string) => void;
+}
+
+interface PropertyHelperOptions {
+  tagName?: string;
+  initialValues?: Record<string, any>;
+  initialContent?: string;
   onInsert: (dsl: string) => void;
 }
 
@@ -142,6 +151,32 @@ export const dialogs = {
         <ImageConfigContent 
           initialUrl={options.initialUrl} 
           initialValues={options.initialValues}
+          onChange={(dsl) => { currentDsl = dsl; }} 
+        />
+      ),
+      onOk: () => {
+        options.onInsert(currentDsl);
+      },
+    });
+  },
+
+  showPropertyHelper: (options: PropertyHelperOptions) => {
+    if (!modal) return;
+    
+    let currentDsl = '';
+
+    modal.confirm({
+      title: options.tagName ? `${options.tagName.toUpperCase()} 属性助手` : 'DSL 属性助手',
+      icon: <SettingOutlined style={{ color: '#1890ff' }} />,
+      width: 900,
+      centered: true,
+      okText: '插入 DSL 代码',
+      cancelText: '取消',
+      content: (
+        <PropertyConfigContent 
+          tagName={options.tagName}
+          initialValues={options.initialValues}
+          initialContent={options.initialContent}
           onChange={(dsl) => { currentDsl = dsl; }} 
         />
       ),

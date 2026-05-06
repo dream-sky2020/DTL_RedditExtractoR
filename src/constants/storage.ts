@@ -4,3 +4,4 @@ export const AUTHOR_PROFILES_STORAGE_KEY = 'reddit-extractor.author-profiles.v1'
 export const GLOBAL_CONFIG_STORAGE_KEY = 'reddit-extractor.global-config.v1';
 export const AUDIO_ITEMS_STORAGE_KEY = 'reddit-extractor.audio-items.v1';
 export const PROJECTS_STORAGE_KEY = 'reddit-extractor.projects.v1';
+export const DSL_SNAPSHOT_STORAGE_KEY = 'reddit-extractor.dsl-snapshot.v1';

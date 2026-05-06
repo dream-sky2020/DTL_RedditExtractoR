@@ -4,7 +4,7 @@ type AttrMap = Record<string, string>;
 
 const ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
 
-const parseAttrs = (input: string): AttrMap => {
+export const parseAttrs = (input: string): AttrMap => {
   const attrs: AttrMap = {};
   let match: RegExpExecArray | null;
 
@@ -85,6 +85,10 @@ export const sceneToDsl = (scene: VideoScene): string => {
     `title="${escapeAttr(scene.title || '')}"`,
   ];
 
+  if (scene.itemSpacing !== undefined) {
+    sceneAttrs.push(`itemSpacing=${scene.itemSpacing}`);
+  }
+
   if (scene.backgroundColor) {
     sceneAttrs.push(`bg="${escapeAttr(scene.backgroundColor)}"`);
   }
@@ -94,6 +98,8 @@ export const sceneToDsl = (scene: VideoScene): string => {
   if (scene.animateStart !== undefined) sceneAttrs.push(`animateStart=${scene.animateStart}`);
   if (scene.animateDuration !== undefined) sceneAttrs.push(`animateDuration=${scene.animateDuration}`);
   if (scene.animateEasing) sceneAttrs.push(`animateEasing="${escapeAttr(scene.animateEasing)}"`);
+  if (scene.offset) sceneAttrs.push(`offset="${escapeAttr(scene.offset)}"`);
+  if (scene.keyframes) sceneAttrs.push(`keyframes="${escapeAttr(scene.keyframes)}"`);
 
   const itemBlocks = scene.items
     .map((item) => {
@@ -115,6 +121,9 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.animateStart !== undefined) itemAttrs.push(`animateStart=${item.animateStart}`);
       if (item.animateDuration !== undefined) itemAttrs.push(`animateDuration=${item.animateDuration}`);
       if (item.animateEasing) itemAttrs.push(`animateEasing="${escapeAttr(item.animateEasing)}"`);
+      if (item.offset) itemAttrs.push(`offset="${escapeAttr(item.offset)}"`);
+      if (item.sticky) itemAttrs.push(`sticky=true`);
+      if (item.keyframes) itemAttrs.push(`keyframes="${escapeAttr(item.keyframes)}"`);
       
       const content = encodeDslLineBreaks((item.content || '').trim());
       return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
@@ -185,6 +194,14 @@ export const parseSceneDsl = (
   const animateStart = parseOptionalSeconds(sceneAttrs.animateStart || sceneAttrs.as);
   const animateDuration = parseOptionalSeconds(sceneAttrs.animateDuration || sceneAttrs.ad);
   const animateEasing = sceneAttrs.animateEasing || sceneAttrs.ae;
+  const offset = sceneAttrs.offset || sceneAttrs.o || fallbackScene?.offset;
+  const keyframes = sceneAttrs.keyframes || sceneAttrs.kf || fallbackScene?.keyframes;
+
+  const itemSpacingRaw = sceneAttrs.itemSpacing || sceneAttrs.is;
+  let itemSpacing = itemSpacingRaw !== undefined ? Number(itemSpacingRaw) : fallbackScene?.itemSpacing;
+  if (itemSpacing !== undefined && !Number.isFinite(itemSpacing)) {
+    itemSpacing = undefined;
+  }
 
   const layoutRaw = (sceneAttrs.layout ?? '').trim();
   const fallbackLayout = fallbackScene?.layout;
@@ -256,6 +273,17 @@ export const parseSceneDsl = (
     const animateStart = parseOptionalSeconds(itemAttrs.animateStart || itemAttrs.as);
     const animateDuration = parseOptionalSeconds(itemAttrs.animateDuration || itemAttrs.ad);
     const animateEasing = itemAttrs.animateEasing || itemAttrs.ae;
+    const itemOffset = itemAttrs.offset || itemAttrs.o || fallbackItem?.offset;
+    const itemKeyframes = itemAttrs.keyframes || itemAttrs.kf || fallbackItem?.keyframes;
+    let sticky: boolean | number | undefined = fallbackItem?.sticky;
+    if (itemAttrs.sticky) {
+      const num = Number(itemAttrs.sticky);
+      if (!isNaN(num)) {
+        sticky = num;
+      } else {
+        sticky = itemAttrs.sticky === 'true' || !!itemAttrs.sticky;
+      }
+    }
 
     if (itemAttrs.exitAnimation != null && parsedExitAnimation == null) {
       warnings.push({
@@ -285,6 +313,9 @@ export const parseSceneDsl = (
       animateStart,
       animateDuration,
       animateEasing,
+      offset: itemOffset,
+      sticky,
+      keyframes: itemKeyframes,
     });
     index += 1;
   }
@@ -317,11 +348,14 @@ export const parseSceneDsl = (
       backgroundColor,
       duration,
       items,
+      itemSpacing,
       animateFrom,
       animateTo,
       animateStart,
       animateDuration,
       animateEasing,
+      offset,
+      keyframes,
     },
     warnings,
   };

@@ -70,7 +70,7 @@ export const SceneDslEditor: React.FC<SceneDslEditorProps> = ({
       }
     >
       <Text id={`scene-card-dsl-desc-${sceneId}`} type="secondary">
-        直接编辑场景 DSL。可在 scene 上使用 layout="top|center" 控制内容格垂直布局；在 item 正文中写 [\n] 可强制换行。
+        直接编辑场景 DSL。可在 scene 上使用 layout="top|center" 控制垂直布局，itemSpacing=12 控制间距；在 item 正文中写 [\n] 可强制换行。
       </Text>
       <TextArea
         id={`scene-card-dsl-textarea-${sceneId}`}

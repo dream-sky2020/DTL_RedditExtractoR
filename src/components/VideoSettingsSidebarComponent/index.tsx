@@ -427,6 +427,8 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
             setAllSceneLayouts={onSetAllSceneLayouts}
             setAllSceneDurations={onSetAllSceneDurations}
             addScene={onAddScene}
+            scenes={draftConfig.scenes}
+            onLoadScenes={(scenes) => setDraftConfig({ ...draftConfig, scenes })}
           />
         </div>
       </div>

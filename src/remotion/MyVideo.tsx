@@ -30,6 +30,138 @@ const parseAudioTags = (content: string) => {
 
 const DEFAULT_ITEM_ANIMATION_FRAMES = 12;
 
+const parseStyle = (str: string) => {
+  const res: Record<string, any> = {};
+  str.split(';').forEach(p => {
+    const [k, v] = p.split(':').map(s => s.trim());
+    if (k && v) {
+      let finalVal = v;
+      // 自动补全 px 单位
+      if ((k === 'x' || k === 'y' || k === 'top' || k === 'left') && !isNaN(Number(v)) && v !== '0') {
+        finalVal = v + 'px';
+      }
+      if (k === 'x') res.left = finalVal;
+      else if (k === 'y') res.top = finalVal;
+      else res[k] = finalVal;
+    }
+  });
+  return res;
+};
+
+const getEasing = (e: string) => {
+  if (e === 'ease-in') return Easing.in(Easing.ease);
+  if (e === 'ease-out') return Easing.out(Easing.ease);
+  if (e === 'ease-in-out') return Easing.inOut(Easing.ease);
+  if (e === 'bounce') return Easing.bounce;
+  if (e === 'elastic') return Easing.elastic(1);
+  return Easing.linear;
+};
+
+const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: string, styleObj: React.CSSProperties, transformsArr: string[]) => {
+  try {
+    const stagesRaw = kfStr.split(';').map(s => s.trim()).filter(Boolean);
+    if (stagesRaw.length < 2) return;
+
+    const parsedStages: { time: number, props: Record<string, number> }[] = [];
+
+    stagesRaw.forEach(stage => {
+      const colonIdx = stage.indexOf(':');
+      if (colonIdx === -1) return;
+      
+      const timeStr = stage.substring(0, colonIdx).trim();
+      const propsStr = stage.substring(colonIdx + 1).trim();
+      
+      const time = parseFloat(timeStr);
+      if (isNaN(time)) return;
+      
+      const props: Record<string, number> = {};
+      propsStr.split(',').forEach(prop => {
+        const pColonIdx = prop.indexOf(':');
+        if (pColonIdx === -1) return;
+        const k = prop.substring(0, pColonIdx).trim();
+        const v = parseFloat(prop.substring(pColonIdx + 1).trim());
+        if (!isNaN(v)) props[k] = v;
+      });
+      
+      if (Object.keys(props).length > 0) {
+        parsedStages.push({ time, props });
+      }
+    });
+
+    // 1. 按时间排序
+    parsedStages.sort((a, b) => a.time - b.time);
+
+    // 2. 去除重复时间点（保留最后一个）
+    const uniqueStages: typeof parsedStages = [];
+    parsedStages.forEach(s => {
+      if (uniqueStages.length > 0 && uniqueStages[uniqueStages.length - 1].time === s.time) {
+        uniqueStages[uniqueStages.length - 1] = s;
+      } else {
+        uniqueStages.push(s);
+      }
+    });
+
+    if (uniqueStages.length < 2) return;
+
+    // 确保 ad 至少是一个微小的正数，防止 timeline 全是 0
+    const safeAd = Math.max(ad, 0.001);
+    const timeline = uniqueStages.map(s => s.time * safeAd);
+    
+    // 关键修复：检查 timeline 是否严格递增
+    for (let i = 1; i < timeline.length; i++) {
+      if (timeline[i] <= timeline[i-1]) {
+        // 如果不是严格递增，说明输入数据有问题，直接跳过动画防止崩溃
+        return;
+      }
+    }
+
+    const allKeys = new Set<string>();
+    uniqueStages.forEach(s => Object.keys(s.props).forEach(k => allKeys.add(k)));
+
+    allKeys.forEach(key => {
+      // 为每个属性构建完整的值序列，如果某个阶段缺失该属性，则沿用上一个值
+      const values: number[] = [];
+      let firstVal: number | null = null;
+      
+      for (const s of uniqueStages) {
+        if (s.props[key] !== undefined) {
+          firstVal = s.props[key];
+          break;
+        }
+      }
+      
+      if (firstVal === null) return;
+
+      let lastVal = firstVal;
+      uniqueStages.forEach(s => {
+        if (s.props[key] !== undefined) {
+          lastVal = s.props[key];
+        }
+        values.push(lastVal);
+      });
+
+      const val = interpolate(
+        currentTime,
+        timeline,
+        values,
+        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: getEasing(ae) }
+      );
+
+      if (key === 'scale') {
+        transformsArr.push(`scale(${val})`);
+      } else if (key === 'x') {
+        styleObj.left = `${val}px`;
+      } else if (key === 'y') {
+        styleObj.top = `${val}px`;
+      } else {
+        (styleObj as any)[key] = val;
+      }
+    });
+  } catch (err) {
+    console.error('Keyframes animation error:', err);
+  }
+};
+
 const getEnterTransform = (animation: ItemAnimationType, progress: number): string => {
   switch (animation) {
     case 'slide-up':
@@ -132,37 +264,20 @@ const SceneItem: React.FC<SceneItemProps> = ({
 
   // --- 新增：Item 级别的自定义动画 (animateFrom, animateTo) ---
   const itemAnimateStyle: React.CSSProperties = {};
-  if (item.animateFrom && item.animateTo && item.animateStart !== undefined) {
+
+  if (item.offset) {
+    Object.assign(itemAnimateStyle, parseStyle(item.offset));
+  }
+
+  if (item.keyframes) {
+    const ad = item.animateDuration || 1;
+    const ae = item.animateEasing || 'ease-out';
+    const itemCurrentTime = (relativeFrame - enterFrame) / fps;
+    applyKeyframes(item.keyframes, itemCurrentTime - (item.animateStart || 0), ad, ae, itemAnimateStyle, transforms);
+  } else if (item.animateFrom && item.animateTo && item.animateStart !== undefined) {
     const ad = item.animateDuration || 1;
     const ae = item.animateEasing || 'ease-out';
     
-    const getEasing = (e: string) => {
-      if (e === 'ease-in') return Easing.in(Easing.ease);
-      if (e === 'ease-out') return Easing.out(Easing.ease);
-      if (e === 'ease-in-out') return Easing.inOut(Easing.ease);
-      if (e === 'bounce') return Easing.bounce;
-      if (e === 'elastic') return Easing.elastic(1);
-      return Easing.linear;
-    };
-
-    const parseStyle = (str: string) => {
-      const res: Record<string, any> = {};
-      str.split(';').forEach(p => {
-        const [k, v] = p.split(':').map(s => s.trim());
-        if (k && v) {
-          let finalVal = v;
-          // 自动补全 px 单位
-          if ((k === 'x' || k === 'y' || k === 'top' || k === 'left') && !isNaN(Number(v)) && v !== '0') {
-            finalVal = v + 'px';
-          }
-          if (k === 'x') res.left = finalVal;
-          else if (k === 'y') res.top = finalVal;
-          else res[k] = finalVal;
-        }
-      });
-      return res;
-    };
-
     const fromStyles = parseStyle(item.animateFrom);
     const toStyles = parseStyle(item.animateTo);
     // 使用相对于 Item 进入的时间
@@ -274,38 +389,28 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const layoutMode = scene.layout === 'center' ? 'center' : (scene.layout === 'bottom' ? 'bottom' : 'top');
   const bgColor = scene.backgroundColor || '#ffffff';
 
+  const stickyIdx = scene.items.findIndex(item => item.sticky);
+  const hasSticky = stickyIdx !== -1;
+  const stickyItem = hasSticky ? scene.items[stickyIdx] : null;
+  const stickyValue = stickyItem?.sticky;
+  const stickyProportion = typeof stickyValue === 'number' ? stickyValue : 0.5;
+
   // --- 新增：Scene 级别的动画逻辑 ---
   const sceneAnimateStyle: React.CSSProperties = {};
-  if (scene.animateFrom && scene.animateTo && scene.animateStart !== undefined) {
+  const sceneTransforms: string[] = [];
+
+  if (scene.offset) {
+    Object.assign(sceneAnimateStyle, parseStyle(scene.offset));
+  }
+
+  if (scene.keyframes) {
+    const ad = scene.animateDuration || 1;
+    const ae = scene.animateEasing || 'ease-out';
+    applyKeyframes(scene.keyframes, (frame / fps) - (scene.animateStart || 0), ad, ae, sceneAnimateStyle, sceneTransforms);
+  } else if (scene.animateFrom && scene.animateTo && scene.animateStart !== undefined) {
     const ad = scene.animateDuration || 1;
     const ae = scene.animateEasing || 'ease-out';
     
-    const getEasing = (e: string) => {
-      if (e === 'ease-in') return Easing.in(Easing.ease);
-      if (e === 'ease-out') return Easing.out(Easing.ease);
-      if (e === 'ease-in-out') return Easing.inOut(Easing.ease);
-      if (e === 'bounce') return Easing.bounce;
-      if (e === 'elastic') return Easing.elastic(1);
-      return Easing.linear;
-    };
-
-    const parseStyle = (str: string) => {
-      const res: Record<string, any> = {};
-      str.split(';').forEach(p => {
-        const [k, v] = p.split(':').map(s => s.trim());
-        if (k && v) {
-          let finalVal = v;
-          if ((k === 'x' || k === 'y' || k === 'top' || k === 'left') && !isNaN(Number(v)) && v !== '0') {
-            finalVal = v + 'px';
-          }
-          if (k === 'x') res.left = finalVal;
-          else if (k === 'y') res.top = finalVal;
-          else res[k] = finalVal;
-        }
-      });
-      return res;
-    };
-
     const fromStyles = parseStyle(scene.animateFrom);
     const toStyles = parseStyle(scene.animateTo);
     const progress = interpolate(
@@ -332,6 +437,11 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         (sceneAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
       }
     });
+
+    if ((sceneAnimateStyle as any).scale !== undefined) {
+      sceneTransforms.push(`scale(${(sceneAnimateStyle as any).scale})`);
+      delete (sceneAnimateStyle as any).scale;
+    }
   }
 
   return (
@@ -352,36 +462,110 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         flexDirection: 'column', 
         height: '100%',
         position: 'relative',
+        transform: sceneTransforms.length > 0 ? sceneTransforms.join(' ') : undefined,
         ...sceneAnimateStyle
       }}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: layoutMode === 'center' ? 'center' : (layoutMode === 'bottom' ? 'flex-end' : 'flex-start'),
-            gap: 12,
-            padding: '4px 8px',
-            height: '100%',
-            overflow: 'hidden',
-          }}
-        >
-          {scene.items.map((item: VideoContentItem) => (
-            <SceneItem
-              key={item.id}
-              item={item}
-              sceneDuration={scene.duration}
-              relativeFrame={frame}
-              fps={fps}
-              quoteFontSize={config.quoteFontSize}
-              maxQuoteDepth={config.maxQuoteDepth}
-              defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
-              defaultItemBackgroundColor={config.itemBackgroundColor}
-              quoteBackgroundColor={config.quoteBackgroundColor}
-              quoteBorderColor={config.quoteBorderColor}
-              isRemotion={isRemotion}
-            />
-          ))}
-        </div>
+        {hasSticky ? (
+          <>
+            <div style={{ 
+              flex: stickyProportion, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'flex-end',
+              gap: scene.itemSpacing ?? 12,
+              padding: '4px 8px',
+              overflow: 'hidden'
+            }}>
+              {scene.items.slice(0, stickyIdx).map((item: VideoContentItem) => (
+                <SceneItem
+                  key={item.id}
+                  item={item}
+                  sceneDuration={scene.duration}
+                  relativeFrame={frame}
+                  fps={fps}
+                  quoteFontSize={config.quoteFontSize}
+                  maxQuoteDepth={config.maxQuoteDepth}
+                  defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+                  defaultItemBackgroundColor={config.itemBackgroundColor}
+                  quoteBackgroundColor={config.quoteBackgroundColor}
+                  quoteBorderColor={config.quoteBorderColor}
+                  isRemotion={isRemotion}
+                />
+              ))}
+            </div>
+            <div style={{ padding: '4px 8px' }}>
+              <SceneItem
+                key={scene.items[stickyIdx].id}
+                item={scene.items[stickyIdx]}
+                sceneDuration={scene.duration}
+                relativeFrame={frame}
+                fps={fps}
+                quoteFontSize={config.quoteFontSize}
+                maxQuoteDepth={config.maxQuoteDepth}
+                defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+                defaultItemBackgroundColor={config.itemBackgroundColor}
+                quoteBackgroundColor={config.quoteBackgroundColor}
+                quoteBorderColor={config.quoteBorderColor}
+                isRemotion={isRemotion}
+              />
+            </div>
+            <div style={{ 
+              flex: 1 - stickyProportion, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'flex-start',
+              gap: scene.itemSpacing ?? 12,
+              padding: '4px 8px',
+              overflow: 'hidden'
+            }}>
+              {scene.items.slice(stickyIdx + 1).map((item: VideoContentItem) => (
+                <SceneItem
+                  key={item.id}
+                  item={item}
+                  sceneDuration={scene.duration}
+                  relativeFrame={frame}
+                  fps={fps}
+                  quoteFontSize={config.quoteFontSize}
+                  maxQuoteDepth={config.maxQuoteDepth}
+                  defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+                  defaultItemBackgroundColor={config.itemBackgroundColor}
+                  quoteBackgroundColor={config.quoteBackgroundColor}
+                  quoteBorderColor={config.quoteBorderColor}
+                  isRemotion={isRemotion}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: layoutMode === 'center' ? 'center' : (layoutMode === 'bottom' ? 'flex-end' : 'flex-start'),
+              gap: scene.itemSpacing ?? 12,
+              padding: '4px 8px',
+              height: '100%',
+              overflow: 'hidden',
+            }}
+          >
+            {scene.items.map((item: VideoContentItem) => (
+              <SceneItem
+                key={item.id}
+                item={item}
+                sceneDuration={scene.duration}
+                relativeFrame={frame}
+                fps={fps}
+                quoteFontSize={config.quoteFontSize}
+                maxQuoteDepth={config.maxQuoteDepth}
+                defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+                defaultItemBackgroundColor={config.itemBackgroundColor}
+                quoteBackgroundColor={config.quoteBackgroundColor}
+                quoteBorderColor={config.quoteBorderColor}
+                isRemotion={isRemotion}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

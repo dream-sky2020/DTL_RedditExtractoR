@@ -15,7 +15,9 @@ import {
   VerticalAlignBottomOutlined,
   AlignCenterOutlined,
   CommentOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  LineHeightOutlined,
+  DragOutlined
 } from '@ant-design/icons';
 import { VideoConfig } from '../../../types';
 import { useSceneMerge } from '../../../hooks/useSceneMerge';
@@ -55,6 +57,11 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   galleryPageSize,
 }) => {
   const [historyLimit, setHistoryLimit] = useState<number>(2);
+  const [batchItemSpacing, setBatchItemSpacing] = useState<number>(12);
+  const [offsetX, setOffsetX] = useState<number>(0);
+  const [offsetY, setOffsetY] = useState<number>(0);
+  const [stickyItemIndex, setStickyItemIndex] = useState<number>(1);
+  const [stickyValue, setStickyValue] = useState<number | boolean>(0.5);
 
   const { mergeScenes } = useSceneMerge({
     selectedSceneIds,
@@ -122,6 +129,59 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     toast.success(`已将 ${selectedSceneIds.length} 个场景的布局改为 ${layout}`);
+  };
+
+  const handleBatchItemSpacingChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+      return { ...scene, itemSpacing: batchItemSpacing };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已将 ${selectedSceneIds.length} 个场景的项目间距改为 ${batchItemSpacing}`);
+  };
+
+  const handleBatchOffsetChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const offsetStr = `x: ${offsetX}; y: ${offsetY}`;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+      return { ...scene, offset: offsetStr };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已将 ${selectedSceneIds.length} 个场景的偏移设置为 ${offsetStr}`);
+  };
+
+  const handleBatchStickyChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const items = [...scene.items];
+      // 清除该场景中所有现有的 sticky
+      items.forEach(item => { delete item.sticky; });
+
+      let targetIdx = -1;
+      if (stickyItemIndex > 0) {
+        targetIdx = stickyItemIndex - 1; // 1-based to 0-based
+      } else if (stickyItemIndex < 0) {
+        targetIdx = items.length + stickyItemIndex; // -1 is last
+      }
+
+      if (targetIdx >= 0 && targetIdx < items.length) {
+        items[targetIdx] = { ...items[targetIdx], sticky: stickyValue };
+      }
+
+      return { ...scene, items };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已更新 ${selectedSceneIds.length} 个场景的强制居中设置`);
   };
 
   const handleChatFlow = (direction: 'top' | 'bottom') => {
@@ -274,6 +334,103 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                       }}
                     >
                       全部bottom
+                    </Button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>项目间距:</Text>
+                    <InputNumber
+                      size="small"
+                      min={0}
+                      max={200}
+                      value={batchItemSpacing}
+                      onChange={(val) => setBatchItemSpacing(val || 0)}
+                      style={{ width: 70 }}
+                    />
+                    <Button
+                      size="small"
+                      icon={<LineHeightOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleBatchItemSpacingChange}
+                      style={{
+                        flex: 1,
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                      }}
+                    >
+                      统一间距
+                    </Button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>偏移:</Text>
+                    <InputNumber
+                      size="small"
+                      placeholder="X"
+                      value={offsetX}
+                      onChange={(val) => setOffsetX(val || 0)}
+                      style={{ width: 55 }}
+                    />
+                    <InputNumber
+                      size="small"
+                      placeholder="Y"
+                      value={offsetY}
+                      onChange={(val) => setOffsetY(val || 0)}
+                      style={{ width: 55 }}
+                    />
+                    <Button
+                      size="small"
+                      icon={<DragOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleBatchOffsetChange}
+                      style={{
+                        flex: 1,
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : 'var(--brand-border)',
+                      }}
+                    >
+                      统一偏移
+                    </Button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>居中项:</Text>
+                    <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
+                      <InputNumber
+                        size="small"
+                        placeholder="索引"
+                        value={stickyItemIndex}
+                        onChange={(val) => setStickyItemIndex(val || 1)}
+                        style={{ width: 55 }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="居中位置比例 (0-1)，0.5 为正中心">
+                      <InputNumber
+                        size="small"
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        placeholder="比例"
+                        value={typeof stickyValue === 'number' ? stickyValue : 0.5}
+                        onChange={(val) => setStickyValue(val ?? 0.5)}
+                        style={{ width: 55 }}
+                      />
+                    </Tooltip>
+                    <Button
+                      size="small"
+                      icon={<AlignCenterOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleBatchStickyChange}
+                      style={{
+                        flex: 1,
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : 'var(--brand-border)',
+                      }}
+                    >
+                      设置居中项
                     </Button>
                   </div>
 

@@ -1,8 +1,12 @@
 import React from 'react';
-import { Space, Button, Row, Col, InputNumber } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { CommentSortMode, ReplyOrderMode } from '../../../types';
+import { Space, Button, Row, Col, InputNumber, Divider, Typography } from 'antd';
+import { PlusOutlined, CameraOutlined, HistoryOutlined } from '@ant-design/icons';
+import { CommentSortMode, ReplyOrderMode, VideoScene } from '../../../types';
 import { dialogs } from '../../Dialogs';
+import { useSnapshotStore } from '../../../store';
+import { toast } from '@components/Toast';
+
+const { Text } = Typography;
 
 interface QuickActionsPanelProps {
   idPrefix?: string;
@@ -16,6 +20,8 @@ interface QuickActionsPanelProps {
   setAllSceneLayouts: (layout: 'top' | 'center') => void;
   setAllSceneDurations: (duration: number) => void;
   addScene: () => void;
+  scenes: VideoScene[];
+  onLoadScenes: (scenes: VideoScene[]) => void;
 }
 
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
@@ -30,8 +36,26 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   setAllSceneLayouts,
   setAllSceneDurations,
   addScene,
+  scenes,
+  onLoadScenes,
 }) => {
   const getId = (suffix: string) => `${idPrefix}-${suffix}`;
+  const { saveSnapshot, loadSnapshot, snapshotTime, hasSnapshot } = useSnapshotStore();
+
+  const handleSaveSnapshot = () => {
+    saveSnapshot(scenes);
+    toast.success('已保存当前 DSL 快照');
+  };
+
+  const handleLoadSnapshot = () => {
+    const snapshot = loadSnapshot();
+    if (snapshot) {
+      onLoadScenes(snapshot);
+      toast.success('已恢复 DSL 快照');
+    } else {
+      toast.error('未找到可用的快照');
+    }
+  };
 
   const handleSetAllDurations = () => {
     let duration = 5;
@@ -135,10 +159,48 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
         block
         icon={<PlusOutlined />}
         onClick={addScene}
-        style={{ background: 'var(--btn-primary-bg)', borderColor: 'var(--btn-primary-border)' }}
+        style={{ background: 'var(--btn-primary-bg)', borderColor: 'var(--btn-primary-border)', marginBottom: 16 }}
       >
         新增画面格
       </Button>
+
+      <Divider style={{ margin: '8px 0', borderColor: 'var(--brand-border)' }} />
+      
+      <div style={{ marginBottom: 8 }}>
+        <Space direction="vertical" style={{ width: '100%' }} size={8}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>DSL 快照管理</Text>
+            {snapshotTime && (
+              <Text style={{ fontSize: 10, color: '#fff' }}>上次保存: {snapshotTime}</Text>
+            )}
+          </div>
+          <Row gutter={8}>
+            <Col span={12}>
+              <Button
+                block
+                size="small"
+                icon={<CameraOutlined />}
+                onClick={handleSaveSnapshot}
+                style={{ color: '#52c41a', borderColor: '#b7eb8f', background: 'transparent' }}
+              >
+                保存快照
+              </Button>
+            </Col>
+            <Col span={12}>
+              <Button
+                block
+                size="small"
+                icon={<HistoryOutlined />}
+                disabled={!hasSnapshot()}
+                onClick={handleLoadSnapshot}
+                style={{ color: '#1890ff', borderColor: '#91d5ff', background: 'transparent' }}
+              >
+                读取快照
+              </Button>
+            </Col>
+          </Row>
+        </Space>
+      </div>
     </Space>
   );
 };

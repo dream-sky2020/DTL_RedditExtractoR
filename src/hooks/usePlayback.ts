@@ -16,11 +16,18 @@ export const usePlayback = (
   const [currentFrame, setCurrentFrame] = useState(initialFrame);
 
   useEffect(() => {
-    setCurrentFrame(initialFrame);
+    setCurrentFrame((prev) => {
+      if (prev === initialFrame) return prev;
+      return initialFrame;
+    });
   }, [initialFrame]);
 
   useEffect(() => {
-    setCurrentFrame((prev) => Math.max(sceneRange.start, Math.min(sceneRange.end, prev)));
+    setCurrentFrame((prev) => {
+      const clamped = Math.max(sceneRange.start, Math.min(sceneRange.end, prev));
+      if (prev === clamped) return prev;
+      return clamped;
+    });
   }, [sceneRange.end, sceneRange.start]);
 
   useEffect(() => {

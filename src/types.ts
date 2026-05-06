@@ -105,6 +105,9 @@ export interface VideoContentItem {
   animateStart?: number;
   animateDuration?: number;
   animateEasing?: string;
+  offset?: string;
+  sticky?: boolean | number;
+  keyframes?: string;
 }
 
 export interface VideoScene {
@@ -115,11 +118,14 @@ export interface VideoScene {
   backgroundColor?: string; // 场景背景颜色
   duration: number; // 整个画面的显示时间 (秒)
   items: VideoContentItem[]; // 画面中包含的内容项 (评论)
+  itemSpacing?: number; // 项之间的间距 (像素)
   animateFrom?: string;
   animateTo?: string;
   animateStart?: number;
   animateDuration?: number;
   animateEasing?: string;
+  offset?: string;
+  keyframes?: string;
 }
 
 export interface VideoConfig {

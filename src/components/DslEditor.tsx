@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Input, Button, Space, Card, Tooltip, Divider } from 'antd';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { Button, Space, Card, Tooltip, Divider, Badge } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -19,11 +19,29 @@ import {
   EnterOutlined,
   SearchOutlined,
   CodeOutlined,
+  ControlOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { EditorView, Decoration, DecorationSet } from '@codemirror/view';
+import { StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
 import { dialogs } from './Dialogs';
+import { getMetadataForTag } from '../rendering/metadata';
+import { parseInlineAttrs } from '../rendering/parser/utils';
+import { parseAttrs } from '../rendering/sceneDsl';
+import { dsl } from './DslLanguage';
 
-const { TextArea } = Input;
+interface DetectedTag {
+  tagName: string;
+  fullText: string;
+  start: number;
+  end: number;
+  attrStr: string;
+  content: string;
+  syntax: 'angle' | 'square';
+  headerLength: number;
+  footerLength: number;
+}
 
 interface DslEditorProps {
   value: string;
@@ -34,122 +52,292 @@ interface DslEditorProps {
   onPreviewLayout?: () => void;
 }
 
-/**
- * DslEditor 组件
- * 功能：为项目自定义的 [style] 语法提供便捷的编辑体验。
- * 包含：
- * 1. 快捷工具栏：快速插入加粗、字号、对齐等标签。
- * 2. 文本区域：支持光标定位插入。
- * 3. 实时同步：通过 onChange 回传最新的文本内容。
- * 4. 预览布局：支持预览渲染后的 HTML 代码。
- */
+// 定义高亮效果的 Effect
+const setTagHighlight = StateEffect.define<{ start: number; headerLen: number; footerLen: number; end: number } | null>();
+
+// 定义管理高亮样式的 Field
+const tagHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (let e of tr.effects) {
+      if (e.is(setTagHighlight)) {
+        if (!e.value) return Decoration.none;
+        const builder = new RangeSetBuilder<Decoration>();
+        const { start, headerLen, footerLen, end } = e.value;
+        
+        // 开始标签背景
+        builder.add(start, start + headerLen, Decoration.mark({
+          attributes: { style: 'background-color: #f6ffed; border-radius: 2px;' }
+        }));
+        
+        // 结束标签背景
+        if (footerLen > 0) {
+          builder.add(end - footerLen, end, Decoration.mark({
+            attributes: { style: 'background-color: #f6ffed; border-radius: 2px;' }
+          }));
+        }
+        return builder.finish();
+      }
+    }
+    return decorations;
+  },
+  provide: f => EditorView.decorations.from(f)
+});
+
 export const DslEditor: React.FC<DslEditorProps> = ({
   value,
   onChange,
-  placeholder = '请输入内容或使用上方工具栏插入标签...',
+  placeholder = '请输入内容...',
   rows = 8,
   onOpenGlobalReplace,
   onPreviewLayout,
 }) => {
-  const textAreaRef = useRef<any>(null);
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const [detectedTag, setDetectedTag] = useState<DetectedTag | null>(null);
 
-  // 在光标位置插入文本的通用方法
-  const insertText = (before: string, after: string = '') => {
-    const textarea = textAreaRef.current?.resizableTextArea?.textArea;
-    if (!textarea) return;
+  // 寻找光标所在的标签 (保持逻辑一致)
+  const findTagAtCursor = useCallback((text: string, cursorOffset: number): DetectedTag | null => {
+    if (!text) return null;
+    let openPos = -1;
+    let syntax: 'angle' | 'square' | null = null;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    
-    const newValue = 
-      value.substring(0, start) + 
-      before + 
-      selectedText + 
-      after + 
-      value.substring(end);
-
-    onChange(newValue);
-
-    // 重新聚焦并设置光标位置 (异步处理以确保 DOM 已更新)
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + before.length + selectedText.length + after.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
-  const handleOpenGlobalReplace = () => {
-    const textarea = textAreaRef.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
-    if (!textarea) {
-      onOpenGlobalReplace?.('');
-      return;
+    for (let i = cursorOffset; i >= 0; i--) {
+      if (text[i] === '[' && (i === 0 || text[i-1] !== '\\')) {
+        if (text[i+1] === '/') continue;
+        openPos = i;
+        syntax = 'square';
+        break;
+      }
+      if (text[i] === '<' && (i === 0 || text[i-1] !== '\\')) {
+        if (text[i+1] === '/') continue;
+        openPos = i;
+        syntax = 'angle';
+        break;
+      }
     }
-    const start = textarea.selectionStart ?? 0;
-    const end = textarea.selectionEnd ?? 0;
-    const selectedText = value.substring(start, end);
-    onOpenGlobalReplace?.(selectedText);
-  };
 
-  const handleOpenImageHelper = () => {
-    const textarea = textAreaRef.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
-    let initialUrl = '';
-    let initialValues: any = {};
+    if (openPos === -1 || !syntax) return null;
 
-    if (textarea) {
-      const start = textarea.selectionStart ?? 0;
-      const end = textarea.selectionEnd ?? 0;
-      const selectedText = value.substring(start, end).trim();
+    const remaining = text.substring(openPos);
+    let match: RegExpMatchArray | null = null;
+    if (syntax === 'square') {
+      match = remaining.match(/^\[([a-zA-Z0-9]+)([^\]]*)\]/);
+    } else {
+      match = remaining.match(/^<([a-zA-Z0-9]+)([^>]*?)(\/?>)/);
+    }
 
-      // Case 1: Raw URL
-      if (selectedText.startsWith('http')) {
-        initialUrl = selectedText;
-      } 
-      // Case 2: [image ...] DSL
-      else if (selectedText.startsWith('[image') && selectedText.endsWith('[/image]')) {
-        const match = selectedText.match(/^\[image([^\]]*)\]([\s\S]*?)\[\/image\]/);
-        if (match) {
-          const attrStr = match[1];
-          initialUrl = match[2].trim();
-          
-          // Parse attributes
-          const wMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
-          if (wMatch) initialValues.width = isNaN(Number(wMatch[2])) ? wMatch[2] : Number(wMatch[2]);
-          
-          const mhMatch = attrStr.match(/\b(mh|max-height)=([^ \]]+)/);
-          if (mhMatch) initialValues.maxHeight = Number(mhMatch[2]);
-          
-          const hMatch = attrStr.match(/\bh=([^ \]]+)/);
-          if (hMatch && !mhMatch) initialValues.maxHeight = Number(hMatch[2]); 
+    if (!match) return null;
+    const tagName = match[1];
+    const attrStr = match[2];
+    const fullTagHeader = match[0];
 
-          const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
-          if (modeMatch) initialValues.mode = modeMatch[1];
-          
-          const posMatch = attrStr.match(/\bpos="([^"]+)"/);
-          if (posMatch) {
-            initialValues.pos = posMatch[1];
-          } else {
-            const posSimpleMatch = attrStr.match(/\bpos=([^ \]]+)/);
-            if (posSimpleMatch) initialValues.pos = posSimpleMatch[1].replace(/_/g, ' ');
-          }
-          
-          const mtMatch = attrStr.match(/\bmt=([^ \]]+)/);
-          if (mtMatch) initialValues.marginTop = Number(mtMatch[2]);
-          
-          const mbMatch = attrStr.match(/\bmb=([^ \]]+)/);
-          if (mbMatch) initialValues.marginBottom = Number(mbMatch[2]);
+    let endPos = -1;
+    let content = '';
+    let footerLength = 0;
+    const startTagEnd = openPos + fullTagHeader.length;
+
+    if (syntax === 'square') {
+      const metadata = getMetadataForTag(tagName);
+      if (metadata && !metadata.hasContent) {
+        endPos = startTagEnd;
+      } else {
+        const closeTag = `[/${tagName}]`;
+        const closeIdx = text.indexOf(closeTag, startTagEnd);
+        if (closeIdx !== -1) {
+          endPos = closeIdx + closeTag.length;
+          content = text.substring(startTagEnd, closeIdx);
+          footerLength = closeTag.length;
+        } else {
+          endPos = startTagEnd;
+        }
+      }
+    } else {
+      if (fullTagHeader.endsWith('/>')) {
+        endPos = startTagEnd;
+      } else {
+        const closeTag = `</${tagName}>`;
+        const closeIdx = text.indexOf(closeTag, startTagEnd);
+        if (closeIdx !== -1) {
+          endPos = closeIdx + closeTag.length;
+          content = text.substring(startTagEnd, closeIdx);
+          footerLength = closeTag.length;
+        } else {
+          endPos = startTagEnd;
         }
       }
     }
+
+    if (cursorOffset >= openPos && cursorOffset <= endPos) {
+      return {
+        tagName,
+        fullText: text.substring(openPos, endPos),
+        start: openPos,
+        end: endPos,
+        attrStr,
+        content,
+        syntax,
+        headerLength: fullTagHeader.length,
+        footerLength
+      };
+    }
+    return null;
+  }, []);
+
+  // 更新检测到的标签并应用高亮
+  const lastHighlightedRange = useRef<string>("");
+
+  const handleUpdate = useCallback((viewUpdate: any) => {
+    const state = viewUpdate.state;
+    const pos = state.selection.main.head;
+    const doc = state.doc.toString();
+    const tag = findTagAtCursor(doc, pos);
     
-    dialogs.showImageHelper({
-      initialUrl,
-      initialValues,
+    setDetectedTag((prev) => {
+      if (!prev && !tag) return prev;
+      if (
+        prev &&
+        tag &&
+        prev.tagName === tag.tagName &&
+        prev.start === tag.start &&
+        prev.end === tag.end &&
+        prev.headerLength === tag.headerLength &&
+        prev.footerLength === tag.footerLength
+      ) {
+        return prev;
+      }
+      return tag;
+    });
+
+    // 只有当高亮范围发生变化时才发送 Effect，避免频繁重绘
+    const rangeKey = tag ? `${tag.start}-${tag.end}` : "none";
+    if (rangeKey !== lastHighlightedRange.current) {
+      lastHighlightedRange.current = rangeKey;
+      viewUpdate.view.dispatch({
+        effects: setTagHighlight.of(tag ? {
+          start: tag.start,
+          headerLen: tag.headerLength,
+          footerLen: tag.footerLength,
+          end: tag.end
+        } : null)
+      });
+    }
+  }, [findTagAtCursor]);
+
+  const insertText = (before: string, after: string = '') => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+
+    const selection = view.state.selection.main;
+    const selectedText = view.state.doc.sliceString(selection.from, selection.to);
+    
+    view.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: before + selectedText + after
+      },
+      selection: { anchor: selection.from + before.length + selectedText.length + after.length }
+    });
+    view.focus();
+  };
+
+  const handleOpenGlobalReplace = () => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const selection = view.state.selection.main;
+    const selectedText = view.state.doc.sliceString(selection.from, selection.to);
+    onOpenGlobalReplace?.(selectedText);
+  };
+
+  const handleOpenPropertyHelper = (forcedTagName?: string) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+
+    let tagName = forcedTagName || '';
+    let initialValues: Record<string, any> = {};
+    let initialContent = '';
+
+    if (!tagName && detectedTag) {
+      tagName = detectedTag.tagName;
+      initialContent = detectedTag.content;
+      initialValues = detectedTag.syntax === 'square' 
+        ? parseInlineAttrs(detectedTag.attrStr) 
+        : parseAttrs(detectedTag.attrStr);
+    }
+
+    if (!tagName) {
+      const selection = view.state.selection.main;
+      const selectedText = view.state.doc.sliceString(selection.from, selection.to).trim();
+      
+      const squareMatch = selectedText.match(/^\[([a-zA-Z0-9]+)([^\]]*)\]([\s\S]*?)(?:\[\/\1\])?$/);
+      if (squareMatch) {
+        tagName = squareMatch[1];
+        initialContent = squareMatch[3];
+        initialValues = parseInlineAttrs(squareMatch[2]);
+      } else {
+        const angleMatch = selectedText.match(/^<([a-zA-Z0-9]+)([^>]*?)(?:\/?>|>(?:[\s\S]*?)<\/\1>)$/);
+        if (angleMatch) {
+          tagName = angleMatch[1];
+          initialValues = parseAttrs(angleMatch[2]);
+          const contentMatch = selectedText.match(/^<[a-zA-Z0-9]+[^>]*>([\s\S]*?)<\/[a-zA-Z0-9]+>$/);
+          if (contentMatch) initialContent = contentMatch[1];
+        }
+      }
+      if (!tagName && selectedText.startsWith('http')) {
+        tagName = 'image';
+        initialContent = selectedText;
+      }
+    }
+
+    // 3. 默认值处理：如果没有识别到标签，不再默认 image，而是让助手显示选择界面
+    const standardValues: Record<string, any> = {};
+    if (tagName) {
+      const meta = getMetadataForTag(tagName);
+      if (meta) {
+        meta.properties.forEach(prop => {
+          const aliasName = prop.alias?.find(a => initialValues[a] !== undefined);
+          const val = initialValues[prop.name] ?? (aliasName ? initialValues[aliasName] : undefined);
+          if (val !== undefined) {
+            if (prop.type === 'number') standardValues[prop.name] = Number(val);
+            else if (prop.type === 'boolean') standardValues[prop.name] = val === 'true' || val === '';
+            else standardValues[prop.name] = val;
+          }
+        });
+      }
+    }
+
+    dialogs.showPropertyHelper({
+      tagName: tagName || undefined,
+      initialValues: standardValues,
+      initialContent,
       onInsert: (dsl) => {
-        insertText(dsl);
+        if (!dsl) return; // 如果没有生成内容（比如未选择标签），则不操作
+        // 如果是在识别到的标签上操作，替换整个标签
+        if (detectedTag && !forcedTagName) {
+          view.dispatch({
+            changes: { from: detectedTag.start, to: detectedTag.end, insert: dsl }
+          });
+        } else {
+          insertText(dsl);
+        }
       }
     });
   };
+
+  const extensions = useMemo(() => [
+    dsl(),
+    tagHighlightField,
+    EditorView.lineWrapping,
+    EditorView.theme({
+      "&": { height: `${rows * 1.5}em`, fontSize: "14px" },
+      ".cm-content": { fontFamily: "'Fira Code', 'Courier New', monospace" },
+      ".cm-gutters": { display: "none" },
+      "&.cm-focused": { outline: "none" }
+    })
+  ], [rows]);
 
   return (
     <Card 
@@ -194,12 +382,16 @@ export const DslEditor: React.FC<DslEditorProps> = ({
             <Tooltip title="快速插入图片 [image]url[/image]">
               <Button size="small" icon={<FileImageOutlined />} onClick={() => insertText('[image]', '[/image]')} />
             </Tooltip>
-            <Tooltip title="图片助手 (可视化裁剪/边距)">
+            <Tooltip title="属性助手 (智能识别标签/可视化配置)">
               <Button 
                 size="small" 
-                icon={<SettingOutlined />} 
-                onClick={handleOpenImageHelper}
-                style={{ color: '#1890ff', borderColor: '#91d5ff' }}
+                icon={<ControlOutlined />} 
+                onClick={() => handleOpenPropertyHelper()}
+                style={{ 
+                  color: detectedTag ? '#52c41a' : '#1890ff', 
+                  borderColor: detectedTag ? '#b7eb8f' : '#91d5ff',
+                  backgroundColor: detectedTag ? '#f6ffed' : 'transparent'
+                }}
               />
             </Tooltip>
             <Tooltip title="图集 [gallery]url1|2.5,url2|2.5[/gallery]">
@@ -216,6 +408,12 @@ export const DslEditor: React.FC<DslEditorProps> = ({
             </Tooltip>
             <Tooltip title="行布局 [row gap=8]">
               <Button size="small" icon={<LayoutOutlined />} onClick={() => insertText('[row gap=8]', '[/row]')} />
+            </Tooltip>
+            <Tooltip title="场景配置 <scene ...>">
+              <Button size="small" icon={<SettingOutlined />} onClick={() => handleOpenPropertyHelper('scene')} />
+            </Tooltip>
+            <Tooltip title="项目配置 <item ...>">
+              <Button size="small" icon={<ControlOutlined />} onClick={() => handleOpenPropertyHelper('item')} />
             </Tooltip>
           </Space>
 
@@ -245,21 +443,25 @@ export const DslEditor: React.FC<DslEditorProps> = ({
       }
       styles={{ body: { padding: 0 } }}
     >
-      <TextArea
-        ref={textAreaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        bordered={false}
-        style={{ 
-          fontFamily: "'Fira Code', 'Courier New', monospace",
-          fontSize: '14px',
-          padding: '12px',
-          resize: 'vertical',
-          backgroundColor: '#fafafa'
-        }}
-      />
+      <div style={{ backgroundColor: '#fafafa', border: '1px solid #d9d9d9' }}>
+        <CodeMirror
+          ref={editorRef}
+          value={value}
+          height="auto"
+          placeholder={placeholder}
+          extensions={extensions}
+          onChange={(val) => onChange(val)}
+          onUpdate={handleUpdate}
+          basicSetup={{
+            lineNumbers: false,
+            foldGutter: false,
+            highlightActiveLine: true,
+            bracketMatching: true,
+            closeBrackets: true,
+            autocompletion: true,
+          }}
+        />
+      </div>
     </Card>
   );
 };

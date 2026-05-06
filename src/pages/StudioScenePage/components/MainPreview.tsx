@@ -6,14 +6,13 @@
  * 2. 自动处理画布比例（横屏 80% 宽度，竖屏 40% 宽度）。
  * 3. 场景缺失时的空状态处理。
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Empty } from 'antd';
-import type { PlayerRef } from '@remotion/player';
-import { VideoPreviewPlayer } from '../../../components/VideoPreviewPlayer';
 import { VideoConfig } from '../../../types';
 import { useFullscreen } from '@hooks/useFullscreen';
 import { usePlayback } from '@hooks/usePlayback';
 import { usePreviewTransform } from '@hooks/usePreviewTransform';
+import { SceneRenderer } from '../../../remotion/MyVideo';
 import { PreviewHeightControl } from './PreviewHeightControl';
 import { PlaybackController } from './PlaybackController';
 import { ZoomController } from './ZoomController';
@@ -22,7 +21,6 @@ import { PreviewNavigator } from './PreviewNavigator';
 interface MainPreviewProps {
   hasScenes: boolean;
   videoConfig: VideoConfig;
-  totalFrames: number;
   fps: number;
   seekFrame: number;
   canvasWidth: number;
@@ -40,7 +38,6 @@ interface MainPreviewProps {
 export const MainPreview: React.FC<MainPreviewProps> = ({
   hasScenes,
   videoConfig,
-  totalFrames,
   fps,
   seekFrame,
   canvasWidth,
@@ -56,7 +53,7 @@ export const MainPreview: React.FC<MainPreviewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<PlayerRef | null>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
 
   const sceneRange = useMemo(() => {
     const sceneStartFrame = videoConfig.scenes
@@ -70,6 +67,7 @@ export const MainPreview: React.FC<MainPreviewProps> = ({
       length: currentSceneDuration,
     };
   }, [currentSceneIdx, fps, videoConfig.scenes]);
+  const currentScene = videoConfig.scenes[currentSceneIdx];
 
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
@@ -109,12 +107,46 @@ export const MainPreview: React.FC<MainPreviewProps> = ({
     // 场景切换时重置状态
     resetTransform();
     setIsScenePlaying(false);
-    playerRef.current?.pause();
   }, [currentSceneIdx, resetTransform, setIsScenePlaying]);
 
+  const previewFrameInScene = useMemo(
+    () => Math.round(Math.max(0, Math.min(sceneRange.length - 1, currentFrame - sceneRange.start))),
+    [currentFrame, sceneRange.length, sceneRange.start],
+  );
+
   useEffect(() => {
-    playerRef.current?.seekTo(currentFrame);
-  }, [currentFrame]);
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const updateViewportSize = (width: number, height: number) => {
+      const nextWidth = Math.max(1, Math.round(width));
+      const nextHeight = Math.max(1, Math.round(height));
+      setViewportSize((prev) => {
+        if (prev.width === nextWidth && prev.height === nextHeight) return prev;
+        return { width: nextWidth, height: nextHeight };
+      });
+    };
+
+    const rect = viewport.getBoundingClientRect();
+    updateViewportSize(rect.width, rect.height);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      updateViewportSize(entry.contentRect.width, entry.contentRect.height);
+    });
+
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
+  const canvasScale = useMemo(() => {
+    if (canvasWidth <= 0 || canvasHeight <= 0) return 1;
+    return Math.max(0.01, Math.min(viewportSize.width / canvasWidth, viewportSize.height / canvasHeight));
+  }, [canvasHeight, canvasWidth, viewportSize.height, viewportSize.width]);
+
+  const stageWidth = canvasWidth * canvasScale;
+  const stageHeight = canvasHeight * canvasScale;
 
   return (
     <div ref={containerRef} style={{
@@ -157,26 +189,45 @@ export const MainPreview: React.FC<MainPreviewProps> = ({
               style={{
                 width: '100%',
                 height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 transformOrigin: 'center center',
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
                 transition: isDragging ? 'none' : 'transform 120ms ease-out',
               }}
             >
-              <VideoPreviewPlayer
-                ref={playerRef}
-                videoConfig={videoConfig}
-                durationInFrames={totalFrames}
-                fps={fps}
-                initialFrame={currentFrame}
-                key={`main-preview-frame-${currentSceneIdx}`}
+              <div
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
+                  width: stageWidth,
+                  height: stageHeight,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: '#000',
                 }}
-                controls={false}
-                autoPlay={false}
-              />
+              >
+                <div
+                  style={{
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    transform: `scale(${canvasScale})`,
+                    transformOrigin: 'top left',
+                  }}
+                >
+                  {currentScene ? (
+                    <SceneRenderer
+                      scene={currentScene}
+                      frame={previewFrameInScene}
+                      fps={fps}
+                      config={videoConfig}
+                      isRemotion={false}
+                    />
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
           

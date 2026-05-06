@@ -510,7 +510,6 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
               <MainPreview
                 hasScenes={hasScenes}
                 videoConfig={videoConfig}
-                totalFrames={totalFrames}
                 fps={fps}
                 seekFrame={getSeekFrame(currentSceneIdx)}
                 canvasWidth={activeCanvas.width}
