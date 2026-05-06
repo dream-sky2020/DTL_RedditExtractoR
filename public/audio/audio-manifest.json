@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-19T19:13:33",
+  "updatedAt": "2026-05-06T19:23:34.956545",
   "items": {
     "public/audio/shortAudio/Unassigned/999-social-credit-siren.mp3": {
       "alias": "",
@@ -60,7 +60,7 @@
       "alias": "",
       "tags": [],
       "category": "",
-      "previewVolume": 0.5
+      "previewVolume": 1
     },
     "public/audio/shortAudio/Unassigned/ding-sound-effect_2.mp3": {
       "alias": "",

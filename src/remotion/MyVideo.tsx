@@ -1,32 +1,8 @@
-import React, { useMemo } from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Audio, staticFile, Sequence, Easing } from 'remotion';
+import React from 'react';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Easing } from 'remotion';
 import { ItemAnimationType, VideoConfig, VideoScene, VideoContentItem } from '../types';
 import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
-
-const parseAudioTags = (content: string) => {
-  const tags: { src: string; start: number; volume: number }[] = [];
-  const regex = /\[audio\s+([^\]]+)\]/g;
-  let match;
-  while ((match = regex.exec(content)) !== null) {
-    const attrStr = match[1];
-    const attrs: Record<string, string> = {};
-    const attrRegex = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
-    let attrMatch;
-    while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
-      const key = attrMatch[1].toLowerCase();
-      const value = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
-      attrs[key] = value;
-    }
-    if (attrs.src) {
-      tags.push({
-        src: attrs.src,
-        start: parseFloat(attrs.start || '0'),
-        volume: parseFloat(attrs.volume || '1.0'),
-      });
-    }
-  }
-  return tags;
-};
+import { SceneAudioMixer } from '../audio/SceneAudioMixer';
 
 const DEFAULT_ITEM_ANIMATION_FRAMES = 12;
 
@@ -67,13 +43,13 @@ const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: stri
     stagesRaw.forEach(stage => {
       const colonIdx = stage.indexOf(':');
       if (colonIdx === -1) return;
-      
+
       const timeStr = stage.substring(0, colonIdx).trim();
       const propsStr = stage.substring(colonIdx + 1).trim();
-      
+
       const time = parseFloat(timeStr);
       if (isNaN(time)) return;
-      
+
       const props: Record<string, number> = {};
       propsStr.split(',').forEach(prop => {
         const pColonIdx = prop.indexOf(':');
@@ -82,7 +58,7 @@ const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: stri
         const v = parseFloat(prop.substring(pColonIdx + 1).trim());
         if (!isNaN(v)) props[k] = v;
       });
-      
+
       if (Object.keys(props).length > 0) {
         parsedStages.push({ time, props });
       }
@@ -106,10 +82,10 @@ const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: stri
     // 确保 ad 至少是一个微小的正数，防止 timeline 全是 0
     const safeAd = Math.max(ad, 0.001);
     const timeline = uniqueStages.map(s => s.time * safeAd);
-    
+
     // 关键修复：检查 timeline 是否严格递增
     for (let i = 1; i < timeline.length; i++) {
-      if (timeline[i] <= timeline[i-1]) {
+      if (timeline[i] <= timeline[i - 1]) {
         // 如果不是严格递增，说明输入数据有问题，直接跳过动画防止崩溃
         return;
       }
@@ -122,14 +98,14 @@ const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: stri
       // 为每个属性构建完整的值序列，如果某个阶段缺失该属性，则沿用上一个值
       const values: number[] = [];
       let firstVal: number | null = null;
-      
+
       for (const s of uniqueStages) {
         if (s.props[key] !== undefined) {
           firstVal = s.props[key];
           break;
         }
       }
-      
+
       if (firstVal === null) return;
 
       let lastVal = firstVal;
@@ -199,13 +175,13 @@ interface SceneItemProps {
   defaultItemBackgroundColor?: string;
   quoteBackgroundColor?: string;
   quoteBorderColor?: string;
-  isRemotion?: boolean; // 新增：是否在 Remotion 环境下
+  isRemotion?: boolean;
 }
 
-const SceneItem: React.FC<SceneItemProps> = ({ 
-  item, 
-  sceneDuration, 
-  relativeFrame, 
+const SceneItem: React.FC<SceneItemProps> = ({
+  item,
+  sceneDuration,
+  relativeFrame,
   fps,
   quoteFontSize,
   maxQuoteDepth,
@@ -213,10 +189,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
   defaultItemBackgroundColor,
   quoteBackgroundColor,
   quoteBorderColor,
-  isRemotion = false,
+  isRemotion: _isRemotion = false,
 }) => {
-  const audioTags = useMemo(() => parseAudioTags(item.content), [item.content]);
-
   const enterSec = Math.min(Math.max(item.enterAt ?? 0, 0), sceneDuration);
   const exitSec = Math.min(
     Math.max(item.exitAt ?? sceneDuration, enterSec),
@@ -277,7 +251,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
   } else if (item.animateFrom && item.animateTo && item.animateStart !== undefined) {
     const ad = item.animateDuration || 1;
     const ae = item.animateEasing || 'ease-out';
-    
+
     const fromStyles = parseStyle(item.animateFrom);
     const toStyles = parseStyle(item.animateTo);
     // 使用相对于 Item 进入的时间
@@ -294,18 +268,18 @@ const SceneItem: React.FC<SceneItemProps> = ({
       const fv = fromStyles[key];
       const tv = toStyles[key];
       if (fv === undefined || tv === undefined) return;
-      
+
       const fn = parseFloat(fv);
       const tn = parseFloat(tv);
       if (!isNaN(fn) && !isNaN(tn)) {
         const val = interpolate(progress, [0, 1], [fn, tn]);
         let unit = String(fv).replace(/[0-9.-]/g, '') || String(tv).replace(/[0-9.-]/g, '');
-        
+
         // 针对位移属性，如果没有单位则默认为 px
         if (!unit && (key === 'top' || key === 'left')) {
           unit = 'px';
         }
-        
+
         (itemAnimateStyle as any)[key] = `${val}${unit}`;
       } else {
         (itemAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
@@ -332,35 +306,20 @@ const SceneItem: React.FC<SceneItemProps> = ({
         ...itemAnimateStyle,
       }}
     >
-      {/* 只有在 Remotion 环境下才渲染音频序列，避免在普通 React 环境下崩溃 */}
-      {isRemotion && audioTags.map((tag, tagIdx) => {
-        const audioStartFrame = enterFrame + Math.floor(tag.start * fps);
-        return (
-          <Sequence
-            key={`${item.id}-audio-${tagIdx}`}
-            from={audioStartFrame}
-          >
-            <Audio
-              src={staticFile(`audio/shortAudio/Unassigned/${tag.src}`)}
-              volume={tag.volume}
-            />
-          </Sequence>
-        );
-      })}
       <div style={{ padding: '8px 4px' }}>
-          <ScriptContentRenderer
-            content={item.content}
-            author={item.author}
-            hideAudio={true}
-            showMediaControls={false}
-            playbackFrame={Math.max(0, relativeFrame - enterFrame)}
-            fps={fps}
-            defaultQuoteFontSize={quoteFontSize}
-            maxQuoteDepth={maxQuoteDepth}
-            defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-            defaultBackgroundColor={quoteBackgroundColor || item.backgroundColor || defaultItemBackgroundColor}
-            defaultBorderColor={quoteBorderColor}
-          />
+        <ScriptContentRenderer
+          content={item.content}
+          author={item.author}
+          hideAudio={true}
+          showMediaControls={false}
+          playbackFrame={Math.max(0, relativeFrame - enterFrame)}
+          fps={fps}
+          defaultQuoteFontSize={quoteFontSize}
+          maxQuoteDepth={maxQuoteDepth}
+          defaultQuoteMaxLimit={defaultQuoteMaxLimit}
+          defaultBackgroundColor={quoteBackgroundColor || item.backgroundColor || defaultItemBackgroundColor}
+          defaultBorderColor={quoteBorderColor}
+        />
       </div>
     </div>
   );
@@ -371,7 +330,7 @@ export interface SceneRendererProps {
   frame: number;
   fps: number;
   config: Partial<VideoConfig>;
-  isRemotion?: boolean; // 新增
+  isRemotion?: boolean;
 }
 
 /**
@@ -410,7 +369,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   } else if (scene.animateFrom && scene.animateTo && scene.animateStart !== undefined) {
     const ad = scene.animateDuration || 1;
     const ae = scene.animateEasing || 'ease-out';
-    
+
     const fromStyles = parseStyle(scene.animateFrom);
     const toStyles = parseStyle(scene.animateTo);
     const progress = interpolate(
@@ -425,7 +384,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
       const fv = fromStyles[key];
       const tv = toStyles[key];
       if (fv === undefined || tv === undefined) return;
-      
+
       const fn = parseFloat(fv);
       const tn = parseFloat(tv);
       if (!isNaN(fn) && !isNaN(tn)) {
@@ -457,9 +416,9 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         fontFamily: 'Inter, -apple-system, sans-serif',
       }}
     >
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
         height: '100%',
         position: 'relative',
         transform: sceneTransforms.length > 0 ? sceneTransforms.join(' ') : undefined,
@@ -467,10 +426,10 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
       }}>
         {hasSticky ? (
           <>
-            <div style={{ 
-              flex: stickyProportion, 
-              display: 'flex', 
-              flexDirection: 'column', 
+            <div style={{
+              flex: stickyProportion,
+              display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'flex-end',
               gap: scene.itemSpacing ?? 12,
               padding: '4px 8px',
@@ -509,10 +468,10 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                 isRemotion={isRemotion}
               />
             </div>
-            <div style={{ 
-              flex: 1 - stickyProportion, 
-              display: 'flex', 
-              flexDirection: 'column', 
+            <div style={{
+              flex: 1 - stickyProportion,
+              display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'flex-start',
               gap: scene.itemSpacing ?? 12,
               padding: '4px 8px',
@@ -574,6 +533,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
 
 export interface MyVideoProps extends VideoConfig {
   focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
+  disableAudio?: boolean;
 }
 
 export const MyVideo: React.FC<MyVideoProps> = (props) => {
@@ -607,13 +567,21 @@ export const MyVideo: React.FC<MyVideoProps> = (props) => {
   if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
 
   return (
-    <SceneRenderer 
-      scene={activeScene} 
-      frame={relativeFrame} 
-      fps={fps} 
-      config={props} 
-      isRemotion={true}
-    />
+    <AbsoluteFill>
+      {!props.disableAudio && (
+        <SceneAudioMixer
+          scenes={scenes}
+          fps={fps}
+          focusedSceneId={props.focusedSceneId}
+        />
+      )}
+      <SceneRenderer
+        scene={activeScene}
+        frame={relativeFrame}
+        fps={fps}
+        config={props}
+      />
+    </AbsoluteFill>
   );
 };
 

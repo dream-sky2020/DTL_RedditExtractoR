@@ -5,6 +5,7 @@ import subprocess
 import requests
 import re
 import hashlib
+import sys
 from datetime import datetime
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -141,11 +142,13 @@ def run_worker():
             # 3. 预处理资源
             video_config = task.get('config', {})
             process_config_urls(video_config)
+            render_config = dict(video_config)
+            render_config['disableAudio'] = True
             
             # 写入临时的 video-config.json 供 render.js 使用
             temp_config_path = os.path.join(PROJECT_ROOT, f"video-config-{task_id}.json")
             with open(temp_config_path, 'w', encoding='utf-8') as f:
-                json.dump(video_config, f, ensure_ascii=False, indent=2)
+                json.dump(render_config, f, ensure_ascii=False, indent=2)
             
             # 4. 调用渲染脚本
             script_path = os.path.join(PROJECT_ROOT, 'scripts', 'render.js')
@@ -160,9 +163,11 @@ def run_worker():
             os.makedirs(os.path.join(PROJECT_ROOT, 'out'), exist_ok=True)
             output_filename = f"video-{task_id}.mp4"
             output_path = os.path.join(PROJECT_ROOT, 'out', output_filename)
+            silent_output_filename = f"video-{task_id}.silent.mp4"
+            silent_output_path = os.path.join(PROJECT_ROOT, 'out', silent_output_filename)
             
             process = subprocess.Popen(
-                ['node', script_path, f'--config=video-config-{task_id}.json', f'--output=out/{output_filename}'],
+                ['node', script_path, f'--config=video-config-{task_id}.json', f'--output=out/{silent_output_filename}'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=False,
@@ -204,6 +209,44 @@ def run_worker():
                         update_task_file(task_id, {"progress": progress})
             
             process.wait()
+
+            mix_returncode = 0
+            if process.returncode == 0 and os.path.exists(running_path):
+                update_task_file(task_id, {
+                    "progress": {"percent": 96, "task": "正在合成音频轨道...", "detail": "FFmpeg audio mixer"}
+                })
+
+                audio_mixer_path = os.path.join(PROJECT_ROOT, 'scripts', 'audio_mixer.py')
+                mix_process = subprocess.Popen(
+                    [
+                        sys.executable,
+                        audio_mixer_path,
+                        '--config', temp_config_path,
+                        '--video', silent_output_path,
+                        '--output', output_path,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    shell=False,
+                    env=env,
+                    bufsize=0,
+                    cwd=PROJECT_ROOT
+                )
+
+                while True:
+                    line = mix_process.stdout.readline()
+                    if not line and mix_process.poll() is not None:
+                        break
+                    if line:
+                        text = line.decode('utf-8', errors='replace').strip()
+                        if text:
+                            print(text)
+                            update_task_file(task_id, {
+                                "progress": {"percent": 98, "task": "正在封装最终 MP4...", "detail": text}
+                            })
+
+                mix_process.wait()
+                mix_returncode = mix_process.returncode
             
             # 5. 处理结果
             # 如果任务还在 running 目录（没被取消）
@@ -213,14 +256,14 @@ def run_worker():
                 
                 final_task['endedAt'] = datetime.now().isoformat()
                 
-                if process.returncode == 0:
+                if process.returncode == 0 and mix_returncode == 0:
                     final_task['status'] = 'success'
                     final_task['progress'] = {"percent": 100, "task": "渲染成功", "detail": ""}
                     final_task['outputPath'] = os.path.abspath(output_path)
                     target_dir = 'success'
                 else:
                     final_task['status'] = 'error'
-                    final_task['message'] = f"渲染失败，错误码: {process.returncode}"
+                    final_task['message'] = f"渲染失败，错误码: render={process.returncode}, audio={mix_returncode}"
                     target_dir = 'error'
                 
                 # 移动到最终目录
@@ -233,6 +276,8 @@ def run_worker():
             # 清理临时配置文件
             if os.path.exists(temp_config_path):
                 os.remove(temp_config_path)
+            if os.path.exists(silent_output_path):
+                os.remove(silent_output_path)
                 
         except Exception as e:
             print(f"🔥 处理任务 {task_id} 时发生异常: {e}")

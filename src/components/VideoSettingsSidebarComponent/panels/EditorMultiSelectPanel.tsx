@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Space, Typography, Divider, InputNumber, Select, Tooltip } from 'antd';
+import { Button, Space, Typography, Divider, InputNumber, Select, Tooltip, Input } from 'antd';
 import {
   DownOutlined,
   UpOutlined,
@@ -62,6 +62,8 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   const [offsetY, setOffsetY] = useState<number>(0);
   const [stickyItemIndex, setStickyItemIndex] = useState<number>(1);
   const [stickyValue, setStickyValue] = useState<number | boolean>(0.5);
+  const [insertTextItemIndex, setInsertTextItemIndex] = useState<number>(1);
+  const [insertTextValue, setInsertTextValue] = useState<string>('');
 
   const { mergeScenes } = useSceneMerge({
     selectedSceneIds,
@@ -93,7 +95,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
       const newItems = scene.items.map(item => {
         let newContent = item.content;
-        
+
         // 循环移除最内层的 quote，直到没有 quote 为止
         // [quote=... id=... #... | ...] ... [/quote]
         const innermostQuoteRegex = /\[quote=[^\]]*?\]((?:(?!\[quote=)[\s\S])*?)\[\/quote\]/g;
@@ -189,7 +191,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     // 1. 获取选中场景的原始数据（按在配置中的顺序）
     const selectedScenes = draftConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
-    
+
     // 2. 提取每个场景的“消息块”（假设每个场景的 items 作为一个整体消息）
     const messageBlocks = selectedScenes.map(s => s.items);
 
@@ -220,6 +222,47 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     toast.success(`聊天流处理完成（${direction === 'top' ? '最新在上' : '最新在下'}，K=${historyLimit}）`);
+  };
+
+  const handleBatchInsertTextToItem = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const textToInsert = insertTextValue;
+    if (!textToInsert) {
+      toast.warning('请先输入要插入的文本');
+      return;
+    }
+
+    let affectedSceneCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const items = [...scene.items];
+      let targetIdx = -1;
+      if (insertTextItemIndex > 0) {
+        targetIdx = insertTextItemIndex - 1; // 1-based to 0-based
+      } else if (insertTextItemIndex < 0) {
+        targetIdx = items.length + insertTextItemIndex; // -1 is last
+      }
+
+      if (targetIdx >= 0 && targetIdx < items.length) {
+        const targetItem = items[targetIdx];
+        items[targetIdx] = {
+          ...targetItem,
+          content: `${targetItem.content}${textToInsert}`,
+        };
+        affectedSceneCount += 1;
+      }
+
+      return { ...scene, items };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedSceneCount > 0) {
+      toast.success(`已在 ${affectedSceneCount} 个场景的指定 item 末尾插入文本`);
+      return;
+    }
+    toast.warning('未找到可插入的目标 item，请检查索引');
   };
 
   return (
@@ -434,6 +477,38 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     </Button>
                   </div>
 
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>插入项:</Text>
+                    <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
+                      <InputNumber
+                        size="small"
+                        placeholder="索引"
+                        value={insertTextItemIndex}
+                        onChange={(val) => setInsertTextItemIndex(val || 1)}
+                        style={{ width: 55 }}
+                      />
+                    </Tooltip>
+                    <Input
+                      size="small"
+                      placeholder="输入要插入的文本"
+                      value={insertTextValue}
+                      onChange={(e) => setInsertTextValue(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      size="small"
+                      disabled={selectedSceneIds.length === 0 || !insertTextValue}
+                      onClick={handleBatchInsertTextToItem}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 && insertTextValue ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 && insertTextValue ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 && insertTextValue ? '#fa8c16' : 'var(--brand-border)',
+                      }}
+                    >
+                      插入文本
+                    </Button>
+                  </div>
+
                   <Divider style={{ margin: '8px 0' }} />
 
                   <div>
@@ -443,7 +518,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                         <HistoryOutlined style={{ fontSize: 12, color: 'var(--text-secondary)' }} />
                       </Tooltip>
                     </div>
-                    
+
                     <Space direction="vertical" style={{ width: '100%' }} size="small">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>最大历史数 K:</Text>
@@ -458,7 +533,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                           ))}
                         </Select>
                       </div>
-                      
+
                       <Button
                         block
                         size="small"
@@ -473,7 +548,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                       >
                         聊天流格式处理（最新在上）
                       </Button>
-                      
+
                       <Button
                         block
                         size="small"
@@ -559,7 +634,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                 </Space>
               </div>
 
-              <SceneReorderSection 
+              <SceneReorderSection
                 selectedSceneIds={selectedSceneIds}
                 totalScenes={draftConfig.scenes.length}
               />

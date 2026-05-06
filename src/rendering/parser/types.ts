@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'audio' | 'row' | 'depthLimit' | 'animate';
+export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'row' | 'depthLimit' | 'animate';
 
 export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic';
 
@@ -60,13 +60,6 @@ export interface StyleNode extends BaseNode {
   children: ASTNode[];
 }
 
-export interface AudioNode extends BaseNode {
-  type: 'audio';
-  src: string;
-  volume: number;
-  start: number;
-}
-
 export interface RowNode extends BaseNode {
   type: 'row';
   style: React.CSSProperties;
@@ -80,6 +73,5 @@ export type ASTNode =
   | ImageNode 
   | GalleryNode 
   | StyleNode 
-  | AudioNode 
   | RowNode
   | AnimateNode;

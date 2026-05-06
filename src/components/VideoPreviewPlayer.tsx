@@ -73,6 +73,7 @@ export const VideoPreviewPlayer = React.forwardRef<PlayerRef, VideoPreviewPlayer
       controls={controls}
       loop={loop}
       autoPlay={autoPlay}
+      numberOfSharedAudioTags={32}
       key={playerKey}
     />
   );

@@ -129,16 +129,6 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     hasContent: true,
     contentLabel: '样式文本',
   },
-  'audio': {
-    tagName: 'audio',
-    syntax: 'square',
-    properties: [
-      { name: 'src', label: '音频地址', type: 'string' },
-      { name: 'volume', label: '音量', type: 'number', min: 0, max: 1, step: 0.1, defaultValue: 1.0 },
-      { name: 'start', label: '开始时间(s)', type: 'number', min: 0, step: 0.1, defaultValue: 0 },
-    ],
-    hasContent: false,
-  },
   'row': {
     tagName: 'row',
     syntax: 'square',

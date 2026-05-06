@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { Typography, Tooltip } from 'antd';
-import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { Typography } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { interpolate, Easing } from 'remotion';
-import { toast } from '../../components/Toast';
 import { ASTNode, MediaItem, EasingType } from './types';
 
 const { Text } = Typography;
@@ -15,30 +13,6 @@ export const PlaybackContext = createContext<{
 }>({});
 
 export const usePlaybackContext = () => useContext(PlaybackContext);
-
-// --- Constants ---
-const AUDIO_ITEMS_STORAGE_KEY = 'reddit-extractor.audio-items.v1';
-
-// --- Utilities ---
-const refreshAudioCache = async () => {
-  try {
-    const response = await axios.get('http://localhost:5000/list_audio');
-    if (response.data.success) {
-      const files: string[] = response.data.files;
-      const items = files.map((path: string) => {
-        const fileName = path.split('/').pop() || path;
-        const name = fileName.replace(/\.[^/.]+$/, '');
-        const url = '/' + path.replace(/^public\//, '');
-        return { name, path, url };
-      });
-      localStorage.setItem(AUDIO_ITEMS_STORAGE_KEY, JSON.stringify(items));
-      return items;
-    }
-  } catch (err) {
-    console.error('自动刷新音频缓存失败:', err);
-  }
-  return null;
-};
 
 const resolvePlaybackIndex = (items: MediaItem[], playbackSeconds: number): number => {
   if (items.length <= 1) return 0;
@@ -364,7 +338,7 @@ export interface RenderOptions {
 
 export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.ReactNode => {
   const {
-    hideAudio = false,
+    hideAudio: _hideAudio = false,
     showMediaControls = true,
     defaultQuoteFontSize = 12,
     defaultBackgroundColor,
@@ -443,42 +417,6 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
           <span key={index} style={node.style}>
             {renderAST(node.children, options)}
           </span>
-        );
-
-      case 'audio':
-        if (hideAudio) return null;
-        return (
-          <Tooltip key={index} title={`音频: ${node.src} (Vol: ${node.volume}, Start: ${node.start}s)`}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                backgroundColor: 'rgba(24, 144, 255, 0.1)',
-                border: '1px solid #1890ff',
-                borderRadius: '4px',
-                padding: '0 4px',
-                margin: '0 2px',
-                cursor: 'pointer',
-                color: '#1890ff',
-                fontSize: '12px'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                const audioUrl = `/audio/shortAudio/Unassigned/${node.src}`;
-                const audio = new Audio(audioUrl);
-                audio.volume = Math.max(0, Math.min(1, node.volume));
-                audio.play().catch(() => {
-                  new Audio(`/audio/${node.src}`).play().catch(() => {
-                    toast.error(`音频文件不存在: ${node.src}`);
-                    refreshAudioCache();
-                  });
-                });
-              }}
-            >
-              <SoundOutlined style={{ marginRight: 4 }} />
-              {node.src}
-            </span>
-          </Tooltip>
         );
 
       case 'row':

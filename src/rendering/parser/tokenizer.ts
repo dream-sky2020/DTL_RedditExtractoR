@@ -1,5 +1,5 @@
 import React from 'react';
-import { ASTNode, TextNode, QuoteNode, ImageNode, GalleryNode, StyleNode, AudioNode, RowNode, DepthLimitNode, AnimateNode, EasingType } from './types';
+import { ASTNode, QuoteNode, ImageNode, GalleryNode, StyleNode, RowNode, DepthLimitNode, AnimateNode, EasingType } from './types';
 import { 
   QUOTE_OPEN_TAG_RE, 
   QUOTE_OPEN_TAG_GLOBAL_RE,
@@ -13,6 +13,26 @@ export interface TokenizerOptions {
   maxQuoteDepth?: number;
   authorPath?: string[];
 }
+
+const IGNORE_TAGS = ['audio'] as const;
+
+const findNextIgnoredTag = (subText: string, currentPos: number): number => {
+  let nearest = -1;
+  for (const tag of IGNORE_TAGS) {
+    const match = subText.match(new RegExp(`\\[${tag}[^\\]]*\\]`));
+    if (!match || match.index == null) continue;
+    const idx = currentPos + match.index;
+    if (nearest === -1 || idx < nearest) {
+      nearest = idx;
+    }
+  }
+  return nearest;
+};
+
+const matchIgnoredTagAt = (text: string, start: number): RegExpMatchArray | null => {
+  const pattern = `^\\[(?:${IGNORE_TAGS.join('|')})[^\\]]*\\]`;
+  return text.substring(start).match(new RegExp(pattern));
+};
 
 export const tokenize = (
   text: string, 
@@ -54,8 +74,7 @@ export const tokenize = (
     const nextGalleryMatch = subText.match(/\[gallery[^\]]*\]/);
     const nextGallery = nextGalleryMatch && nextGalleryMatch.index != null ? currentPos + nextGalleryMatch.index : -1;
     
-    const nextAudioMatch = subText.match(/\[audio[^\]]*\]/);
-    const nextAudio = nextAudioMatch && nextAudioMatch.index != null ? currentPos + nextAudioMatch.index : -1;
+    const nextIgnoredTag = findNextIgnoredTag(subText, currentPos);
     
     const nextRowMatch = subText.match(/\[row[^\]]*\]/);
     const nextRow = nextRowMatch && nextRowMatch.index != null ? currentPos + nextRowMatch.index : -1;
@@ -68,14 +87,14 @@ export const tokenize = (
 
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'animate' | 'textTag' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'audio' | 'row' | 'animate' | 'textTag' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
     if (nextGallery !== -1) indices.push({ idx: nextGallery, type: 'gallery' });
-    if (nextAudio !== -1) indices.push({ idx: nextAudio, type: 'audio' });
+    if (nextIgnoredTag !== -1) indices.push({ idx: nextIgnoredTag, type: 'ignoredTag' });
     if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
     if (nextAnimate !== -1) indices.push({ idx: nextAnimate, type: 'animate' });
     if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
@@ -239,18 +258,12 @@ export const tokenize = (
           currentPos = startTagEnd;
         }
       }
-    } else if (type === 'audio') {
-      const match = text.substring(foundIdx).match(/^\[audio([^\]]*)\]/);
+    } else if (type === 'ignoredTag') {
+      const match = matchIgnoredTagAt(text, foundIdx);
       if (match) {
-        const attrStr = match[1];
-        const attrs = parseInlineAttrs(attrStr);
-        nodes.push({
-          type: 'audio',
-          src: attrs.src || '',
-          volume: parseFloat(attrs.volume || '1.0'),
-          start: parseFloat(attrs.start || '0')
-        });
         currentPos = foundIdx + match[0].length;
+      } else {
+        currentPos = foundIdx + 1;
       }
     } else if (type === 'row') {
       const match = text.substring(foundIdx).match(/^\[row([^\]]*)\]/);
