@@ -13,6 +13,11 @@ import { AudioItem } from '@/types';
 
 const { Title: AntTitle, Text: AntText } = Typography;
 
+const formatAudioTagTime = (seconds: number) => {
+  const rounded = Math.round(seconds * 1000) / 1000;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+};
+
 export const AudioPreviewPage: React.FC = () => {
   const {
     audioItems,
@@ -95,15 +100,25 @@ export const AudioPreviewPage: React.FC = () => {
   }, []);
 
   const copyAudioTag = useCallback((item: AudioItem) => {
+    const duration = durationMap[item.path];
+    if (duration === undefined) {
+      toast.warning('音频时长仍在读取中，请稍后再复制');
+      return;
+    }
+    if (duration === null || !Number.isFinite(duration) || duration <= 0) {
+      toast.error('无法获取音频时长，不能生成准确的结束时间');
+      return;
+    }
+
     const fileName = item.path.split('/').pop() || '';
-    const tag = `[audio src="${fileName}" start="0" volume="${item.previewVolume.toFixed(2)}"]`;
+    const tag = `[audio src="${fileName}" start="0" end="${formatAudioTagTime(duration)}" volume="${item.previewVolume.toFixed(2)}"]`;
     navigator.clipboard.writeText(tag).then(() => {
       toast.success('标签已复制', { description: tag });
     }).catch(err => {
       console.error('复制失败:', err);
       toast.error('复制失败，请重试');
     });
-  }, []);
+  }, [durationMap]);
 
   const commitRename = async (path: string, nextAlias: string) => {
     const target = audioItems.find(item => item.path === path);
