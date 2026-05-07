@@ -68,15 +68,18 @@ const tagHighlightField = StateField.define<DecorationSet>({
         const builder = new RangeSetBuilder<Decoration>();
         const { start, headerLen, footerLen, end } = e.value;
         
-        // 开始标签背景
+        // 整个标签范围给弱提示，首尾标签给强提示，避免误改外层标签。
+        builder.add(start, end, Decoration.mark({
+          attributes: { style: 'background-color: rgba(250, 173, 20, 0.14);' }
+        }));
+
         builder.add(start, start + headerLen, Decoration.mark({
-          attributes: { style: 'background-color: #f6ffed; border-radius: 2px;' }
+          attributes: { style: 'background-color: #ffd666; color: #1f1f1f; border-radius: 3px; box-shadow: inset 0 0 0 1px #fa8c16;' }
         }));
         
-        // 结束标签背景
         if (footerLen > 0) {
           builder.add(end - footerLen, end, Decoration.mark({
-            attributes: { style: 'background-color: #f6ffed; border-radius: 2px;' }
+            attributes: { style: 'background-color: #ffd666; color: #1f1f1f; border-radius: 3px; box-shadow: inset 0 0 0 1px #fa8c16;' }
           }));
         }
         return builder.finish();
@@ -98,92 +101,120 @@ export const DslEditor: React.FC<DslEditorProps> = ({
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [detectedTag, setDetectedTag] = useState<DetectedTag | null>(null);
 
-  // 寻找光标所在的标签 (保持逻辑一致)
-  const findTagAtCursor = useCallback((text: string, cursorOffset: number): DetectedTag | null => {
-    if (!text) return null;
-    let openPos = -1;
-    let syntax: 'angle' | 'square' | null = null;
+  const findHeaderEnd = (text: string, openPos: number, syntax: 'angle' | 'square') => {
+    const closeChar = syntax === 'angle' ? '>' : ']';
+    let quote: '"' | "'" | null = null;
 
-    for (let i = cursorOffset; i >= 0; i--) {
+    for (let i = openPos + 1; i < text.length; i++) {
+      const char = text[i];
+      if ((char === '"' || char === "'") && text[i - 1] !== '\\') {
+        quote = quote === char ? null : quote || char;
+      } else if (!quote && char === closeChar) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
+  // 寻找光标所在的标签。嵌套标签里优先命中最内层，也支持指定要找的祖先标签类型。
+  const findTagAtCursor = useCallback((text: string, cursorOffset: number, preferredTagName?: string): DetectedTag | null => {
+    if (!text) return null;
+    const normalizedPreferredTagName = preferredTagName?.toLowerCase();
+    const candidates: DetectedTag[] = [];
+
+    for (let i = 0; i <= cursorOffset; i++) {
+      let openPos = -1;
+      let syntax: 'angle' | 'square' | null = null;
+
       if (text[i] === '[' && (i === 0 || text[i-1] !== '\\')) {
         if (text[i+1] === '/') continue;
         openPos = i;
         syntax = 'square';
-        break;
-      }
-      if (text[i] === '<' && (i === 0 || text[i-1] !== '\\')) {
+      } else if (text[i] === '<' && (i === 0 || text[i-1] !== '\\')) {
         if (text[i+1] === '/') continue;
         openPos = i;
         syntax = 'angle';
-        break;
-      }
-    }
-
-    if (openPos === -1 || !syntax) return null;
-
-    const remaining = text.substring(openPos);
-    let match: RegExpMatchArray | null = null;
-    if (syntax === 'square') {
-      match = remaining.match(/^\[([a-zA-Z0-9]+)([^\]]*)\]/);
-    } else {
-      match = remaining.match(/^<([a-zA-Z0-9]+)([^>]*?)(\/?>)/);
-    }
-
-    if (!match) return null;
-    const tagName = match[1];
-    const attrStr = match[2];
-    const fullTagHeader = match[0];
-
-    let endPos = -1;
-    let content = '';
-    let footerLength = 0;
-    const startTagEnd = openPos + fullTagHeader.length;
-
-    if (syntax === 'square') {
-      const metadata = getMetadataForTag(tagName);
-      if (metadata && !metadata.hasContent) {
-        endPos = startTagEnd;
       } else {
-        const closeTag = `[/${tagName}]`;
-        const closeIdx = text.indexOf(closeTag, startTagEnd);
-        if (closeIdx !== -1) {
-          endPos = closeIdx + closeTag.length;
-          content = text.substring(startTagEnd, closeIdx);
-          footerLength = closeTag.length;
-        } else {
+        continue;
+      }
+
+      if (openPos === -1 || !syntax) continue;
+
+      const remaining = text.substring(openPos);
+      let tagMatch: RegExpMatchArray | null = null;
+      if (syntax === 'square') {
+        tagMatch = remaining.match(/^\[([a-zA-Z0-9]+)\b/);
+      } else {
+        tagMatch = remaining.match(/^<([a-zA-Z0-9]+)\b/);
+      }
+
+      if (!tagMatch) continue;
+      const headerEnd = findHeaderEnd(text, openPos, syntax);
+      if (headerEnd === -1) continue;
+
+      const tagName = tagMatch[1];
+      const fullTagHeader = text.substring(openPos, headerEnd + 1);
+      const attrStr = fullTagHeader.slice(tagName.length + 1, -1).replace(/\/\s*$/, '');
+
+      let endPos = -1;
+      let content = '';
+      let footerLength = 0;
+      const startTagEnd = openPos + fullTagHeader.length;
+
+      if (syntax === 'square') {
+        const metadata = getMetadataForTag(tagName);
+        if (metadata && !metadata.hasContent) {
           endPos = startTagEnd;
+        } else {
+          const closeTag = `[/${tagName}]`;
+          const closeIdx = text.indexOf(closeTag, startTagEnd);
+          if (closeIdx !== -1) {
+            endPos = closeIdx + closeTag.length;
+            content = text.substring(startTagEnd, closeIdx);
+            footerLength = closeTag.length;
+          } else {
+            endPos = startTagEnd;
+          }
+        }
+      } else {
+        if (fullTagHeader.endsWith('/>')) {
+          endPos = startTagEnd;
+        } else {
+          const closeTag = `</${tagName}>`;
+          const closeIdx = text.indexOf(closeTag, startTagEnd);
+          if (closeIdx !== -1) {
+            endPos = closeIdx + closeTag.length;
+            content = text.substring(startTagEnd, closeIdx);
+            footerLength = closeTag.length;
+          } else {
+            endPos = startTagEnd;
+          }
         }
       }
-    } else {
-      if (fullTagHeader.endsWith('/>')) {
-        endPos = startTagEnd;
-      } else {
-        const closeTag = `</${tagName}>`;
-        const closeIdx = text.indexOf(closeTag, startTagEnd);
-        if (closeIdx !== -1) {
-          endPos = closeIdx + closeTag.length;
-          content = text.substring(startTagEnd, closeIdx);
-          footerLength = closeTag.length;
-        } else {
-          endPos = startTagEnd;
-        }
+
+      if (cursorOffset >= openPos && cursorOffset <= endPos) {
+        candidates.push({
+          tagName,
+          fullText: text.substring(openPos, endPos),
+          start: openPos,
+          end: endPos,
+          attrStr,
+          content,
+          syntax,
+          headerLength: fullTagHeader.length,
+          footerLength
+        });
       }
     }
 
-    if (cursorOffset >= openPos && cursorOffset <= endPos) {
-      return {
-        tagName,
-        fullText: text.substring(openPos, endPos),
-        start: openPos,
-        end: endPos,
-        attrStr,
-        content,
-        syntax,
-        headerLength: fullTagHeader.length,
-        footerLength
-      };
-    }
-    return null;
+    const matchingCandidates = normalizedPreferredTagName
+      ? candidates.filter(candidate => candidate.tagName.toLowerCase() === normalizedPreferredTagName)
+      : candidates;
+
+    return matchingCandidates.reduce<DetectedTag | null>((innermost, candidate) => (
+      !innermost || candidate.start > innermost.start ? candidate : innermost
+    ), null);
   }, []);
 
   // 更新检测到的标签并应用高亮
@@ -256,20 +287,39 @@ export const DslEditor: React.FC<DslEditorProps> = ({
     const view = editorRef.current?.view;
     if (!view) return;
 
+    const selection = view.state.selection.main;
+    const doc = view.state.doc.toString();
+    const currentTag = findTagAtCursor(doc, selection.head, forcedTagName);
+
+    setDetectedTag(currentTag);
+    const rangeKey = currentTag ? `${currentTag.start}-${currentTag.end}` : "none";
+    if (rangeKey !== lastHighlightedRange.current) {
+      lastHighlightedRange.current = rangeKey;
+      view.dispatch({
+        effects: setTagHighlight.of(currentTag ? {
+          start: currentTag.start,
+          headerLen: currentTag.headerLength,
+          footerLen: currentTag.footerLength,
+          end: currentTag.end
+        } : null)
+      });
+    }
+
     let tagName = forcedTagName || '';
     let initialValues: Record<string, any> = {};
     let initialContent = '';
+    let helperTargetTag: DetectedTag | null = null;
 
-    if (!tagName && detectedTag) {
-      tagName = detectedTag.tagName;
-      initialContent = detectedTag.content;
-      initialValues = detectedTag.syntax === 'square' 
-        ? parseInlineAttrs(detectedTag.attrStr) 
-        : parseAttrs(detectedTag.attrStr);
+    if (currentTag && (!tagName || currentTag.tagName.toLowerCase() === tagName.toLowerCase())) {
+      helperTargetTag = currentTag;
+      tagName = currentTag.tagName;
+      initialContent = currentTag.content;
+      initialValues = currentTag.syntax === 'square' 
+        ? parseInlineAttrs(currentTag.attrStr) 
+        : parseAttrs(currentTag.attrStr);
     }
 
     if (!tagName) {
-      const selection = view.state.selection.main;
       const selectedText = view.state.doc.sliceString(selection.from, selection.to).trim();
       
       const squareMatch = selectedText.match(/^\[([a-zA-Z0-9]+)([^\]]*)\]([\s\S]*?)(?:\[\/\1\])?$/);
@@ -316,9 +366,9 @@ export const DslEditor: React.FC<DslEditorProps> = ({
       onInsert: (dsl) => {
         if (!dsl) return; // 如果没有生成内容（比如未选择标签），则不操作
         // 如果是在识别到的标签上操作，替换整个标签
-        if (detectedTag && !forcedTagName) {
+        if (helperTargetTag) {
           view.dispatch({
-            changes: { from: detectedTag.start, to: detectedTag.end, insert: dsl }
+            changes: { from: helperTargetTag.start, to: helperTargetTag.end, insert: dsl }
           });
         } else {
           insertText(dsl);

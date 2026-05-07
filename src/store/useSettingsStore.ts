@@ -11,12 +11,50 @@ import {
 } from '@/types';
 import { GLOBAL_CONFIG_STORAGE_KEY } from '@/constants/storage';
 
+type PreviewLayoutMode = 'auto' | 'fixed';
+
+interface StudioUiSettings {
+  galleryPage: number;
+  galleryPageSize: number;
+  previewLayoutMode: PreviewLayoutMode;
+  previewMinWidth: number;
+  frameOffset: number;
+}
+
+interface EditorPaginationSettings {
+  currentPage: number;
+  pageSize: number;
+}
+
+interface MultiSelectUiSettings {
+  historyLimit: number;
+  batchItemSpacing: number;
+  offsetX: number;
+  offsetY: number;
+  stickyItemIndex: number;
+  stickyValue: number | boolean;
+  insertTextItemIndex: number;
+  insertTextValue: string;
+  animationItemIndex: number;
+  animationKeyframes: string;
+}
+
+interface EditorUiSettings {
+  studio: StudioUiSettings;
+  editor: EditorPaginationSettings;
+  multiSelect: MultiSelectUiSettings;
+}
+
 interface SettingsState extends GlobalSettings {
   colorArrangement: ColorArrangementSettings;
+  editorUiSettings: EditorUiSettings;
   
   // Actions
   updateSettings: (settings: Partial<GlobalSettings>) => void;
   setColorArrangement: (settings: Partial<ColorArrangementSettings> | ((prev: ColorArrangementSettings) => ColorArrangementSettings)) => void;
+  setStudioUiSettings: (settings: Partial<StudioUiSettings>) => void;
+  setEditorPaginationSettings: (settings: Partial<EditorPaginationSettings>) => void;
+  setMultiSelectUiSettings: (settings: Partial<MultiSelectUiSettings>) => void;
   
   // Specific Setters (for compatibility with old code if needed)
   setCommentSortMode: (mode: CommentSortMode) => void;
@@ -47,11 +85,38 @@ const DEFAULT_COLOR_ARRANGEMENT: ColorArrangementSettings = {
   seed: 20260402,
 };
 
+const DEFAULT_EDITOR_UI_SETTINGS: EditorUiSettings = {
+  studio: {
+    galleryPage: 1,
+    galleryPageSize: 12,
+    previewLayoutMode: 'auto',
+    previewMinWidth: 280,
+    frameOffset: 15,
+  },
+  editor: {
+    currentPage: 1,
+    pageSize: 10,
+  },
+  multiSelect: {
+    historyLimit: 2,
+    batchItemSpacing: 12,
+    offsetX: 0,
+    offsetY: 0,
+    stickyItemIndex: 1,
+    stickyValue: 0.5,
+    insertTextItemIndex: 1,
+    insertTextValue: '',
+    animationItemIndex: 1,
+    animationKeyframes: '',
+  },
+};
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       ...DEFAULT_GLOBAL_SETTINGS,
       colorArrangement: DEFAULT_COLOR_ARRANGEMENT,
+      editorUiSettings: DEFAULT_EDITOR_UI_SETTINGS,
 
       updateSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
       
@@ -59,6 +124,27 @@ export const useSettingsStore = create<SettingsState>()(
         colorArrangement: typeof newArrangement === 'function' 
           ? (newArrangement as any)(state.colorArrangement)
           : { ...state.colorArrangement, ...newArrangement }
+      })),
+
+      setStudioUiSettings: (newSettings) => set((state) => ({
+        editorUiSettings: {
+          ...state.editorUiSettings,
+          studio: { ...state.editorUiSettings.studio, ...newSettings },
+        },
+      })),
+
+      setEditorPaginationSettings: (newSettings) => set((state) => ({
+        editorUiSettings: {
+          ...state.editorUiSettings,
+          editor: { ...state.editorUiSettings.editor, ...newSettings },
+        },
+      })),
+
+      setMultiSelectUiSettings: (newSettings) => set((state) => ({
+        editorUiSettings: {
+          ...state.editorUiSettings,
+          multiSelect: { ...state.editorUiSettings.multiSelect, ...newSettings },
+        },
       })),
 
       setCommentSortMode: (commentSortMode) => set({ commentSortMode }),

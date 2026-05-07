@@ -3,9 +3,10 @@ import { Card } from 'antd';
 import { BugOutlined } from '@ant-design/icons';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { SceneCard } from '../../../../components/SceneCard';
-import { VideoScene } from '../../../../types';
+import { VideoConfig, VideoScene } from '../../../../types';
 
 interface EditorSectionProps {
+  videoConfig: VideoConfig;
   scene: VideoScene;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -15,6 +16,7 @@ interface EditorSectionProps {
 }
 
 export const EditorSection: React.FC<EditorSectionProps> = ({
+  videoConfig,
   scene,
   isExpanded,
   onToggleExpand,
@@ -33,6 +35,7 @@ export const EditorSection: React.FC<EditorSectionProps> = ({
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef}>
               <SceneCard
+                videoConfig={videoConfig}
                 scene={scene}
                 index={0}
                 isExpanded={isExpanded}

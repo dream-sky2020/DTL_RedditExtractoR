@@ -44,6 +44,8 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
     colorArrangement, setColorArrangement,
+    editorUiSettings,
+    setEditorPaginationSettings,
   } = useSettingsStore();
 
   const {
@@ -135,8 +137,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
 
   const [expandedSceneIds, setExpandedSceneIds] = useState<Record<string, boolean>>({});
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const { currentPage, pageSize } = editorUiSettings.editor;
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
 
@@ -156,6 +157,15 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
   React.useEffect(() => {
     setSelectedSceneIds(prev => prev.filter(id => videoConfig.scenes.some(s => s.id === id)));
   }, [videoConfig.scenes]);
+
+  React.useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(videoConfig.scenes.length / pageSize));
+    const nextPage = Math.min(Math.max(currentPage, 1), maxPage);
+
+    if (nextPage !== currentPage) {
+      setEditorPaginationSettings({ currentPage: nextPage });
+    }
+  }, [currentPage, pageSize, videoConfig.scenes.length, setEditorPaginationSettings]);
 
   // 计算当前分页的数据
   const pagedScenes = videoConfig.scenes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -238,8 +248,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
           replaceScene={replaceScene}
           onDragEnd={onDragEnd}
           onPageChange={(page, size) => {
-            setCurrentPage(page);
-            setPageSize(size || 10);
+            setEditorPaginationSettings({ currentPage: page, pageSize: size || 10 });
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           isMultiSelectMode={isMultiSelectMode}

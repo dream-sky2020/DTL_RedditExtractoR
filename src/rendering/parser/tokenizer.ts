@@ -343,10 +343,9 @@ export const tokenize = (
             str.split(';').forEach(pair => {
               const [key, val] = pair.split(':').map(s => s.trim());
               if (key && val) {
-                if (key === 'x') style.left = isNaN(Number(val)) ? val : `${val}px`;
-                else if (key === 'y') style.top = isNaN(Number(val)) ? val : `${val}px`;
-                else if (key === 'scale') (style as any).scale = val;
-                else if (key === 'opacity') style.opacity = val;
+                if (key === 'x' || key === 'y' || key === 'scale' || key === 'scaleX' || key === 'scaleY' || key === 'rotate') {
+                  (style as any)[key] = val;
+                } else if (key === 'opacity') style.opacity = val;
                 else (style as any)[key] = val;
               }
             });
@@ -357,9 +356,10 @@ export const tokenize = (
             type: 'animate',
             from: parseStyleStr(attrs.from || ''),
             to: parseStyleStr(attrs.to || ''),
+            keyframes: attrs.keyframes || attrs.kf,
             start: parseFloat(attrs.start || '0'),
             duration: parseFloat(attrs.duration || '1'),
-            easing: (attrs.easing || 'ease-out') as EasingType,
+            easing: attrs.easing || 'ease-out',
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
           currentPos = endTagIdx + 10;

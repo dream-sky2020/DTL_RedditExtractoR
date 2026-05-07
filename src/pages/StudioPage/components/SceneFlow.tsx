@@ -80,7 +80,6 @@ export const SceneFlow: React.FC<SceneFlowProps> = ({
                         onUpdateScene={(updates) => onUpdateScene(scene.id, updates)}
                         onRemoveScene={() => onRemoveScene(scene.id)}
                         onPreviewScene={() => setPreviewSceneId(scene.id)}
-                        onPreviewScale={cardScale}
                         onReplaceScene={(nextScene) => replaceScene(scene.id, nextScene)}
                         innerRef={draggableProvided.innerRef}
                         draggableProps={draggableProvided.draggableProps}

@@ -140,6 +140,7 @@ export const parseSceneDsl = (
   const text = rawText.trim();
   const warnings: SceneDslWarning[] = [];
   const sceneMatch = text.match(/^<scene\b([^>]*)>([\s\S]*?)<\/scene>\s*$/i);
+  const shouldUseFallbackFields = !sceneMatch;
 
   const rootAttrsText = sceneMatch?.[1] ?? '';
   const body = sceneMatch?.[2] ?? text;
@@ -186,19 +187,21 @@ export const parseSceneDsl = (
     });
   }
 
-  const title = sceneAttrs.title ?? fallbackScene?.title ?? '';
-  const backgroundColor = sceneAttrs.bg || sceneAttrs.backgroundColor || fallbackScene?.backgroundColor || '';
+  const title = sceneAttrs.title ?? (shouldUseFallbackFields ? fallbackScene?.title : '') ?? '';
+  const backgroundColor = sceneAttrs.bg || sceneAttrs.backgroundColor || (shouldUseFallbackFields ? fallbackScene?.backgroundColor : '') || '';
   
   const animateFrom = sceneAttrs.animateFrom || sceneAttrs.af;
   const animateTo = sceneAttrs.animateTo || sceneAttrs.at;
   const animateStart = parseOptionalSeconds(sceneAttrs.animateStart || sceneAttrs.as);
   const animateDuration = parseOptionalSeconds(sceneAttrs.animateDuration || sceneAttrs.ad);
   const animateEasing = sceneAttrs.animateEasing || sceneAttrs.ae;
-  const offset = sceneAttrs.offset || sceneAttrs.o || fallbackScene?.offset;
-  const keyframes = sceneAttrs.keyframes || sceneAttrs.kf || fallbackScene?.keyframes;
+  const offset = sceneAttrs.offset || sceneAttrs.o || (shouldUseFallbackFields ? fallbackScene?.offset : undefined);
+  const keyframes = sceneAttrs.keyframes || sceneAttrs.kf || (shouldUseFallbackFields ? fallbackScene?.keyframes : undefined);
 
   const itemSpacingRaw = sceneAttrs.itemSpacing || sceneAttrs.is;
-  let itemSpacing = itemSpacingRaw !== undefined ? Number(itemSpacingRaw) : fallbackScene?.itemSpacing;
+  let itemSpacing = itemSpacingRaw !== undefined
+    ? Number(itemSpacingRaw)
+    : shouldUseFallbackFields ? fallbackScene?.itemSpacing : undefined;
   if (itemSpacing !== undefined && !Number.isFinite(itemSpacing)) {
     itemSpacing = undefined;
   }
@@ -266,16 +269,16 @@ export const parseSceneDsl = (
     const parsedExitAnimation = parseOptionalAnimation(itemAttrs.exitAnimation);
     const enterAnimation = parsedEnterAnimation ?? fallbackItem?.enterAnimation;
     const exitAnimation = parsedExitAnimation ?? fallbackItem?.exitAnimation;
-    const itemBackgroundColor = itemAttrs.bg || itemAttrs.backgroundColor || fallbackItem?.backgroundColor || '';
+    const itemBackgroundColor = itemAttrs.bg || itemAttrs.backgroundColor || (shouldUseFallbackFields ? fallbackItem?.backgroundColor : '') || '';
     
     const animateFrom = itemAttrs.animateFrom || itemAttrs.af;
     const animateTo = itemAttrs.animateTo || itemAttrs.at;
     const animateStart = parseOptionalSeconds(itemAttrs.animateStart || itemAttrs.as);
     const animateDuration = parseOptionalSeconds(itemAttrs.animateDuration || itemAttrs.ad);
     const animateEasing = itemAttrs.animateEasing || itemAttrs.ae;
-    const itemOffset = itemAttrs.offset || itemAttrs.o || fallbackItem?.offset;
-    const itemKeyframes = itemAttrs.keyframes || itemAttrs.kf || fallbackItem?.keyframes;
-    let sticky: boolean | number | undefined = fallbackItem?.sticky;
+    const itemOffset = itemAttrs.offset || itemAttrs.o || (shouldUseFallbackFields ? fallbackItem?.offset : undefined);
+    const itemKeyframes = itemAttrs.keyframes || itemAttrs.kf || (shouldUseFallbackFields ? fallbackItem?.keyframes : undefined);
+    let sticky: boolean | number | undefined = shouldUseFallbackFields ? fallbackItem?.sticky : undefined;
     if (itemAttrs.sticky) {
       const num = Number(itemAttrs.sticky);
       if (!isNaN(num)) {

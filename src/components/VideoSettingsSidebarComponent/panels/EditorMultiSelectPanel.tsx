@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Space, Typography, Divider, InputNumber, Select, Tooltip, Input } from 'antd';
 import {
   DownOutlined,
@@ -23,9 +23,23 @@ import { VideoConfig } from '../../../types';
 import { useSceneMerge } from '../../../hooks/useSceneMerge';
 import { SceneReorderSection } from '../sections/SceneReorderSection';
 import { toast } from '@components/Toast';
+import { useSettingsStore } from '@/store';
 
 const { Text } = Typography;
 const { Option } = Select;
+
+/** 1-based 正序 / 负序索引，不允许 0；清空时回到 1；经 0 步进时在 ±1 之间跳过 */
+function applyItemIndexChange(val: number | null, prev: number, set: (n: number) => void) {
+  if (val == null) {
+    set(1);
+    return;
+  }
+  if (val === 0) {
+    set(prev > 0 ? -1 : 1);
+    return;
+  }
+  set(val);
+}
 
 interface EditorMultiSelectPanelProps {
   isMultiSelectMode: boolean;
@@ -56,14 +70,29 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   galleryPage,
   galleryPageSize,
 }) => {
-  const [historyLimit, setHistoryLimit] = useState<number>(2);
-  const [batchItemSpacing, setBatchItemSpacing] = useState<number>(12);
-  const [offsetX, setOffsetX] = useState<number>(0);
-  const [offsetY, setOffsetY] = useState<number>(0);
-  const [stickyItemIndex, setStickyItemIndex] = useState<number>(1);
-  const [stickyValue, setStickyValue] = useState<number | boolean>(0.5);
-  const [insertTextItemIndex, setInsertTextItemIndex] = useState<number>(1);
-  const [insertTextValue, setInsertTextValue] = useState<string>('');
+  const { editorUiSettings, setMultiSelectUiSettings } = useSettingsStore();
+  const {
+    historyLimit,
+    batchItemSpacing,
+    offsetX,
+    offsetY,
+    stickyItemIndex,
+    stickyValue,
+    insertTextItemIndex,
+    insertTextValue,
+    animationItemIndex = 1,
+    animationKeyframes = '',
+  } = editorUiSettings.multiSelect;
+  const setHistoryLimit = (value: number) => setMultiSelectUiSettings({ historyLimit: value });
+  const setBatchItemSpacing = (value: number) => setMultiSelectUiSettings({ batchItemSpacing: value });
+  const setOffsetX = (value: number) => setMultiSelectUiSettings({ offsetX: value });
+  const setOffsetY = (value: number) => setMultiSelectUiSettings({ offsetY: value });
+  const setStickyItemIndex = (value: number) => setMultiSelectUiSettings({ stickyItemIndex: value });
+  const setStickyValue = (value: number | boolean) => setMultiSelectUiSettings({ stickyValue: value });
+  const setInsertTextItemIndex = (value: number) => setMultiSelectUiSettings({ insertTextItemIndex: value });
+  const setInsertTextValue = (value: string) => setMultiSelectUiSettings({ insertTextValue: value });
+  const setAnimationItemIndex = (value: number) => setMultiSelectUiSettings({ animationItemIndex: value });
+  const setAnimationKeyframes = (value: string) => setMultiSelectUiSettings({ animationKeyframes: value });
 
   const { mergeScenes } = useSceneMerge({
     selectedSceneIds,
@@ -265,6 +294,48 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     toast.warning('未找到可插入的目标 item，请检查索引');
   };
 
+  const handleBatchItemKeyframesChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const nextKeyframes = animationKeyframes.trim();
+    let affectedSceneCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const targetIdx = animationItemIndex > 0
+        ? animationItemIndex - 1
+        : animationItemIndex < 0
+          ? scene.items.length + animationItemIndex
+          : -1;
+
+      if (targetIdx < 0 || targetIdx >= scene.items.length) {
+        return scene;
+      }
+
+      const items = scene.items.map((item, itemIndex) => {
+        if (itemIndex !== targetIdx) return item;
+        affectedSceneCount += 1;
+        if (nextKeyframes) {
+          return { ...item, keyframes: nextKeyframes };
+        }
+        const nextItem = { ...item };
+        delete nextItem.keyframes;
+        return nextItem;
+      });
+
+      return { ...scene, items };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedSceneCount > 0) {
+      toast.success(nextKeyframes
+        ? `已更新 ${affectedSceneCount} 个场景的指定 item 关键帧动画`
+        : `已清除 ${affectedSceneCount} 个场景的指定 item 关键帧动画`);
+      return;
+    }
+    toast.warning('未找到可修改动画的目标 item，请检查索引');
+  };
+
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -443,9 +514,10 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
                       <InputNumber
                         size="small"
+                        step={1}
                         placeholder="索引"
                         value={stickyItemIndex}
-                        onChange={(val) => setStickyItemIndex(val || 1)}
+                        onChange={(val) => applyItemIndexChange(val, stickyItemIndex, setStickyItemIndex)}
                         style={{ width: 55 }}
                       />
                     </Tooltip>
@@ -482,9 +554,10 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
                       <InputNumber
                         size="small"
+                        step={1}
                         placeholder="索引"
                         value={insertTextItemIndex}
-                        onChange={(val) => setInsertTextItemIndex(val || 1)}
+                        onChange={(val) => applyItemIndexChange(val, insertTextItemIndex, setInsertTextItemIndex)}
                         style={{ width: 55 }}
                       />
                     </Tooltip>
@@ -509,6 +582,40 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     </Button>
                   </div>
 
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap', paddingTop: 4 }}>动画项:</Text>
+                    <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
+                      <InputNumber
+                        size="small"
+                        step={1}
+                        placeholder="索引"
+                        value={animationItemIndex}
+                        onChange={(val) => applyItemIndexChange(val, animationItemIndex, setAnimationItemIndex)}
+                        style={{ width: 55 }}
+                      />
+                    </Tooltip>
+                    <Input.TextArea
+                      size="small"
+                      placeholder="输入 item keyframes，留空则清除"
+                      value={animationKeyframes}
+                      onChange={(e) => setAnimationKeyframes(e.target.value)}
+                      autoSize={{ minRows: 1, maxRows: 3 }}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      size="small"
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleBatchItemKeyframesChange}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : 'var(--brand-border)',
+                      }}
+                    >
+                      修改动画
+                    </Button>
+                  </div>
+
                   <Divider style={{ margin: '8px 0' }} />
 
                   <div>
@@ -528,7 +635,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                           onChange={setHistoryLimit}
                           style={{ width: 80 }}
                         >
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11 ,12 ,13 ,14 ,15 ,16].map(val => (
                             <Option key={val} value={val}>{val}</Option>
                           ))}
                         </Select>

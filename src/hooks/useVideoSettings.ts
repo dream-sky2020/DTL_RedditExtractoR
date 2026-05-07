@@ -16,6 +16,8 @@ import { generateRandomAliasProfiles } from '../utils/aliasGenerator';
 import { hslToHex } from '../utils/color/hslToHex';
 import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
 
+type GlobalSceneLayout = Extract<SceneLayoutType, 'top' | 'center'>;
+
 interface VideoSettingsOptions {
   videoConfig: VideoConfig;
   setVideoConfig: (config: VideoConfig) => void;
@@ -33,7 +35,7 @@ interface VideoSettingsOptions {
   persistAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
   // 各个具体设置的 setter
   setImageLayoutMode: (mode: ImageLayoutMode) => void;
-  setSceneLayout: (layout: SceneLayoutType) => void;
+  setSceneLayout: (layout: GlobalSceneLayout) => void;
   setTitleAlignment: (alignment: TitleAlignmentType) => void;
   setTitleFontSize: (size: number) => void;
   setContentFontSize: (size: number) => void;
@@ -241,7 +243,9 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const handleSceneLayoutChange = (layout: SceneLayoutType) => {
-    setSceneLayout(layout);
+    if (layout !== 'bottom') {
+      setSceneLayout(layout);
+    }
     const newScenes = videoConfig.scenes.map(s => ({ ...s, layout }));
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
     setVideoConfig(newConfig);

@@ -12,9 +12,10 @@ export interface AnimateNode extends BaseNode {
   type: 'animate';
   from: React.CSSProperties;
   to: React.CSSProperties;
+  keyframes?: string;
   start: number;
   duration: number;
-  easing: EasingType;
+  easing: string;
   children: ASTNode[];
 }
 

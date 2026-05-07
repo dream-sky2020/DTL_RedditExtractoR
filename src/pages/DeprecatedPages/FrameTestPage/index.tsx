@@ -192,6 +192,7 @@ export const FrameTestPage: React.FC<FrameTestPageProps> = ({ onBack }) => {
             />
 
             <EditorSection
+              videoConfig={previewConfig}
               scene={scene}
               isExpanded={isExpanded}
               onToggleExpand={() => setIsExpanded(!isExpanded)}

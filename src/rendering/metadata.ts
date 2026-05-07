@@ -1,7 +1,7 @@
 import { EasingType } from './parser/types';
 import { ItemAnimationType, SceneLayoutType } from '../types';
 
-export type PropertyType = 'string' | 'number' | 'boolean' | 'select' | 'color' | 'css';
+export type PropertyType = 'string' | 'number' | 'boolean' | 'select' | 'color' | 'css' | 'keyframes';
 
 export interface PropertyMetadata {
   name: string;
@@ -33,6 +33,7 @@ const EASING_OPTIONS = [
   { label: '渐入渐出 (ease-in-out)', value: 'ease-in-out' },
   { label: '弹跳 (bounce)', value: 'bounce' },
   { label: '弹性 (elastic)', value: 'elastic' },
+  { label: '强调减速 (cubic-bezier)', value: 'cubic-bezier(0.22, 1, 0.36, 1)' },
 ];
 
 const ANIMATION_OPTIONS = [
@@ -58,13 +59,13 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'title', label: '标题', type: 'string' },
       { name: 'bg', label: '背景颜色', type: 'color', alias: ['backgroundColor'] },
       { name: 'itemSpacing', label: '项目间距', type: 'number', min: 0, step: 1, defaultValue: 12, alias: ['is'] },
-      { name: 'af', label: '动画起始', type: 'css', alias: ['animateFrom'], placeholder: 'opacity: 0; y: 20' },
-      { name: 'at', label: '动画结束', type: 'css', alias: ['animateTo'], placeholder: 'opacity: 1; y: 0' },
+      { name: 'af', label: '动画起始', type: 'css', alias: ['animateFrom'], placeholder: 'opacity: 0; y: 20; scaleX: 0.8; scaleY: 0.8; rotate: -8' },
+      { name: 'at', label: '动画结束', type: 'css', alias: ['animateTo'], placeholder: 'opacity: 1; y: 0; scaleX: 1; scaleY: 1; rotate: 0' },
       { name: 'as', label: '动画开始时间', type: 'number', min: 0, step: 0.1, alias: ['animateStart'] },
       { name: 'ad', label: '动画时长', type: 'number', min: 0, step: 0.1, alias: ['animateDuration'] },
       { name: 'ae', label: '动画缓动', type: 'select', options: EASING_OPTIONS, alias: ['animateEasing'] },
       { name: 'o', label: '偏移', type: 'css', alias: ['offset'], placeholder: 'x: 10; y: 20' },
-      { name: 'kf', label: '关键帧动画', type: 'string', alias: ['keyframes'], placeholder: '0: scale:0; 0.5: scale:1.2; 1: scale:1' },
+      { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, y: 20, rotate: -8; 0.5 @ease-out: scaleX: 1.1, scaleY: 1.1; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, y: 0, rotate: 0' },
     ],
     hasContent: true,
     contentLabel: '场景内容',
@@ -80,13 +81,13 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'enterAnimation', label: '进入动画', type: 'select', options: ANIMATION_OPTIONS },
       { name: 'exitAnimation', label: '退出动画', type: 'select', options: ANIMATION_OPTIONS },
       { name: 'bg', label: '背景颜色', type: 'color', alias: ['backgroundColor'] },
-      { name: 'af', label: '动画起始', type: 'css', alias: ['animateFrom'] },
-      { name: 'at', label: '动画结束', type: 'css', alias: ['animateTo'] },
+      { name: 'af', label: '动画起始', type: 'css', alias: ['animateFrom'], placeholder: 'opacity: 0; y: 20; scaleX: 0.8; scaleY: 0.8; rotate: -8' },
+      { name: 'at', label: '动画结束', type: 'css', alias: ['animateTo'], placeholder: 'opacity: 1; y: 0; scaleX: 1; scaleY: 1; rotate: 0' },
       { name: 'as', label: '动画开始时间', type: 'number', min: 0, step: 0.1, alias: ['animateStart'] },
       { name: 'ad', label: '动画时长', type: 'number', min: 0, step: 0.1, alias: ['animateDuration'] },
       { name: 'ae', label: '动画缓动', type: 'select', options: EASING_OPTIONS, alias: ['animateEasing'] },
       { name: 'o', label: '偏移', type: 'css', alias: ['offset'], placeholder: 'x: 10; y: 20' },
-      { name: 'kf', label: '关键帧动画', type: 'string', alias: ['keyframes'], placeholder: '0: scale:0; 0.5: scale:1.2; 1: scale:1' },
+      { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, y: 20, rotate: -8; 0.5 @ease-out: scaleX: 1.1, scaleY: 1.1; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, y: 0, rotate: 0' },
       { name: 'sticky', label: '强制居中', type: 'boolean', description: '使该项强制在场景中心，其他项自动让位' },
     ],
     hasContent: true,
@@ -156,8 +157,9 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     tagName: 'animate',
     syntax: 'square',
     properties: [
-      { name: 'from', label: '起始状态', type: 'css' },
-      { name: 'to', label: '结束状态', type: 'css' },
+      { name: 'from', label: '起始状态', type: 'css', placeholder: 'opacity: 0; x: -20; scaleX: 0.8; scaleY: 0.8; rotate: -8' },
+      { name: 'to', label: '结束状态', type: 'css', placeholder: 'opacity: 1; x: 0; scaleX: 1; scaleY: 1; rotate: 0' },
+      { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, x: -20; 0.5 @ease-out: rotate: 8; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, x: 0, rotate: 0' },
       { name: 'start', label: '开始时间(s)', type: 'number', min: 0, step: 0.1, defaultValue: 0 },
       { name: 'duration', label: '时长(s)', type: 'number', min: 0, step: 0.1, defaultValue: 1 },
       { name: 'easing', label: '缓动函数', type: 'select', options: EASING_OPTIONS, defaultValue: 'ease-out' },

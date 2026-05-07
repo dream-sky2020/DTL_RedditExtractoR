@@ -3,6 +3,7 @@ import { Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { interpolate, Easing } from 'remotion';
 import { ASTNode, MediaItem, EasingType } from './types';
+import { buildAnimationStyle } from '../animation';
 
 const { Text } = Typography;
 
@@ -41,29 +42,46 @@ const getEasingFunction = (easing: EasingType) => {
   }
 };
 
-const AnimateContent: React.FC<{
-  from: React.CSSProperties;
-  to: React.CSSProperties;
-  start: number;
-  duration: number;
-  easing: EasingType;
-  children: React.ReactNode;
-}> = ({ from, to, start, duration, easing, children }) => {
-  const { playbackFrame, fps } = usePlaybackContext();
-  const currentTime = playbackFrame != null && fps ? playbackFrame / fps : 0;
+const getDefaultTransformUnit = (key: string): string => {
+  if (key === 'x' || key === 'y') return 'px';
+  if (key === 'rotate') return 'deg';
+  return '';
+};
 
-  const progress = interpolate(
-    currentTime,
-    [start, start + duration],
-    [0, 1],
-    {
-      extrapolateLeft: 'clamp',
-      extrapolateRight: 'clamp',
-      easing: getEasingFunction(easing),
-    }
-  );
+const splitAnimationPair = (input: string): [string, string] | null => {
+  const separatorIndex = input.indexOf(':');
+  if (separatorIndex === -1) return null;
+  const key = input.slice(0, separatorIndex).trim();
+  const value = input.slice(separatorIndex + 1).trim();
+  return key && value ? [key, value] : null;
+};
 
-  const animatedStyle: React.CSSProperties = { ...from };
+const applyAnimationValue = (
+  key: string,
+  value: string | number,
+  style: React.CSSProperties,
+  transforms: string[]
+) => {
+  const raw = String(value);
+  const unit = raw.replace(/[0-9.-]/g, '') || getDefaultTransformUnit(key);
+
+  if (key === 'x') transforms.push(`translateX(${parseFloat(raw)}${unit})`);
+  else if (key === 'y') transforms.push(`translateY(${parseFloat(raw)}${unit})`);
+  else if (key === 'scale') transforms.push(`scale(${raw})`);
+  else if (key === 'scaleX') transforms.push(`scaleX(${raw})`);
+  else if (key === 'scaleY') transforms.push(`scaleY(${raw})`);
+  else if (key === 'rotate') transforms.push(`rotate(${parseFloat(raw)}${unit})`);
+  else if (key === 'opacity') style.opacity = Number.isFinite(Number(raw)) ? Number(raw) : raw as any;
+  else (style as any)[key] = raw;
+};
+
+const applyInterpolatedStyles = (
+  from: React.CSSProperties,
+  to: React.CSSProperties,
+  progress: number,
+  style: React.CSSProperties,
+  transforms: string[]
+) => {
   const keys = new Set([...Object.keys(from), ...Object.keys(to)]);
 
   keys.forEach((key) => {
@@ -72,33 +90,104 @@ const AnimateContent: React.FC<{
 
     if (fromVal === undefined || toVal === undefined) return;
 
-    // Handle numeric values
     const fromNum = parseFloat(fromVal);
     const toNum = parseFloat(toVal);
 
-    if (!isNaN(fromNum) && !isNaN(toNum)) {
+    if (!Number.isNaN(fromNum) && !Number.isNaN(toNum)) {
       const currentNum = interpolate(progress, [0, 1], [fromNum, toNum]);
-      const unit = String(fromVal).replace(/[0-9.-]/g, '') || String(toVal).replace(/[0-9.-]/g, '');
-      (animatedStyle as any)[key] = `${currentNum}${unit}`;
+      const unit = String(fromVal).replace(/[0-9.-]/g, '') || String(toVal).replace(/[0-9.-]/g, '') || getDefaultTransformUnit(key);
+      applyAnimationValue(key, `${currentNum}${unit}`, style, transforms);
     } else {
-      // Non-numeric values (like colors or display) - switch at 0.5 progress
-      (animatedStyle as any)[key] = progress < 0.5 ? fromVal : toVal;
+      applyAnimationValue(key, progress < 0.5 ? fromVal : toVal, style, transforms);
     }
   });
+};
 
-  // Special handling for scale and translate if specified as x, y
-  const transforms: string[] = [];
-  if ((animatedStyle as any).scale !== undefined) {
-    transforms.push(`scale(${(animatedStyle as any).scale})`);
-    delete (animatedStyle as any).scale;
+const parseKeyframes = (keyframes: string) =>
+  keyframes
+    .split(';')
+    .map(stage => {
+      const frame = splitAnimationPair(stage.trim());
+      if (!frame) return null;
+
+      const [timeText, propsText] = frame;
+      const time = Number(timeText);
+      if (!Number.isFinite(time)) return null;
+
+      const props: Record<string, string> = {};
+      propsText
+        .split(',')
+        .map(pair => pair.trim())
+        .filter(Boolean)
+        .forEach((pair) => {
+          const prop = splitAnimationPair(pair);
+          if (prop) props[prop[0]] = prop[1];
+        });
+
+      return Object.keys(props).length > 0 ? { time, props } : null;
+    })
+    .filter((stage): stage is { time: number; props: Record<string, string> } => Boolean(stage))
+    .sort((a, b) => a.time - b.time);
+
+const applyKeyframes = (
+  keyframes: string,
+  currentTime: number,
+  duration: number,
+  easing: EasingType,
+  style: React.CSSProperties,
+  transforms: string[]
+) => {
+  const stages = parseKeyframes(keyframes);
+  if (stages.length < 2) return;
+
+  const timeline = stages.map(stage => stage.time * Math.max(duration, 0.001));
+  for (let i = 1; i < timeline.length; i += 1) {
+    if (timeline[i] <= timeline[i - 1]) return;
   }
 
-  // If left/top are used for x/y in animate node, we might want to use translate for better performance
-  // but for now we'll stick to what the user provides in from/to.
+  const allKeys = new Set<string>();
+  stages.forEach(stage => Object.keys(stage.props).forEach(key => allKeys.add(key)));
 
-  if (transforms.length > 0) {
-    animatedStyle.transform = transforms.join(' ');
-  }
+  allKeys.forEach((key) => {
+    let lastValue = stages.find(stage => stage.props[key] !== undefined)?.props[key];
+    if (lastValue === undefined) return;
+
+    const rawValues = stages.map((stage) => {
+      if (stage.props[key] !== undefined) lastValue = stage.props[key];
+      return lastValue as string;
+    });
+    const numericValues = rawValues.map(value => parseFloat(value));
+    const canInterpolate = numericValues.every(value => Number.isFinite(value));
+
+    if (canInterpolate) {
+      const currentValue = interpolate(currentTime, timeline, numericValues, {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: getEasingFunction(easing),
+      });
+      const unit = rawValues.find(value => value.replace(/[0-9.-]/g, ''))?.replace(/[0-9.-]/g, '') || getDefaultTransformUnit(key);
+      applyAnimationValue(key, `${currentValue}${unit}`, style, transforms);
+      return;
+    }
+
+    const activeIndex = timeline.findIndex(time => currentTime <= time);
+    const value = rawValues[Math.max(0, activeIndex === -1 ? rawValues.length - 1 : activeIndex)];
+    applyAnimationValue(key, value, style, transforms);
+  });
+};
+
+const AnimateContent: React.FC<{
+  from: React.CSSProperties;
+  to: React.CSSProperties;
+  keyframes?: string;
+  start: number;
+  duration: number;
+  easing: string;
+  children: React.ReactNode;
+}> = ({ from, to, keyframes, start, duration, easing, children }) => {
+  const { playbackFrame, fps } = usePlaybackContext();
+  const currentTime = playbackFrame != null && fps ? playbackFrame / fps : 0;
+  const animatedStyle = buildAnimationStyle({ from, to, keyframes, currentTime, start, duration, easing });
 
   return <div style={{ position: 'relative', ...animatedStyle, transition: 'none' }}>{children}</div>;
 };
@@ -432,6 +521,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
             key={index}
             from={node.from}
             to={node.to}
+            keyframes={node.keyframes}
             start={node.start}
             duration={node.duration}
             easing={node.easing}

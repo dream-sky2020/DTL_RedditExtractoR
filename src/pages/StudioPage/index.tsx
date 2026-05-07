@@ -51,6 +51,8 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
     colorArrangement, setColorArrangement,
     sceneDisplayMode,
+    editorUiSettings,
+    setStudioUiSettings,
   } = useSettingsStore();
 
   const {
@@ -141,11 +143,18 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   } = useSidebarResize({ defaultWidth: 420, minWidth: 300, maxWidth: 760 });
 
   // Gallery Logic
-  const [galleryPage, setGalleryPage] = useState(1);
-  const [galleryPageSize, setGalleryPageSize] = useState(12);
-  const [previewLayoutMode, setPreviewLayoutMode] = useState<PreviewLayoutMode>('auto');
-  const [previewMinWidth, setPreviewMinWidth] = useState(280);
-  const [frameOffset, setFrameOffset] = useState(15);
+  const {
+    galleryPage,
+    galleryPageSize,
+    previewLayoutMode,
+    previewMinWidth,
+    frameOffset,
+  } = editorUiSettings.studio;
+  const setGalleryPage = (page: number) => setStudioUiSettings({ galleryPage: page });
+  const setGalleryPageSize = (size: number) => setStudioUiSettings({ galleryPageSize: size });
+  const setPreviewLayoutMode = (mode: PreviewLayoutMode) => setStudioUiSettings({ previewLayoutMode: mode });
+  const setPreviewMinWidth = (width: number) => setStudioUiSettings({ previewMinWidth: width });
+  const setFrameOffset = (offset: number) => setStudioUiSettings({ frameOffset: offset });
   
   // Multi-select Logic
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -164,6 +173,15 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const totalFrames = getTotalFrames(videoConfig, fps);
 
   const isCompact = sceneDisplayMode === 'compact';
+
+  useEffect(() => {
+    const maxGalleryPage = Math.max(1, Math.ceil(scenes.length / galleryPageSize));
+    const nextGalleryPage = Math.min(Math.max(galleryPage, 1), maxGalleryPage);
+
+    if (nextGalleryPage !== galleryPage) {
+      setStudioUiSettings({ galleryPage: nextGalleryPage });
+    }
+  }, [galleryPage, galleryPageSize, scenes.length, setStudioUiSettings]);
 
   const galleryStartIndex = (galleryPage - 1) * galleryPageSize;
   const visibleGalleryScenes = useMemo(
@@ -326,7 +344,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                         setGalleryPageSize(size || 12);
                       }}
                       showSizeChanger
-                      pageSizeOptions={['12', '24', '36', '48']}
+                      pageSizeOptions={['12', '24', '48','96']}
                     />
                   </div>
                 )}

@@ -3,6 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Easing } fr
 import { ItemAnimationType, VideoConfig, VideoScene, VideoContentItem } from '../types';
 import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
 import { SceneAudioMixer } from '../audio/SceneAudioMixer';
+import { buildAnimationStyle, parseAnimationStyle } from '../rendering/animation';
 
 const DEFAULT_ITEM_ANIMATION_FRAMES = 12;
 
@@ -31,6 +32,11 @@ const getEasing = (e: string) => {
   if (e === 'bounce') return Easing.bounce;
   if (e === 'elastic') return Easing.elastic(1);
   return Easing.linear;
+};
+
+const getTransformUnit = (key: string) => {
+  if (key === 'rotate') return 'deg';
+  return '';
 };
 
 const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: string, styleObj: React.CSSProperties, transformsArr: string[]) => {
@@ -125,6 +131,12 @@ const applyKeyframes = (kfStr: string, currentTime: number, ad: number, ae: stri
 
       if (key === 'scale') {
         transformsArr.push(`scale(${val})`);
+      } else if (key === 'scaleX') {
+        transformsArr.push(`scaleX(${val})`);
+      } else if (key === 'scaleY') {
+        transformsArr.push(`scaleY(${val})`);
+      } else if (key === 'rotate') {
+        transformsArr.push(`rotate(${val}${getTransformUnit(key)})`);
       } else if (key === 'x') {
         styleObj.left = `${val}px`;
       } else if (key === 'y') {
@@ -240,56 +252,25 @@ const SceneItem: React.FC<SceneItemProps> = ({
   const itemAnimateStyle: React.CSSProperties = {};
 
   if (item.offset) {
-    Object.assign(itemAnimateStyle, parseStyle(item.offset));
+    Object.assign(itemAnimateStyle, parseAnimationStyle(item.offset));
   }
 
-  if (item.keyframes) {
-    const ad = item.animateDuration || 1;
-    const ae = item.animateEasing || 'ease-out';
+  if (item.keyframes || (item.animateFrom && item.animateTo)) {
     const itemCurrentTime = (relativeFrame - enterFrame) / fps;
-    applyKeyframes(item.keyframes, itemCurrentTime - (item.animateStart || 0), ad, ae, itemAnimateStyle, transforms);
-  } else if (item.animateFrom && item.animateTo && item.animateStart !== undefined) {
-    const ad = item.animateDuration || 1;
-    const ae = item.animateEasing || 'ease-out';
-
-    const fromStyles = parseStyle(item.animateFrom);
-    const toStyles = parseStyle(item.animateTo);
-    // 使用相对于 Item 进入的时间
-    const itemCurrentTime = (relativeFrame - enterFrame) / fps;
-    const progress = interpolate(
-      itemCurrentTime,
-      [item.animateStart, item.animateStart + ad],
-      [0, 1],
-      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: getEasing(ae) }
-    );
-
-    const allKeys = new Set([...Object.keys(fromStyles), ...Object.keys(toStyles)]);
-    allKeys.forEach(key => {
-      const fv = fromStyles[key];
-      const tv = toStyles[key];
-      if (fv === undefined || tv === undefined) return;
-
-      const fn = parseFloat(fv);
-      const tn = parseFloat(tv);
-      if (!isNaN(fn) && !isNaN(tn)) {
-        const val = interpolate(progress, [0, 1], [fn, tn]);
-        let unit = String(fv).replace(/[0-9.-]/g, '') || String(tv).replace(/[0-9.-]/g, '');
-
-        // 针对位移属性，如果没有单位则默认为 px
-        if (!unit && (key === 'top' || key === 'left')) {
-          unit = 'px';
-        }
-
-        (itemAnimateStyle as any)[key] = `${val}${unit}`;
-      } else {
-        (itemAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
-      }
+    const customStyle = buildAnimationStyle({
+      from: parseAnimationStyle(item.animateFrom || ''),
+      to: parseAnimationStyle(item.animateTo || ''),
+      keyframes: item.keyframes,
+      currentTime: itemCurrentTime,
+      start: item.animateStart || 0,
+      duration: item.animateDuration || 1,
+      easing: item.animateEasing || 'ease-out',
     });
-
-    if ((itemAnimateStyle as any).scale !== undefined) {
-      transforms.push(`scale(${(itemAnimateStyle as any).scale})`);
-      delete (itemAnimateStyle as any).scale;
+    if (customStyle.transform) {
+      transforms.push(String(customStyle.transform));
+      delete customStyle.transform;
     }
+    Object.assign(itemAnimateStyle, customStyle);
   }
 
   return (
@@ -359,48 +340,24 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const sceneTransforms: string[] = [];
 
   if (scene.offset) {
-    Object.assign(sceneAnimateStyle, parseStyle(scene.offset));
+    Object.assign(sceneAnimateStyle, parseAnimationStyle(scene.offset));
   }
 
-  if (scene.keyframes) {
-    const ad = scene.animateDuration || 1;
-    const ae = scene.animateEasing || 'ease-out';
-    applyKeyframes(scene.keyframes, (frame / fps) - (scene.animateStart || 0), ad, ae, sceneAnimateStyle, sceneTransforms);
-  } else if (scene.animateFrom && scene.animateTo && scene.animateStart !== undefined) {
-    const ad = scene.animateDuration || 1;
-    const ae = scene.animateEasing || 'ease-out';
-
-    const fromStyles = parseStyle(scene.animateFrom);
-    const toStyles = parseStyle(scene.animateTo);
-    const progress = interpolate(
-      frame / fps,
-      [scene.animateStart, scene.animateStart + ad],
-      [0, 1],
-      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: getEasing(ae) }
-    );
-
-    const allKeys = new Set([...Object.keys(fromStyles), ...Object.keys(toStyles)]);
-    allKeys.forEach(key => {
-      const fv = fromStyles[key];
-      const tv = toStyles[key];
-      if (fv === undefined || tv === undefined) return;
-
-      const fn = parseFloat(fv);
-      const tn = parseFloat(tv);
-      if (!isNaN(fn) && !isNaN(tn)) {
-        const val = interpolate(progress, [0, 1], [fn, tn]);
-        let unit = String(fv).replace(/[0-9.-]/g, '') || String(tv).replace(/[0-9.-]/g, '');
-        if (!unit && (key === 'top' || key === 'left')) unit = 'px';
-        (sceneAnimateStyle as any)[key] = `${val}${unit}`;
-      } else {
-        (sceneAnimateStyle as any)[key] = progress < 0.5 ? fv : tv;
-      }
+  if (scene.keyframes || (scene.animateFrom && scene.animateTo)) {
+    const customStyle = buildAnimationStyle({
+      from: parseAnimationStyle(scene.animateFrom || ''),
+      to: parseAnimationStyle(scene.animateTo || ''),
+      keyframes: scene.keyframes,
+      currentTime: frame / fps,
+      start: scene.animateStart || 0,
+      duration: scene.animateDuration || 1,
+      easing: scene.animateEasing || 'ease-out',
     });
-
-    if ((sceneAnimateStyle as any).scale !== undefined) {
-      sceneTransforms.push(`scale(${(sceneAnimateStyle as any).scale})`);
-      delete (sceneAnimateStyle as any).scale;
+    if (customStyle.transform) {
+      sceneTransforms.push(String(customStyle.transform));
+      delete customStyle.transform;
     }
+    Object.assign(sceneAnimateStyle, customStyle);
   }
 
   return (
