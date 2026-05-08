@@ -73,6 +73,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   const { editorUiSettings, setMultiSelectUiSettings } = useSettingsStore();
   const {
     historyLimit,
+    batchSceneDuration = 3,
     batchItemSpacing,
     offsetX,
     offsetY,
@@ -84,6 +85,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     animationKeyframes = '',
   } = editorUiSettings.multiSelect;
   const setHistoryLimit = (value: number) => setMultiSelectUiSettings({ historyLimit: value });
+  const setBatchSceneDuration = (value: number) => setMultiSelectUiSettings({ batchSceneDuration: value });
   const setBatchItemSpacing = (value: number) => setMultiSelectUiSettings({ batchItemSpacing: value });
   const setOffsetX = (value: number) => setMultiSelectUiSettings({ offsetX: value });
   const setOffsetY = (value: number) => setMultiSelectUiSettings({ offsetY: value });
@@ -172,6 +174,30 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     toast.success(`已将 ${selectedSceneIds.length} 个场景的项目间距改为 ${batchItemSpacing}`);
+  };
+
+  const handleBatchSceneDurationChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    if (!Number.isFinite(batchSceneDuration) || batchSceneDuration <= 0) {
+      toast.warning('请输入大于 0 的场景时长');
+      return;
+    }
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+      return {
+        ...scene,
+        duration: batchSceneDuration,
+        items: scene.items.map(item => ({
+          ...item,
+          exitAt: batchSceneDuration,
+        })),
+      };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已将 ${selectedSceneIds.length} 个场景的时长和 item exitAt 改为 ${batchSceneDuration}s`);
   };
 
   const handleBatchOffsetChange = () => {
@@ -448,6 +474,31 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                       }}
                     >
                       全部bottom
+                    </Button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>场景时长:</Text>
+                    <InputNumber
+                      size="small"
+                      min={0.1}
+                      step={0.1}
+                      value={batchSceneDuration}
+                      onChange={(val) => setBatchSceneDuration(val ?? 3)}
+                      style={{ width: 70 }}
+                    />
+                    <Button
+                      size="small"
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleBatchSceneDurationChange}
+                      style={{
+                        flex: 1,
+                        backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                      }}
+                    >
+                      修改时长
                     </Button>
                   </div>
 

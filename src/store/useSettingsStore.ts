@@ -28,6 +28,7 @@ interface EditorPaginationSettings {
 
 interface MultiSelectUiSettings {
   historyLimit: number;
+  batchSceneDuration: number;
   batchItemSpacing: number;
   offsetX: number;
   offsetY: number;
@@ -99,6 +100,7 @@ const DEFAULT_EDITOR_UI_SETTINGS: EditorUiSettings = {
   },
   multiSelect: {
     historyLimit: 2,
+    batchSceneDuration: 3,
     batchItemSpacing: 12,
     offsetX: 0,
     offsetY: 0,

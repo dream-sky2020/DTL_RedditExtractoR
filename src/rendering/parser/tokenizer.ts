@@ -16,6 +16,35 @@ export interface TokenizerOptions {
 
 const IGNORE_TAGS = ['audio'] as const;
 
+const toCssLength = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+  return isNaN(Number(value)) ? value : `${value}px`;
+};
+
+const toInlineAttr = (name: string, value: string | undefined): string => {
+  if (!value) return '';
+  return /\s/.test(value) ? `${name}="${value}"` : `${name}=${value}`;
+};
+
+const buildRowMediaAttrStr = (
+  attrs: Record<string, string>,
+  isGrid: boolean
+): string | undefined => {
+  const itemWidth = attrs.itemw || attrs.imagew || attrs.iw || attrs.cell || attrs.size;
+  const itemHeight = attrs.itemh || attrs.imageh || attrs.ih || attrs.cell || attrs.size;
+  const mode = attrs.mode || attrs.fit;
+  const pos = attrs.pos;
+
+  const parts = [
+    toInlineAttr('w', isGrid ? '100%' : toCssLength(itemWidth)),
+    toInlineAttr('h', toCssLength(itemHeight)),
+    toInlineAttr('mode', mode),
+    toInlineAttr('pos', pos),
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' ') : undefined;
+};
+
 const findNextIgnoredTag = (subText: string, currentPos: number): number => {
   let nearest = -1;
   for (const tag of IGNORE_TAGS) {
@@ -290,19 +319,37 @@ export const tokenize = (
 
         if (endTagIdx !== -1) {
           const attrs = parseInlineAttrs(attrStr);
+          const columns = Number.parseInt(attrs.cols || attrs.columns || '', 10);
+          const isGrid = attrs.layout === 'grid' || Number.isFinite(columns);
+          const gap = toCssLength(attrs.gap) || '0px';
+          const justify = (attrs.justify || 'start') === 'between'
+            ? 'space-between'
+            : (attrs.justify || 'start') === 'around'
+              ? 'space-around'
+              : (attrs.justify || 'start');
           const rowStyle: React.CSSProperties = {
-            display: 'flex', 
-            flexDirection: 'row', 
-            flexWrap: 'wrap', 
-            gap: attrs.gap ? (isNaN(Number(attrs.gap)) ? attrs.gap : `${attrs.gap}px`) : '0px', 
-            alignItems: (attrs.align || 'center') as any, 
-            justifyContent: (attrs.justify || 'start') === 'between' ? 'space-between' : (attrs.justify || 'start') === 'around' ? 'space-around' : (attrs.justify || 'start') as any, 
-            margin: '12px 0', 
+            display: isGrid ? 'grid' : 'flex',
+            gap,
+            alignItems: (attrs.align || 'center') as any,
+            justifyContent: justify as any,
+            margin: '12px 0',
             width: '100%'
           };
+
+          if (isGrid) {
+            const itemWidth = toCssLength(attrs.itemw || attrs.imagew || attrs.iw || attrs.cell || attrs.size);
+            const columnCount = Number.isFinite(columns) && columns > 0 ? columns : 'auto-fit';
+            rowStyle.gridTemplateColumns = `repeat(${columnCount}, ${itemWidth || 'minmax(0, 1fr)'})`;
+            rowStyle.justifyItems = (attrs.justifyitems || 'stretch') as any;
+          } else {
+            rowStyle.flexDirection = 'row';
+            rowStyle.flexWrap = 'wrap';
+          }
+
           nodes.push({
             type: 'row',
             style: rowStyle,
+            mediaAttrStr: buildRowMediaAttrStr(attrs, isGrid),
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
           currentPos = endTagIdx + 6;

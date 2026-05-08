@@ -64,6 +64,7 @@ export interface StyleNode extends BaseNode {
 export interface RowNode extends BaseNode {
   type: 'row';
   style: React.CSSProperties;
+  mediaAttrStr?: string;
   children: ASTNode[];
 }
 

@@ -333,7 +333,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                   </Row>
                 )}
                 
-                {scenes.length > galleryPageSize && (
+                {hasScenes && (
                   <div style={{ marginTop: 30, display: 'flex', justifyContent: 'center' }}>
                     <Pagination
                       current={galleryPage}

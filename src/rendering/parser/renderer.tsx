@@ -280,7 +280,8 @@ const MediaContent: React.FC<{
   attrStr: string;
   showControls: boolean;
   inRow?: boolean;
-}> = ({ mediaItems, attrStr, showControls, inRow = false }) => {
+  rowMediaAttrStr?: string;
+}> = ({ mediaItems, attrStr, showControls, inRow = false, rowMediaAttrStr }) => {
   const { playbackFrame, fps } = usePlaybackContext();
   const [manualIndex, setManualIndex] = useState(0);
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
@@ -303,7 +304,8 @@ const MediaContent: React.FC<{
   );
   const currentIndex = mediaItems.length <= 1 ? 0 : (showControls ? manualIndex : autoIndex);
   const currentItem = mediaItems[currentIndex] || mediaItems[0];
-  const { mediaStyle, wrapperStyle, isHeightSet } = buildMediaStyles(attrStr, inRow);
+  const effectiveAttrStr = rowMediaAttrStr ? `${attrStr} ${rowMediaAttrStr}` : attrStr;
+  const { mediaStyle, wrapperStyle, isHeightSet } = buildMediaStyles(effectiveAttrStr, inRow);
 
   const navButtonStyle: React.CSSProperties = {
     width: 36,
@@ -423,6 +425,7 @@ export interface RenderOptions {
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
   inRow?: boolean;
+  rowMediaAttrStr?: string;
 }
 
 export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.ReactNode => {
@@ -432,7 +435,8 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
     defaultQuoteFontSize = 12,
     defaultBackgroundColor,
     defaultBorderColor,
-    inRow = false
+    inRow = false,
+    rowMediaAttrStr
   } = options;
 
   return nodes.map((node, index) => {
@@ -487,6 +491,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
             attrStr={node.attrStr}
             showControls={showMediaControls}
             inRow={inRow}
+            rowMediaAttrStr={rowMediaAttrStr}
           />
         );
 
@@ -498,6 +503,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
             attrStr={node.attrStr}
             showControls={showMediaControls}
             inRow={inRow}
+            rowMediaAttrStr={rowMediaAttrStr}
           />
         );
 
@@ -511,7 +517,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
       case 'row':
         return (
           <div key={index} style={node.style} className="script-row">
-            {renderAST(node.children, { ...options, inRow: true })}
+            {renderAST(node.children, { ...options, inRow: true, rowMediaAttrStr: node.mediaAttrStr || rowMediaAttrStr })}
           </div>
         );
 

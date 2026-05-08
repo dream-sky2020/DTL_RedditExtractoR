@@ -135,6 +135,15 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     syntax: 'square',
     properties: [
       { name: 'gap', label: '间距', type: 'string', defaultValue: '8' },
+      { name: 'cols', label: '网格列数', type: 'number', alias: ['columns'], description: '设置后 row 使用网格布局，例如 cols=2' },
+      { name: 'cell', label: '单元格尺寸', type: 'string', description: '同时作为内部图片默认宽高，例如 cell=240' },
+      { name: 'itemw', label: '内部图片宽度', type: 'string', alias: ['imagew', 'iw'] },
+      { name: 'itemh', label: '内部图片高度', type: 'string', alias: ['imageh', 'ih'] },
+      { name: 'mode', label: '内部图片填充', type: 'select', options: [
+        { label: '自适应 (contain)', value: 'contain' },
+        { label: '裁剪 (cover)', value: 'cover' },
+        { label: '拉伸 (fill)', value: 'fill' }
+      ], defaultValue: 'contain' },
       { name: 'align', label: '垂直对齐', type: 'select', options: [
         { label: '起点', value: 'start' },
         { label: '居中', value: 'center' },
