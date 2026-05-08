@@ -72,6 +72,10 @@ interface SettingsState extends GlobalSettings {
   setItemBackgroundColor: (color: string) => void;
   setQuoteBackgroundColor: (color: string) => void;
   setQuoteBorderColor: (color: string) => void;
+  setSceneBackgroundColorEnd: (color: string) => void;
+  setSceneBackgroundGradientMode: (mode: boolean) => void;
+  setItemBackgroundColorEnd: (color: string) => void;
+  setItemBackgroundGradientMode: (mode: boolean) => void;
   setSceneDisplayMode: (mode: SceneDisplayMode) => void;
   getProjectState: () => GlobalSettings & { colorArrangement: ColorArrangementSettings };
   applyProjectState: (payload: Partial<GlobalSettings> & { colorArrangement?: ColorArrangementSettings }) => void;
@@ -163,6 +167,10 @@ export const useSettingsStore = create<SettingsState>()(
       setItemBackgroundColor: (itemBackgroundColor) => set({ itemBackgroundColor }),
       setQuoteBackgroundColor: (quoteBackgroundColor) => set({ quoteBackgroundColor }),
       setQuoteBorderColor: (quoteBorderColor) => set({ quoteBorderColor }),
+      setSceneBackgroundColorEnd: (sceneBackgroundColorEnd) => set({ sceneBackgroundColorEnd }),
+      setSceneBackgroundGradientMode: (sceneBackgroundGradientMode) => set({ sceneBackgroundGradientMode }),
+      setItemBackgroundColorEnd: (itemBackgroundColorEnd) => set({ itemBackgroundColorEnd }),
+      setItemBackgroundGradientMode: (itemBackgroundGradientMode) => set({ itemBackgroundGradientMode }),
       setSceneDisplayMode: (sceneDisplayMode) => set({ sceneDisplayMode }),
 
       getProjectState: () => {
@@ -179,7 +187,11 @@ export const useSettingsStore = create<SettingsState>()(
           maxQuoteDepth: state.maxQuoteDepth,
           defaultQuoteMaxLimit: state.defaultQuoteMaxLimit,
           sceneBackgroundColor: state.sceneBackgroundColor,
+          sceneBackgroundColorEnd: state.sceneBackgroundColorEnd,
+          sceneBackgroundGradientMode: state.sceneBackgroundGradientMode,
           itemBackgroundColor: state.itemBackgroundColor,
+          itemBackgroundColorEnd: state.itemBackgroundColorEnd,
+          itemBackgroundGradientMode: state.itemBackgroundGradientMode,
           quoteBackgroundColor: state.quoteBackgroundColor,
           quoteBorderColor: state.quoteBorderColor,
           sceneDisplayMode: state.sceneDisplayMode,

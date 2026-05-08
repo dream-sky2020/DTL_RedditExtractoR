@@ -7,6 +7,9 @@ export interface AudioDslTag {
   start: number;
   volume: number;
   duration: number;
+  loop: boolean;
+  fadeOutSeconds: number;
+  fadeOutEndVolume: number;
 }
 
 export interface ParsedAudioTrack {
@@ -17,20 +20,43 @@ export interface ParsedAudioTrack {
   startSeconds: number;
   durationSeconds: number;
   volume: number;
+  loop: boolean;
+  fadeOutSeconds: number;
+  fadeOutEndVolume: number;
 }
 
 const parseInlineAttrs = (attrStr: string): Record<string, string> => {
   const attrs: Record<string, string> = {};
-  const attrRegex = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
+  const attrRegex = /([a-zA-Z_][\w-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+)))?/g;
   let attrMatch: RegExpExecArray | null;
 
   while ((attrMatch = attrRegex.exec(attrStr)) !== null) {
     const key = attrMatch[1].toLowerCase();
-    const value = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
+    const value = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? 'true';
     attrs[key] = value;
   }
 
   return attrs;
+};
+
+const parseNumberAttr = (value: string | undefined) => {
+  if (value === undefined) return NaN;
+  return Number.parseFloat(value);
+};
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+const parseBooleanAttr = (value: string | undefined) => {
+  if (value === undefined) return false;
+  return ['true', '1', 'yes', 'y', 'on'].includes(value.trim().toLowerCase());
+};
+
+const getFirstAttr = (attrs: Record<string, string>, keys: string[]) => {
+  for (const key of keys) {
+    const value = attrs[key];
+    if (value !== undefined) return value;
+  }
+  return undefined;
 };
 
 export const parseAudioDslTags = (content: string): AudioDslTag[] => {
@@ -44,21 +70,31 @@ export const parseAudioDslTags = (content: string): AudioDslTag[] => {
     const attrs = parseInlineAttrs(match[1]);
     if (!attrs.src) continue;
 
-    const parsedStart = Number.parseFloat(attrs.start ?? '0');
-    const parsedVolume = Number.parseFloat(attrs.volume ?? '1');
-    const parsedDuration = Number.parseFloat(attrs.duration ?? attrs.d ?? '');
-    const parsedEnd = Number.parseFloat(attrs.end ?? '');
+    const parsedStart = parseNumberAttr(attrs.start ?? '0');
+    const parsedVolume = parseNumberAttr(attrs.volume ?? '1');
+    const parsedDuration = parseNumberAttr(attrs.duration ?? attrs.d);
+    const parsedEnd = parseNumberAttr(attrs.end);
+    const parsedFadeOut = parseNumberAttr(getFirstAttr(attrs, ['fadeout', 'fade-out', 'fade']));
+    const parsedFadeOutEndVolume = parseNumberAttr(
+      getFirstAttr(attrs, ['fadeto', 'fade-to', 'fadeoutto', 'fade-out-to', 'fadelevel', 'fade-level', 'fadevolume', 'fade-volume'])
+    );
     const start = Number.isFinite(parsedStart) ? Math.max(0, parsedStart) : 0;
     const durationFromEnd = Number.isFinite(parsedEnd) ? parsedEnd - start : NaN;
     const rawDuration = Number.isFinite(parsedDuration) ? parsedDuration : durationFromEnd;
+    const duration = Number.isFinite(rawDuration) && rawDuration > 0
+      ? rawDuration
+      : DEFAULT_AUDIO_DURATION_SECONDS;
 
     tags.push({
       src: attrs.src,
       start,
       volume: Number.isFinite(parsedVolume) ? Math.max(0, Math.min(1, parsedVolume)) : 1,
-      duration: Number.isFinite(rawDuration) && rawDuration > 0
-        ? rawDuration
-        : DEFAULT_AUDIO_DURATION_SECONDS,
+      duration,
+      loop: parseBooleanAttr(attrs.loop ?? attrs.repeat),
+      fadeOutSeconds: Number.isFinite(parsedFadeOut) && parsedFadeOut > 0
+        ? Math.min(parsedFadeOut, duration)
+        : 0,
+      fadeOutEndVolume: Number.isFinite(parsedFadeOutEndVolume) ? clamp01(parsedFadeOutEndVolume) : 0,
     });
   }
 
@@ -87,6 +123,9 @@ export const parseSceneAudioTracks = (scenes: VideoScene[], focusedSceneId?: str
             volume: tag.volume,
             startSeconds: baseOffset + enterAt + tag.start,
             durationSeconds: tag.duration,
+            loop: tag.loop,
+            fadeOutSeconds: tag.fadeOutSeconds,
+            fadeOutEndVolume: tag.fadeOutEndVolume,
           });
         });
       });

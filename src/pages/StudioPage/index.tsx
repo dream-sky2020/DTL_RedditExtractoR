@@ -47,7 +47,12 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize,
     contentFontSize, setContentFontSize, quoteFontSize, setQuoteFontSize,
     maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
-    sceneBackgroundColor, setSceneBackgroundColor, itemBackgroundColor, setItemBackgroundColor,
+    sceneBackgroundColor, setSceneBackgroundColor, 
+    sceneBackgroundColorEnd, setSceneBackgroundColorEnd,
+    sceneBackgroundGradientMode, setSceneBackgroundGradientMode,
+    itemBackgroundColor, setItemBackgroundColor,
+    itemBackgroundColorEnd, setItemBackgroundColorEnd,
+    itemBackgroundGradientMode, setItemBackgroundGradientMode,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
     colorArrangement, setColorArrangement,
     sceneDisplayMode,
@@ -76,9 +81,13 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     },
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
     setContentFontSize, setQuoteFontSize, setMaxQuoteDepth, setDefaultQuoteMaxLimit,
-    setSceneBackgroundColor, setItemBackgroundColor, setQuoteBackgroundColor, setQuoteBorderColor,
+    setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
+    setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
+    setQuoteBackgroundColor, setQuoteBorderColor,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
-    maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor,
+    maxQuoteDepth, defaultQuoteMaxLimit, 
+    sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
+    itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor
   });
 
@@ -378,7 +387,11 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         maxQuoteDepth={maxQuoteDepth}
         defaultQuoteMaxLimit={defaultQuoteMaxLimit}
         sceneBackgroundColor={sceneBackgroundColor}
+        sceneBackgroundColorEnd={sceneBackgroundColorEnd}
+        sceneBackgroundGradientMode={sceneBackgroundGradientMode}
         itemBackgroundColor={itemBackgroundColor}
+        itemBackgroundColorEnd={itemBackgroundColorEnd}
+        itemBackgroundGradientMode={itemBackgroundGradientMode}
         quoteBackgroundColor={quoteBackgroundColor}
         quoteBorderColor={quoteBorderColor}
         onApplyCommentSort={videoSettingsHandlers.handleApplyCommentSort}
@@ -395,7 +408,11 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         onMaxQuoteDepthChange={videoSettingsHandlers.handleMaxQuoteDepthChange}
         onDefaultQuoteMaxLimitChange={videoSettingsHandlers.handleDefaultQuoteMaxLimitChange}
         onSceneBackgroundColorChange={videoSettingsHandlers.handleSceneBackgroundColorChange}
+        onSceneBackgroundColorEndChange={videoSettingsHandlers.handleSceneBackgroundColorEndChange}
+        onSceneBackgroundGradientModeChange={videoSettingsHandlers.handleSceneBackgroundGradientModeChange}
         onItemBackgroundColorChange={videoSettingsHandlers.handleItemBackgroundColorChange}
+        onItemBackgroundColorEndChange={videoSettingsHandlers.handleItemBackgroundColorEndChange}
+        onItemBackgroundGradientModeChange={videoSettingsHandlers.handleItemBackgroundGradientModeChange}
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
         onSetAllSceneLayouts={videoSettingsHandlers.setAllSceneLayouts}

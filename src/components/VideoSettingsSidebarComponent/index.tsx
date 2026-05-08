@@ -68,7 +68,11 @@ interface VideoSettingsSidebarProps {
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
+  sceneBackgroundColorEnd: string;
+  sceneBackgroundGradientMode: boolean;
   itemBackgroundColor: string;
+  itemBackgroundColorEnd: string;
+  itemBackgroundGradientMode: boolean;
   quoteBackgroundColor: string;
   quoteBorderColor: string;
   
@@ -87,7 +91,11 @@ interface VideoSettingsSidebarProps {
   onMaxQuoteDepthChange: (depth: number) => void;
   onDefaultQuoteMaxLimitChange: (limit: number) => void;
   onSceneBackgroundColorChange: (color: string) => void;
+  onSceneBackgroundColorEndChange: (color: string) => void;
+  onSceneBackgroundGradientModeChange: (mode: boolean) => void;
   onItemBackgroundColorChange: (color: string) => void;
+  onItemBackgroundColorEndChange: (color: string) => void;
+  onItemBackgroundGradientModeChange: (mode: boolean) => void;
   onQuoteBackgroundColorChange: (color: string) => void;
   onQuoteBorderColorChange: (color: string) => void;
   onSetAllSceneLayouts: (layout: 'top' | 'center') => void;
@@ -147,7 +155,11 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     maxQuoteDepth,
     defaultQuoteMaxLimit,
     sceneBackgroundColor,
+    sceneBackgroundColorEnd,
+    sceneBackgroundGradientMode,
     itemBackgroundColor,
+    itemBackgroundColorEnd,
+    itemBackgroundGradientMode,
     quoteBackgroundColor,
     quoteBorderColor,
     onApplyCommentSort,
@@ -164,7 +176,11 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     onMaxQuoteDepthChange,
     onDefaultQuoteMaxLimitChange,
     onSceneBackgroundColorChange,
+    onSceneBackgroundColorEndChange,
+    onSceneBackgroundGradientModeChange,
     onItemBackgroundColorChange,
+    onItemBackgroundColorEndChange,
+    onItemBackgroundGradientModeChange,
     onQuoteBackgroundColorChange,
     onQuoteBorderColorChange,
     onSetAllSceneLayouts,
@@ -337,8 +353,16 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                 <DefaultColorsSection
                   sceneBackgroundColor={sceneBackgroundColor}
                   setSceneBackgroundColor={onSceneBackgroundColorChange}
+                  sceneBackgroundColorEnd={sceneBackgroundColorEnd}
+                  setSceneBackgroundColorEnd={onSceneBackgroundColorEndChange}
+                  sceneBackgroundGradientMode={sceneBackgroundGradientMode}
+                  setSceneBackgroundGradientMode={onSceneBackgroundGradientModeChange}
                   itemBackgroundColor={itemBackgroundColor}
                   setItemBackgroundColor={onItemBackgroundColorChange}
+                  itemBackgroundColorEnd={itemBackgroundColorEnd}
+                  setItemBackgroundColorEnd={onItemBackgroundColorEndChange}
+                  itemBackgroundGradientMode={itemBackgroundGradientMode}
+                  setItemBackgroundGradientMode={onItemBackgroundGradientModeChange}
                 />
                 <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
                 <QuoteStyleSection

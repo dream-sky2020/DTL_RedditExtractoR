@@ -43,7 +43,11 @@ interface VideoSettingsOptions {
   setMaxQuoteDepth: (depth: number) => void;
   setDefaultQuoteMaxLimit: (limit: number) => void;
   setSceneBackgroundColor: (color: string) => void;
+  setSceneBackgroundColorEnd: (color: string) => void;
+  setSceneBackgroundGradientMode: (mode: boolean) => void;
   setItemBackgroundColor: (color: string) => void;
+  setItemBackgroundColorEnd: (color: string) => void;
+  setItemBackgroundGradientMode: (mode: boolean) => void;
   setQuoteBackgroundColor: (color: string) => void;
   setQuoteBorderColor: (color: string) => void;
   // 当前值（用于计算）
@@ -54,7 +58,11 @@ interface VideoSettingsOptions {
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
+  sceneBackgroundColorEnd: string;
+  sceneBackgroundGradientMode: boolean;
   itemBackgroundColor: string;
+  itemBackgroundColorEnd: string;
+  itemBackgroundGradientMode: boolean;
   quoteBackgroundColor: string;
   quoteBorderColor: string;
 }
@@ -67,13 +75,73 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles,
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
     setContentFontSize, setQuoteFontSize, setMaxQuoteDepth, setDefaultQuoteMaxLimit,
-    setSceneBackgroundColor, setItemBackgroundColor, setQuoteBackgroundColor, setQuoteBorderColor,
+    setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
+    setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
+    setQuoteBackgroundColor, setQuoteBorderColor,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
-    maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor, itemBackgroundColor,
+    maxQuoteDepth, defaultQuoteMaxLimit, 
+    sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
+    itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor
   } = opts;
 
   // --- 内部辅助函数 ---
+  const interpolateColor = (color1: string, color2: string, factor: number) => {
+    if (color1 === 'transparent' || color2 === 'transparent') {
+      return factor < 0.5 ? color1 : color2;
+    }
+    
+    const hex = (x: string) => {
+      const h = x.replace('#', '');
+      if (h.length === 3) return h.split('').map(c => c + c).join('');
+      return h;
+    };
+
+    const r1 = parseInt(hex(color1).substring(0, 2), 16);
+    const g1 = parseInt(hex(color1).substring(2, 4), 16);
+    const b1 = parseInt(hex(color1).substring(4, 6), 16);
+
+    const r2 = parseInt(hex(color2).substring(0, 2), 16);
+    const g2 = parseInt(hex(color2).substring(2, 4), 16);
+    const b2 = parseInt(hex(color2).substring(4, 6), 16);
+
+    const r = Math.round(r1 + factor * (r2 - r1));
+    const g = Math.round(g1 + factor * (g2 - g1));
+    const b = Math.round(b1 + factor * (b2 - b1));
+
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
+  const applyColorsToConfig = (config: VideoConfig, overrideOpts?: Partial<VideoSettingsOptions>) => {
+    const sColor = overrideOpts?.sceneBackgroundColor ?? sceneBackgroundColor;
+    const sColorEnd = overrideOpts?.sceneBackgroundColorEnd ?? sceneBackgroundColorEnd;
+    const sMode = overrideOpts?.sceneBackgroundGradientMode ?? sceneBackgroundGradientMode;
+    const iColor = overrideOpts?.itemBackgroundColor ?? itemBackgroundColor;
+    const iColorEnd = overrideOpts?.itemBackgroundColorEnd ?? itemBackgroundColorEnd;
+    const iMode = overrideOpts?.itemBackgroundGradientMode ?? itemBackgroundGradientMode;
+
+    const total = config.scenes.length;
+    const nextScenes = config.scenes.map((scene, index) => {
+      const factor = total > 1 ? index / (total - 1) : 0;
+      
+      const currentSceneBg = sMode ? interpolateColor(sColor, sColorEnd, factor) : sColor;
+      const currentItemBg = iMode ? interpolateColor(iColor, iColorEnd, factor) : iColor;
+
+      return {
+        ...scene,
+        backgroundColor: currentSceneBg,
+        items: scene.items.map(item => ({ ...item, backgroundColor: currentItemBg }))
+      };
+    });
+
+    return {
+      ...config,
+      scenes: nextScenes,
+      sceneBackgroundColor: sColor,
+      itemBackgroundColor: iColor,
+    };
+  };
   const buildColorWithSettings = (index: number, settings: ColorArrangementSettings) => {
     const s = Math.max(20, Math.min(90, settings.saturation)) / 100;
     const l = Math.max(20, Math.min(80, settings.lightness)) / 100;
@@ -138,7 +206,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       }]
     }));
 
-    return {
+    const baseConfig = {
       title: nextResult.title,
       subreddit: nextResult.subreddit,
       scenes: [postScene, ...commentScenes],
@@ -153,6 +221,8 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       itemBackgroundColor: opts.itemBackgroundColor,
       canvas,
     };
+
+    return applyColorsToConfig(baseConfig);
   };
 
   const rebuildFromRaw = (
@@ -332,18 +402,37 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
 
   const handleSceneBackgroundColorChange = (color: string) => {
     setSceneBackgroundColor(color);
-    const newScenes = videoConfig.scenes.map(scene => ({ ...scene, backgroundColor: color }));
-    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, sceneBackgroundColor: color });
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundColor: color }));
+    setVideoConfig(newConfig);
+  };
+
+  const handleSceneBackgroundColorEndChange = (color: string) => {
+    setSceneBackgroundColorEnd(color);
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundColorEnd: color }));
+    setVideoConfig(newConfig);
+  };
+
+  const handleSceneBackgroundGradientModeChange = (mode: boolean) => {
+    setSceneBackgroundGradientMode(mode);
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundGradientMode: mode }));
     setVideoConfig(newConfig);
   };
 
   const handleItemBackgroundColorChange = (color: string) => {
     setItemBackgroundColor(color);
-    const newScenes = videoConfig.scenes.map(scene => ({
-      ...scene,
-      items: scene.items.map(item => ({ ...item, backgroundColor: color }))
-    }));
-    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, itemBackgroundColor: color });
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundColor: color }));
+    setVideoConfig(newConfig);
+  };
+
+  const handleItemBackgroundColorEndChange = (color: string) => {
+    setItemBackgroundColorEnd(color);
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundColorEnd: color }));
+    setVideoConfig(newConfig);
+  };
+
+  const handleItemBackgroundGradientModeChange = (mode: boolean) => {
+    setItemBackgroundGradientMode(mode);
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundGradientMode: mode }));
     setVideoConfig(newConfig);
   };
 
@@ -374,9 +463,9 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       layout: 'top',
       backgroundColor: sceneBackgroundColor,
       duration: 5,
-      items: [{ id: 'item-' + Date.now(), author: 'NewUser', content: '' }]
+      items: [{ id: 'item-' + Date.now(), author: 'NewUser', content: '', backgroundColor: itemBackgroundColor }]
     };
-    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] });
+    const newConfig = normalizeVideoConfig(applyColorsToConfig({ ...videoConfig, scenes: [...videoConfig.scenes, newScene] }));
     setVideoConfig(newConfig);
   };
 
@@ -400,7 +489,10 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleSceneLayoutChange, handleTitleAlignmentChange, handleTitleFontSizeChange,
     handleContentFontSizeChange, handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
     handleDefaultQuoteMaxLimitChange, handleSceneBackgroundColorChange,
-    handleItemBackgroundColorChange, handleQuoteBackgroundColorChange,
+    handleSceneBackgroundColorEndChange, handleSceneBackgroundGradientModeChange,
+    handleItemBackgroundColorChange, handleItemBackgroundColorEndChange,
+    handleItemBackgroundGradientModeChange,
+    handleQuoteBackgroundColorChange,
     handleQuoteBorderColorChange, setAllSceneLayouts, addScene, setAllSceneDurations
   };
 };

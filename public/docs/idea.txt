@@ -63,3 +63,15 @@ https://www.reddit.com/r/Jujutsufolk/comments/1sck5t7/why_didnt_they_just_send_r
 
 https://www.reddit.com/r/Jujutsufolk/comments/1st3fsx/i_made_this_pls_clap/
 https://www.reddit.com/r/limbuscompany/comments/1stoxuh/sure_fire_way_to_prevent_corrosions/
+
+<scene id="scene-sora-3" duration=75 type="post" layout="top" title="名为“空”的讽刺：逃离之梦的终结" bg="#0f0f0f">
+  <item id="content-3" author="Lunarsault" enterAt=0 exitAt=75 enterAnimation="none" exitAnimation="none" bg="#34495e">
+[style size=34]里恩曾告诉良秀：蜘蛛永远不要渴望离开蛛网，永远不要奢求[style b]天空[/style]。[\n][\n]    而 Sora 的名字在日语中正是 [style color=#ecf0f1 b]“天空（Sky）”[/style]。[\n][\n][\n]    [image]https://preview.redd.it/lsjxmmovsfzg1.png?width=1069&format=png&auto=webp&s=b104e57b482633040e4faf1ec7a3e86f45c94eba[/image][n][\n]    指数送给他一个名为“天空”的孩子，却让她在枷锁中寻找幸福。[\n][\n][\n]    最悲剧的是，Sora 真心地爱着里恩。而里恩亲手送她去死。他告诉莲“太迟了”、“没意义”，其实是在对自己说。[\n][\n]    [image]https://preview.redd.it/zrvckh76ufzg1.png?width=997&format=png&auto=webp&s=6877e520b93349aac585361630ac62ec483f06b5[/image][\n][\n]    莲拥有为主人赴死的勇气，而里恩从未有过为家庭反抗的勇气。Sora 和 莲 就像两面镜子，映照出里恩作为一个[style b]既不敢反抗、也不敢服从[/style]的失败者，是多么的孤独与悲哀。[/style]
+  </item>
+</scene>
+
+<scene id="scene-ok6wmqg" duration=3 type="comments" layout="center" title="评论 u/PM_ME_YOUR_ROBOTGIRL" bg="#3a1b9f">
+  <item id="ok6wmqg" author="PM_ME_YOUR_ROBOTGIRL" enterAt=0 exitAt=3 enterAnimation="none" exitAnimation="none" bg="#9fb4ed">
+[style size=34][style color=#d87e31 b]u/PM_ME_YOUR_ROBOTGIRL:[/style] <#text#>I want to point something out about Sora's name that this post missed. Sora means sky, yes, but the kanji for sky (空) in Japanese also means "empty, vacuum", the same as Rien's name in French. Their names match.</#text#>[/style]
+  </item>
+</scene>

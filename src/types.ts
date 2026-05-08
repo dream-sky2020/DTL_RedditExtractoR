@@ -29,7 +29,11 @@ export interface GlobalSettings {
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
+  sceneBackgroundColorEnd: string;
+  sceneBackgroundGradientMode: boolean;
   itemBackgroundColor: string;
+  itemBackgroundColorEnd: string;
+  itemBackgroundGradientMode: boolean;
   quoteBackgroundColor: string;
   quoteBorderColor: string;
   sceneDisplayMode: SceneDisplayMode;
@@ -47,7 +51,11 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   maxQuoteDepth: 4,
   defaultQuoteMaxLimit: 150,
   sceneBackgroundColor: '#ffffff',
+  sceneBackgroundColorEnd: '#ffffff',
+  sceneBackgroundGradientMode: false,
   itemBackgroundColor: 'transparent',
+  itemBackgroundColorEnd: 'transparent',
+  itemBackgroundGradientMode: false,
   quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
   quoteBorderColor: '#e0e0e0',
   sceneDisplayMode: 'normal',
