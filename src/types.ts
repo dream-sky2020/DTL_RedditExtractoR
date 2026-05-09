@@ -61,7 +61,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   sceneDisplayMode: 'normal',
 };
 
-export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test';
+export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try';
 
 export interface ReplyInfo {
   author: string;

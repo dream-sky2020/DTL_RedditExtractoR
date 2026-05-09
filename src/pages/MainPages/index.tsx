@@ -28,6 +28,7 @@ import { ComponentTestPage } from '../ComponentTestPage/index';
 import { StudioScenePage } from '../StudioScenePage/index';
 import { RenderTasksPage } from '../RenderTasksPage/index';
 import { ProjectsPage } from '../ProjectsPage/index';
+import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 
 import { 
   ToolKey, 
@@ -195,6 +196,12 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
           desc: '测试 Dialogs 和 Toast 统一组件。',
           button: '',
         };
+      case 'qwen_tts_try':
+        return {
+          title: 'Qwen3-TTS 试听',
+          desc: '调用本地 Qwen3-TTS 封装接口合成语音并播放。',
+          button: '',
+        };
     }
   }, [activeTool]);
 
@@ -345,6 +352,10 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'component_test' && (
               <ComponentTestPage />
+            )}
+
+            {activeTool === 'qwen_tts_try' && (
+              <QwenTtsTryPage />
             )}
           </Content>
         </Layout>

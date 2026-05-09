@@ -14,6 +14,7 @@ import {
   EyeOutlined,
   PlayCircleOutlined,
   SoundOutlined,
+  AudioOutlined,
 } from '@ant-design/icons';
 import { ToolKey } from '../types';
 
@@ -99,6 +100,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             key: 'audio_preview',
             icon: <SoundOutlined />,
             label: '音频预览',
+          },
+          {
+            key: 'qwen_tts_try',
+            icon: <AudioOutlined />,
+            label: 'Qwen3-TTS 试听',
           },
           {
             key: 'data_view',

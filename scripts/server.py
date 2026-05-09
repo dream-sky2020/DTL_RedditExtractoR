@@ -255,6 +255,137 @@ def update_audio_manifest():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+# --- Qwen3-TTS（可选依赖：pip install -r scripts/requirements-qwen-tts.txt） ---
+
+@app.route('/qwen_tts/status', methods=['GET'])
+def qwen_tts_status():
+    try:
+        from qwen_tts_wrapper import check_dependencies
+        ok, err = check_dependencies()
+        return jsonify({
+            "success": True,
+            "dependencies_ok": ok,
+            "dependency_error": err or None,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/qwen_tts/synthesize', methods=['POST'])
+def qwen_tts_synthesize():
+    try:
+        from qwen_tts_wrapper import (
+            check_dependencies,
+            synthesize_custom_voice_wav,
+            cache_filename,
+            cache_digest,
+            current_tts_model_id,
+        )
+        from qwen_tts_manifest import upsert_item
+    except ImportError as e:
+        return jsonify({"success": False, "message": f"封装模块加载失败: {e}"}), 500
+
+    body = request.json or {}
+    text = (body.get('text') or "").strip()
+    if not text:
+        return jsonify({"success": False, "message": "text 不能为空"}), 400
+    if len(text) > 4000:
+        return jsonify({"success": False, "message": "text 过长（上限 4000 字符）"}), 400
+
+    language = body.get('language') or 'Chinese'
+    speaker = body.get('speaker') or 'Vivian'
+    instruct = body.get('instruct')
+    if isinstance(instruct, str):
+        instruct = instruct.strip() or None
+
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    digest = cache_digest(text, language, speaker, instruct)
+    filename = cache_filename(text, language, speaker, instruct)
+    out_path = os.path.join(CACHE_DIR, filename)
+    model_id = current_tts_model_id()
+
+    def respond_ok(sr: int, cached: bool):
+        upsert_item(
+            CACHE_DIR,
+            digest=digest,
+            filename=filename,
+            text=text,
+            language=language,
+            speaker=speaker,
+            instruct=instruct,
+            model_id=model_id,
+            sample_rate=sr,
+        )
+        return jsonify({
+            "success": True,
+            "url": f"/cache/{filename}",
+            "sample_rate": sr,
+            "filename": filename,
+            "digest": digest,
+            "cached": cached,
+        })
+
+    # 缓存命中：文件存在则无需加载 GPU 模型
+    if os.path.isfile(out_path) and os.path.getsize(out_path) > 0:
+        sr = 0
+        try:
+            import soundfile as sf
+
+            sr = int(sf.info(out_path).samplerate)
+        except Exception:
+            pass
+        return respond_ok(sr, True)
+
+    ok, err = check_dependencies()
+    if not ok:
+        return jsonify({"success": False, "message": f"依赖未安装: {err}"}), 503
+
+    try:
+        sr, _ = synthesize_custom_voice_wav(
+            text,
+            out_path,
+            language=language,
+            speaker=speaker,
+            instruct=instruct,
+        )
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    return respond_ok(sr, False)
+
+
+@app.route('/qwen_tts/index', methods=['GET'])
+def qwen_tts_index():
+    """列出 TTS 缓存索引（与磁盘 qwen_tts_*.wav 对齐），类似 list_audio + manifest。"""
+    try:
+        from qwen_tts_manifest import build_index_response
+    except ImportError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    try:
+        rows = build_index_response(CACHE_DIR)
+        return jsonify({"success": True, "entries": rows, "count": len(rows)})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/qwen_tts/cache/<digest>', methods=['DELETE'])
+def qwen_tts_delete_cache(digest: str):
+    """删除指定 digest 的 WAV 与清单项。"""
+    try:
+        from qwen_tts_manifest import delete_digest_entry
+    except ImportError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    try:
+        ok, msg = delete_digest_entry(CACHE_DIR, digest)
+        if not ok:
+            return jsonify({"success": False, "message": msg}), 400
+        return jsonify({"success": True, "message": msg})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     print("--------------------------------------")
     print("RedditExtractor API Server 已启动")
