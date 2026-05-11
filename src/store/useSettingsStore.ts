@@ -35,7 +35,9 @@ interface MultiSelectUiSettings {
   stickyItemIndex: number;
   stickyValue: number | boolean;
   insertTextItemIndex: number;
+  insertTextMode: 'fixed' | 'weightedRandom';
   insertTextValue: string;
+  insertTextWeightedOptions: string;
   animationItemIndex: number;
   animationKeyframes: string;
 }
@@ -111,7 +113,9 @@ const DEFAULT_EDITOR_UI_SETTINGS: EditorUiSettings = {
     stickyItemIndex: 1,
     stickyValue: 0.5,
     insertTextItemIndex: 1,
+    insertTextMode: 'fixed',
     insertTextValue: '',
+    insertTextWeightedOptions: '',
     animationItemIndex: 1,
     animationKeyframes: '',
   },

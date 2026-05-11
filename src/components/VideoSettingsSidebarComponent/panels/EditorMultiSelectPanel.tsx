@@ -5,6 +5,7 @@ import {
   UpOutlined,
   SelectOutlined,
   DeleteOutlined,
+  CopyOutlined,
   MergeCellsOutlined,
   TranslationOutlined,
   CloseCircleOutlined,
@@ -17,16 +18,26 @@ import {
   CommentOutlined,
   HistoryOutlined,
   LineHeightOutlined,
-  DragOutlined
+  DragOutlined,
+  ScissorOutlined
 } from '@ant-design/icons';
-import { VideoConfig } from '../../../types';
+import { VideoConfig, VideoScene } from '../../../types';
 import { useSceneMerge } from '../../../hooks/useSceneMerge';
 import { SceneReorderSection } from '../sections/SceneReorderSection';
 import { toast } from '@components/Toast';
 import { useSettingsStore } from '@/store';
+import { dialogs } from '@components/Dialogs';
+import { sceneToDsl, parseSceneDsl } from '../../../rendering/sceneDsl';
 
 const { Text } = Typography;
 const { Option } = Select;
+
+type InsertTextMode = 'fixed' | 'weightedRandom';
+
+interface WeightedInsertTextOption {
+  text: string;
+  weight: number;
+}
 
 /** 1-based 正序 / 负序索引，不允许 0；清空时回到 1；经 0 步进时在 ±1 之间跳过 */
 function applyItemIndexChange(val: number | null, prev: number, set: (n: number) => void) {
@@ -39,6 +50,54 @@ function applyItemIndexChange(val: number | null, prev: number, set: (n: number)
     return;
   }
   set(val);
+}
+
+function createUniqueRandomId(existingIds: Set<string>, prefix = '') {
+  let nextId = '';
+  do {
+    nextId = `${prefix}${Math.random().toString(36).slice(2, 9)}`;
+  } while (existingIds.has(nextId));
+  existingIds.add(nextId);
+  return nextId;
+}
+
+function parseWeightedInsertTextOptions(source: string): { options: WeightedInsertTextOption[]; error?: string } {
+  const lines = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const options: WeightedInsertTextOption[] = [];
+
+  for (const line of lines) {
+    const separatorIndex = line.lastIndexOf('|');
+    if (separatorIndex === -1) {
+      return { options: [], error: '随机插入配置请使用“文本 | 权重”的格式' };
+    }
+
+    const text = line.slice(0, separatorIndex).trim();
+    const weight = Number(line.slice(separatorIndex + 1).trim());
+    if (!text) {
+      return { options: [], error: '随机插入配置中存在空文本' };
+    }
+    if (!Number.isFinite(weight) || weight <= 0) {
+      return { options: [], error: '随机插入权重必须是大于 0 的数字' };
+    }
+    options.push({ text, weight });
+  }
+
+  if (options.length === 0) {
+    return { options: [], error: '请先填写随机插入文本和权重' };
+  }
+  return { options };
+}
+
+function pickWeightedInsertText(options: WeightedInsertTextOption[]) {
+  const totalWeight = options.reduce((sum, option) => sum + option.weight, 0);
+  let cursor = Math.random() * totalWeight;
+  for (const option of options) {
+    cursor -= option.weight;
+    if (cursor <= 0) {
+      return option.text;
+    }
+  }
+  return options[options.length - 1]?.text ?? '';
 }
 
 interface EditorMultiSelectPanelProps {
@@ -80,7 +139,9 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     stickyItemIndex,
     stickyValue,
     insertTextItemIndex,
+    insertTextMode = 'fixed',
     insertTextValue,
+    insertTextWeightedOptions = '',
     animationItemIndex = 1,
     animationKeyframes = '',
   } = editorUiSettings.multiSelect;
@@ -92,7 +153,9 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   const setStickyItemIndex = (value: number) => setMultiSelectUiSettings({ stickyItemIndex: value });
   const setStickyValue = (value: number | boolean) => setMultiSelectUiSettings({ stickyValue: value });
   const setInsertTextItemIndex = (value: number) => setMultiSelectUiSettings({ insertTextItemIndex: value });
+  const setInsertTextMode = (value: InsertTextMode) => setMultiSelectUiSettings({ insertTextMode: value });
   const setInsertTextValue = (value: string) => setMultiSelectUiSettings({ insertTextValue: value });
+  const setInsertTextWeightedOptions = (value: string) => setMultiSelectUiSettings({ insertTextWeightedOptions: value });
   const setAnimationItemIndex = (value: number) => setMultiSelectUiSettings({ animationItemIndex: value });
   const setAnimationKeyframes = (value: string) => setMultiSelectUiSettings({ animationKeyframes: value });
 
@@ -116,6 +179,126 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     const currentPageScenes = draftConfig.scenes.slice(startIndex, startIndex + galleryPageSize);
     setSelectedSceneIds(currentPageScenes.map(s => s.id));
     toast.success(`已全选当前页面 ${currentPageScenes.length} 个场景`);
+  };
+
+  const handleOpenSplitModal = () => {
+    if (selectedSceneIds.length !== 1) {
+      toast.warning('请选择 1 个画面格后再进行裁剪');
+      return;
+    }
+    const scene = draftConfig.scenes.find(s => s.id === selectedSceneIds[0]);
+    if (!scene) return;
+    
+    dialogs.showSplitHelper({
+      initialValue: sceneToDsl(scene),
+      onOk: handleApplySplit
+    });
+  };
+
+  const handleApplySplit = (dslWithSplits: string) => {
+    const sourceSceneIndex = draftConfig.scenes.findIndex(scene => scene.id === selectedSceneIds[0]);
+    if (sourceSceneIndex === -1) return;
+    
+    const sourceScene = draftConfig.scenes[sourceSceneIndex];
+    
+    // 1. 替换 [split] 为标记并解析
+    const splitMarker = `__SPLIT_${Math.random().toString(36).slice(2, 9)}__`;
+    const dslForParsing = dslWithSplits.replace(/\[split\]/g, splitMarker);
+    
+    const parseResult = parseSceneDsl(dslForParsing, sourceScene);
+    if (!parseResult.ok) {
+      toast.error(`解析失败: ${parseResult.error}`);
+      return;
+    }
+
+    const parsedScene = parseResult.scene;
+    
+    // 2. 智能拆分每个 item 的 content
+    let maxParts = 1;
+    const itemPartsMap = parsedScene.items.map(item => {
+      if (!item.content.includes(splitMarker)) return [item.content];
+
+      // 完美方案的关键：使用正则捕获 <#text#> 及其前后的“外壳”
+      // 这样可以确保 [style] 标签和作者名等前缀在每个分段中都被保留
+      const textTagRegex = /^([\s\S]*?<#text#>)([\s\S]*?)(<\/#text#>[\s\S]*)$/;
+      const match = item.content.match(textTagRegex);
+
+      if (match) {
+        const [_, prefix, innerContent, suffix] = match;
+        const segments = innerContent.split(splitMarker);
+        if (segments.length > maxParts) maxParts = segments.length;
+        // 为每个片段重新套上外壳
+        return segments.map(seg => `${prefix}${seg}${suffix}`);
+      } else {
+        // 如果没有 <#text#> 标签，则回退到普通拆分（适用于纯文本 item）
+        const segments = item.content.split(splitMarker);
+        if (segments.length > maxParts) maxParts = segments.length;
+        return segments;
+      }
+    });
+
+    if (maxParts <= 1) {
+      toast.warning('未检测到有效的 [split] 标记');
+      return;
+    }
+
+    // 3. 生成新场景
+    const sceneIds = new Set(draftConfig.scenes.map(scene => scene.id));
+    const itemIds = new Set(draftConfig.scenes.flatMap(scene => scene.items.map(item => item.id)));
+    
+    const newGeneratedScenes: VideoScene[] = [];
+    for (let i = 0; i < maxParts; i++) {
+      const newScene: VideoScene = {
+        ...parsedScene,
+        id: createUniqueRandomId(sceneIds, 'scene-'),
+        items: parsedScene.items.map((item, itemIdx) => ({
+          ...item,
+          id: createUniqueRandomId(itemIds),
+          // 如果当前 item 份数不足，则取最后一份（保持内容显示）
+          content: itemPartsMap[itemIdx][i] ?? itemPartsMap[itemIdx][itemPartsMap[itemIdx].length - 1]
+        }))
+      };
+      newGeneratedScenes.push(newScene);
+    }
+
+    // 4. 应用到配置
+    const newScenes = [...draftConfig.scenes];
+    newScenes.splice(sourceSceneIndex, 1, ...newGeneratedScenes);
+    
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    setSelectedSceneIds(newGeneratedScenes.map(s => s.id));
+    toast.success(`已成功裁剪并生成 ${newGeneratedScenes.length} 个新画面格`);
+  };
+
+  const handleDuplicateSelectedScene = () => {
+    if (selectedSceneIds.length !== 1) {
+      toast.warning('请选择 1 个画面格后再复制');
+      return;
+    }
+
+    const sourceSceneIndex = draftConfig.scenes.findIndex(scene => scene.id === selectedSceneIds[0]);
+    if (sourceSceneIndex === -1) {
+      toast.warning('未找到要复制的画面格');
+      return;
+    }
+
+    const sceneIds = new Set(draftConfig.scenes.map(scene => scene.id));
+    const itemIds = new Set(draftConfig.scenes.flatMap(scene => scene.items.map(item => item.id)));
+    const sourceScene = draftConfig.scenes[sourceSceneIndex];
+    const duplicatedScene: VideoScene = {
+      ...sourceScene,
+      id: createUniqueRandomId(sceneIds, 'scene-'),
+      items: sourceScene.items.map(item => ({
+        ...item,
+        id: createUniqueRandomId(itemIds),
+      })),
+    };
+    const newScenes = [...draftConfig.scenes];
+    newScenes.splice(sourceSceneIndex + 1, 0, duplicatedScene);
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    setSelectedSceneIds([duplicatedScene.id]);
+    toast.success('已根据选中的画面格复制出新画面格');
   };
 
   const handleClearQuotes = () => {
@@ -150,6 +333,58 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     toast.success(`已清理 ${selectedSceneIds.length} 个场景中的引用内容`);
+  };
+
+  const handleRemoveLineBreakTags = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    let affectedItemCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const newItems = scene.items.map(item => {
+        const newContent = item.content.replace(/\[\\n\]|\r?\n/g, '');
+        if (newContent !== item.content) {
+          affectedItemCount += 1;
+        }
+        return { ...item, content: newContent };
+      });
+
+      return { ...scene, items: newItems };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedItemCount > 0) {
+      toast.success(`已去除 ${affectedItemCount} 个 item 中的换行标记`);
+      return;
+    }
+    toast.warning('选中的画面格中没有找到换行标记');
+  };
+
+  const handleRemoveFirstLineBreakTag = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    let affectedItemCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const newItems = scene.items.map(item => {
+        const newContent = item.content.replace(/\[\\n\]|\r?\n/, '');
+        if (newContent !== item.content) {
+          affectedItemCount += 1;
+        }
+        return { ...item, content: newContent };
+      });
+
+      return { ...scene, items: newItems };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedItemCount > 0) {
+      toast.success(`已去除 ${affectedItemCount} 个 item 中的第一个换行标记`);
+      return;
+    }
+    toast.warning('选中的画面格中没有找到换行标记');
   };
 
   const handleBatchLayoutChange = (layout: 'top' | 'center' | 'bottom') => {
@@ -282,8 +517,16 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
   const handleBatchInsertTextToItem = () => {
     if (selectedSceneIds.length === 0) return;
 
-    const textToInsert = insertTextValue;
-    if (!textToInsert) {
+    const isWeightedRandomMode = insertTextMode === 'weightedRandom';
+    const weightedOptionsResult = isWeightedRandomMode
+      ? parseWeightedInsertTextOptions(insertTextWeightedOptions)
+      : { options: [] };
+
+    if (isWeightedRandomMode && weightedOptionsResult.error) {
+      toast.warning(weightedOptionsResult.error);
+      return;
+    }
+    if (!isWeightedRandomMode && !insertTextValue) {
       toast.warning('请先输入要插入的文本');
       return;
     }
@@ -302,6 +545,9 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
       if (targetIdx >= 0 && targetIdx < items.length) {
         const targetItem = items[targetIdx];
+        const textToInsert = isWeightedRandomMode
+          ? pickWeightedInsertText(weightedOptionsResult.options)
+          : insertTextValue;
         items[targetIdx] = {
           ...targetItem,
           content: `${targetItem.content}${textToInsert}`,
@@ -314,7 +560,7 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
     if (affectedSceneCount > 0) {
-      toast.success(`已在 ${affectedSceneCount} 个场景的指定 item 末尾插入文本`);
+      toast.success(`已在 ${affectedSceneCount} 个场景的指定 item 末尾${isWeightedRandomMode ? '随机' : ''}插入文本`);
       return;
     }
     toast.warning('未找到可插入的目标 item，请检查索引');
@@ -361,6 +607,9 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     }
     toast.warning('未找到可修改动画的目标 item，请检查索引');
   };
+
+  const canInsertText = selectedSceneIds.length > 0
+    && (insertTextMode === 'weightedRandom' ? insertTextWeightedOptions.trim() : insertTextValue);
 
   return (
     <>
@@ -435,6 +684,34 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                       全选本页
                     </Button>
                   </div>
+                  <Button
+                    block
+                    size="small"
+                    icon={<CopyOutlined />}
+                    disabled={selectedSceneIds.length !== 1}
+                    onClick={handleDuplicateSelectedScene}
+                    style={{
+                      backgroundColor: selectedSceneIds.length === 1 ? '#52c41a' : '#fff',
+                      color: selectedSceneIds.length === 1 ? '#fff' : '#000',
+                      borderColor: selectedSceneIds.length === 1 ? '#52c41a' : '#d9d9d9',
+                    }}
+                  >
+                    以此复制新画面格
+                  </Button>
+                  <Button
+                    block
+                    size="small"
+                    icon={<ScissorOutlined />}
+                    disabled={selectedSceneIds.length !== 1}
+                    onClick={handleOpenSplitModal}
+                    style={{
+                      backgroundColor: selectedSceneIds.length === 1 ? '#722ed1' : '#fff',
+                      color: selectedSceneIds.length === 1 ? '#fff' : '#000',
+                      borderColor: selectedSceneIds.length === 1 ? '#722ed1' : '#d9d9d9',
+                    }}
+                  >
+                    根据 [split] 裁剪
+                  </Button>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                     <Button
                       size="small"
@@ -600,37 +877,60 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                     </Button>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>插入项:</Text>
-                    <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
-                      <InputNumber
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>插入项:</Text>
+                      <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
+                        <InputNumber
+                          size="small"
+                          step={1}
+                          placeholder="索引"
+                          value={insertTextItemIndex}
+                          onChange={(val) => applyItemIndexChange(val, insertTextItemIndex, setInsertTextItemIndex)}
+                          style={{ width: 55 }}
+                        />
+                      </Tooltip>
+                      <Select
                         size="small"
-                        step={1}
-                        placeholder="索引"
-                        value={insertTextItemIndex}
-                        onChange={(val) => applyItemIndexChange(val, insertTextItemIndex, setInsertTextItemIndex)}
-                        style={{ width: 55 }}
+                        value={insertTextMode}
+                        onChange={setInsertTextMode}
+                        style={{ width: 92 }}
+                      >
+                        <Option value="fixed">固定</Option>
+                        <Option value="weightedRandom">随机权重</Option>
+                      </Select>
+                      {insertTextMode === 'fixed' && (
+                        <Input
+                          size="small"
+                          placeholder="输入要插入的文本"
+                          value={insertTextValue}
+                          onChange={(e) => setInsertTextValue(e.target.value)}
+                          style={{ flex: 1 }}
+                        />
+                      )}
+                      <Button
+                        size="small"
+                        disabled={!canInsertText}
+                        onClick={handleBatchInsertTextToItem}
+                        style={{
+                          backgroundColor: canInsertText ? '#fa8c16' : '#fff',
+                          color: canInsertText ? '#fff' : '#000',
+                          borderColor: canInsertText ? '#fa8c16' : 'var(--brand-border)',
+                        }}
+                      >
+                        插入文本
+                      </Button>
+                    </div>
+                    {insertTextMode === 'weightedRandom' && (
+                      <Input.TextArea
+                        size="small"
+                        placeholder={'每行一个：文本 | 权重\n例如：哈哈 | 3\n例如：不错 | 1'}
+                        value={insertTextWeightedOptions}
+                        onChange={(e) => setInsertTextWeightedOptions(e.target.value)}
+                        autoSize={{ minRows: 2, maxRows: 5 }}
+                        style={{ marginTop: 4 }}
                       />
-                    </Tooltip>
-                    <Input
-                      size="small"
-                      placeholder="输入要插入的文本"
-                      value={insertTextValue}
-                      onChange={(e) => setInsertTextValue(e.target.value)}
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      size="small"
-                      disabled={selectedSceneIds.length === 0 || !insertTextValue}
-                      onClick={handleBatchInsertTextToItem}
-                      style={{
-                        backgroundColor: selectedSceneIds.length > 0 && insertTextValue ? '#fa8c16' : '#fff',
-                        color: selectedSceneIds.length > 0 && insertTextValue ? '#fff' : '#000',
-                        borderColor: selectedSceneIds.length > 0 && insertTextValue ? '#fa8c16' : 'var(--brand-border)',
-                      }}
-                    >
-                      插入文本
-                    </Button>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
@@ -739,6 +1039,32 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                   </Button>
                   <Button
                     block
+                    icon={<ClearOutlined />}
+                    disabled={selectedSceneIds.length === 0}
+                    onClick={handleRemoveLineBreakTags}
+                    style={{
+                      backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                      color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                      borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                    }}
+                  >
+                    去除 [\n]
+                  </Button>
+                  <Button
+                    block
+                    icon={<ClearOutlined />}
+                    disabled={selectedSceneIds.length === 0}
+                    onClick={handleRemoveFirstLineBreakTag}
+                    style={{
+                      backgroundColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#fff',
+                      color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                      borderColor: selectedSceneIds.length > 0 ? '#fa8c16' : '#d9d9d9',
+                    }}
+                  >
+                    去除第一个 [\n]
+                  </Button>
+                  <Button
+                    block
                     icon={<DeleteOutlined />}
                     disabled={selectedSceneIds.length === 0}
                     onClick={onRemoveSelectedScenes}
@@ -792,13 +1118,13 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                 </Space>
               </div>
 
-              <SceneReorderSection
-                selectedSceneIds={selectedSceneIds}
-                totalScenes={draftConfig.scenes.length}
-              />
-            </Space>
-          )}
-        </div>
+      <SceneReorderSection
+        selectedSceneIds={selectedSceneIds}
+        totalScenes={draftConfig.scenes.length}
+      />
+    </Space>
+  )}
+</div>
       )}
     </>
   );

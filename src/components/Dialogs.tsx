@@ -11,7 +11,9 @@ import {
 } from '@ant-design/icons';
 import { ImageConfigContent } from './ImageConfigContent';
 import { PropertyConfigContent } from './PropertyConfigContent';
-import { SettingOutlined } from '@ant-design/icons';
+import { DslTranslateContent } from './DslTranslateContent';
+import { DslSplitContent } from './DslSplitContent';
+import { SettingOutlined, TranslationOutlined, ScissorOutlined } from '@ant-design/icons';
 
 interface DialogOptions {
   title: string;
@@ -43,6 +45,17 @@ interface PropertyHelperOptions {
   initialValues?: Record<string, any>;
   initialContent?: string;
   onInsert: (dsl: string) => void;
+}
+
+interface TranslateHelperOptions {
+  chunks: { id: number; original: string }[];
+  initialValue: string;
+  onOk: (value: string) => void;
+}
+
+interface SplitHelperOptions {
+  initialValue: string;
+  onOk: (value: string) => void;
 }
 
 // 这是一个单例引用，将在 App 组件初始化时被赋值
@@ -183,6 +196,47 @@ export const dialogs = {
       onOk: () => {
         options.onInsert(currentDsl);
       },
+    });
+  },
+
+  showTranslateHelper: (options: TranslateHelperOptions) => {
+    if (!modal) return;
+    let currentValue = options.initialValue;
+    modal.confirm({
+      title: '批量翻译脚本',
+      icon: <TranslationOutlined style={{ color: '#1890ff' }} />,
+      width: 800,
+      centered: true,
+      okText: '确认并应用翻译',
+      cancelText: '取消',
+      content: (
+        <DslTranslateContent 
+          chunks={options.chunks} 
+          initialValue={options.initialValue} 
+          onChange={(val) => { currentValue = val; }} 
+        />
+      ),
+      onOk: () => options.onOk(currentValue),
+    });
+  },
+
+  showSplitHelper: (options: SplitHelperOptions) => {
+    if (!modal) return;
+    let currentValue = options.initialValue;
+    modal.confirm({
+      title: '画面格裁剪助手',
+      icon: <ScissorOutlined style={{ color: '#722ed1' }} />,
+      width: 900,
+      centered: true,
+      okText: '根据 [split] 裁剪',
+      cancelText: '取消',
+      content: (
+        <DslSplitContent 
+          initialValue={options.initialValue} 
+          onChange={(val) => { currentValue = val; }} 
+        />
+      ),
+      onOk: () => options.onOk(currentValue),
     });
   }
 };

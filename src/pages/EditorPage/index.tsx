@@ -23,7 +23,7 @@ import { useSidebarResize } from '@hooks/useSidebarResize';
 import { useVideoSettings } from '@hooks/useVideoSettings';
 import { useSceneDeletion } from '@hooks/useSceneDeletion';
 import { useDslTranslate } from '@hooks/useDslTranslate';
-import { TranslationModal } from '@components/TranslationModal';
+import { dialogs } from '@components/Dialogs';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
@@ -85,10 +85,6 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
   });
 
   const {
-    isModalOpen: isTranslateModalOpen,
-    setIsModalOpen: setIsTranslateModalOpen,
-    chunks: translateChunks,
-    initialValue: translateInitialValue,
     extractChunks,
     applyTranslations
   } = useDslTranslate();
@@ -119,12 +115,21 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleApplyTranslate = (value: string) => {
-    // 关键改动：传入所有场景进行翻译应用，确保跨场景的相同文本都能被替换
-    const result = applyTranslations(videoConfig.scenes, value);
+  const handleOpenTranslationModal = () => {
+    const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
+    const { chunks, initialValue } = extractChunks(selectedScenes);
+    
+    dialogs.showTranslateHelper({
+      chunks,
+      initialValue,
+      onOk: (value) => handleApplyTranslate(chunks, value)
+    });
+  };
+
+  const handleApplyTranslate = (chunks: any[], value: string) => {
+    const result = applyTranslations(videoConfig.scenes, value, chunks);
     if (result.ok && result.nextScenes) {
       setVideoConfig({ ...videoConfig, scenes: result.nextScenes });
-      setIsTranslateModalOpen(false);
       message.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
     } else if (result.error) {
       message.error(result.error);
@@ -344,18 +349,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         selectedSceneIds={selectedSceneIds}
         setSelectedSceneIds={setSelectedSceneIds}
         onRemoveSelectedScenes={removeSelectedScenes}
-        onOpenTranslationModal={() => {
-          const selectedScenes = videoConfig.scenes.filter(s => selectedSceneIds.includes(s.id));
-          extractChunks(selectedScenes);
-        }}
-      />
-
-      <TranslationModal
-        open={isTranslateModalOpen}
-        onCancel={() => setIsTranslateModalOpen(false)}
-        onOk={handleApplyTranslate}
-        chunks={translateChunks}
-        initialValue={translateInitialValue}
+        onOpenTranslationModal={handleOpenTranslationModal}
       />
 
       <Modal

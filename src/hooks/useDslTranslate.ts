@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { VideoScene } from '@/types';
 import { sceneToDsl, parseSceneDsl } from '@/rendering/sceneDsl';
 
@@ -8,10 +8,6 @@ interface TranslationChunk {
 }
 
 export const useDslTranslate = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chunks, setChunks] = useState<TranslationChunk[]>([]);
-  const [initialValue, setInitialValue] = useState('');
-
   // 提取可翻译的文本块
   const extractChunks = useCallback((scenes: VideoScene[]) => {
     const uniqueChunks = new Set<string>();
@@ -35,14 +31,15 @@ export const useDslTranslate = () => {
       original: text
     }));
     
-    setChunks(chunkList);
-    
     const initialInput = chunkList.map(c => `[#${c.id}=<${c.original}>]`).join('\n');
-    setInitialValue(initialInput);
-    setIsModalOpen(true);
+    
+    return {
+      chunks: chunkList,
+      initialValue: initialInput
+    };
   }, []);
 
-  const applyTranslations = useCallback((scenes: VideoScene[], translationText: string) => {
+  const applyTranslations = useCallback((scenes: VideoScene[], translationText: string, chunks: TranslationChunk[]) => {
     // 解析用户的翻译输入 [#1=<翻译内容>]
     const translationMap = new Map<string, string>();
     const replaceRegex = /\[#(\d+)=<([\s\S]*?)>\]/g;
@@ -76,11 +73,7 @@ export const useDslTranslate = () => {
 
       // 执行替换
       translationMap.forEach((translated, original) => {
-        // 使用正则全局替换，注意转义原始文本中的正则特殊字符
         const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        
-        // 核心修正：搜索和替换时都带上 <#text#> 标签
-        // 这样可以确保只替换整个翻译块，而不会误伤到包含该单词的其他长句子
         const regex = new RegExp(`<#text#>${escapedOriginal}<\/#text#>`, 'g');
         
         const count = (dsl.match(regex) || []).length;
@@ -108,13 +101,9 @@ export const useDslTranslate = () => {
       totalReplacements,
       affectedScenes: nextScenes.filter((s, i) => s !== scenes[i]).length
     };
-  }, [chunks]);
+  }, []);
 
   return {
-    isModalOpen,
-    setIsModalOpen,
-    chunks,
-    initialValue,
     extractChunks,
     applyTranslations
   };
