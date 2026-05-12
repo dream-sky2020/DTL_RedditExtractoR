@@ -29,6 +29,7 @@ import { StudioScenePage } from '../StudioScenePage/index';
 import { RenderTasksPage } from '../RenderTasksPage/index';
 import { ProjectsPage } from '../ProjectsPage/index';
 import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
+import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
 
 import { 
   ToolKey, 
@@ -134,6 +135,12 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
         return {
           title: '导出与渲染任务',
           desc: '统一管理导出任务、进度与取消/清理。',
+          button: '',
+        };
+      case 'background_video':
+        return {
+          title: '背景视频轨道',
+          desc: '选择最终导出专用的背景视频，并设置播放结束策略。',
           button: '',
         };
       case 'static_preview':
@@ -288,6 +295,10 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
                 clearFinishedTasks={clearFinishedTasks}
                 downloadVideoConfig={downloadVideoConfig}
               />
+            )}
+
+            {activeTool === 'background_video' && (
+              <BackgroundVideoPage />
             )}
 
             {activeTool === 'static_preview' && (

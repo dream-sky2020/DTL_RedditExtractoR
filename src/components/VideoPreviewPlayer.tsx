@@ -57,7 +57,11 @@ export const VideoPreviewPlayer = React.forwardRef<PlayerRef, VideoPreviewPlayer
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const resolvedCompositionWidth = compositionWidth ?? activeCanvas.width;
   const resolvedCompositionHeight = compositionHeight ?? activeCanvas.height;
-  const inputProps: MyVideoProps = focusedSceneId ? { ...videoConfig, focusedSceneId } : videoConfig;
+  const inputProps: MyVideoProps = {
+    ...videoConfig,
+    renderMode: 'preview',
+    ...(focusedSceneId ? { focusedSceneId } : {}),
+  };
 
   return (
     <Player

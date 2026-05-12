@@ -87,6 +87,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '导出与渲染队列',
           },
           {
+            key: 'background_video',
+            icon: <PlayCircleOutlined />,
+            label: '背景视频轨道',
+          },
+          {
             key: 'studio',
             icon: <AppstoreOutlined />,
             label: '视频编辑画板',

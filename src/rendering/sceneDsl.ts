@@ -56,6 +56,21 @@ const parseOptionalSeconds = (value: string | undefined): number | undefined => 
   return num;
 };
 
+const parseOptionalNumber = (value: string | undefined): number | undefined => {
+  if (value == null || value.trim() === '') return undefined;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return undefined;
+  return num;
+};
+
+const parseOptionalBoolean = (value: string | undefined): boolean | undefined => {
+  if (value == null) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  return undefined;
+};
+
 const parseOptionalAnimation = (value: string | undefined): ItemAnimationType | undefined => {
   if (!value) return undefined;
   if (ITEM_ANIMATION_SET.has(value as ItemAnimationType)) {
@@ -124,6 +139,12 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.offset) itemAttrs.push(`offset="${escapeAttr(item.offset)}"`);
       if (item.sticky) itemAttrs.push(`sticky=true`);
       if (item.keyframes) itemAttrs.push(`keyframes="${escapeAttr(item.keyframes)}"`);
+      if (item.glass !== undefined) itemAttrs.push(`glass=${item.glass ? 'true' : 'false'}`);
+      if (item.glassBlur !== undefined) itemAttrs.push(`glassBlur=${item.glassBlur}`);
+      if (item.glassOpacity !== undefined) itemAttrs.push(`glassOpacity=${item.glassOpacity}`);
+      if (item.glassTint) itemAttrs.push(`glassTint="${escapeAttr(item.glassTint)}"`);
+      if (item.glassBorderColor) itemAttrs.push(`glassBorder="${escapeAttr(item.glassBorderColor)}"`);
+      if (item.glassShadow) itemAttrs.push(`glassShadow="${escapeAttr(item.glassShadow)}"`);
       
       const content = encodeDslLineBreaks((item.content || '').trim());
       return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
@@ -278,6 +299,12 @@ export const parseSceneDsl = (
     const animateEasing = itemAttrs.animateEasing || itemAttrs.ae;
     const itemOffset = itemAttrs.offset || itemAttrs.o || (shouldUseFallbackFields ? fallbackItem?.offset : undefined);
     const itemKeyframes = itemAttrs.keyframes || itemAttrs.kf || (shouldUseFallbackFields ? fallbackItem?.keyframes : undefined);
+    const glass = parseOptionalBoolean(itemAttrs.glass) ?? (shouldUseFallbackFields ? fallbackItem?.glass : undefined);
+    const glassBlur = parseOptionalNumber(itemAttrs.glassBlur || itemAttrs.gb) ?? (shouldUseFallbackFields ? fallbackItem?.glassBlur : undefined);
+    const glassOpacity = parseOptionalNumber(itemAttrs.glassOpacity || itemAttrs.go) ?? (shouldUseFallbackFields ? fallbackItem?.glassOpacity : undefined);
+    const glassTint = itemAttrs.glassTint || itemAttrs.gt || (shouldUseFallbackFields ? fallbackItem?.glassTint : undefined);
+    const glassBorderColor = itemAttrs.glassBorder || itemAttrs.glassBorderColor || itemAttrs.gbc || (shouldUseFallbackFields ? fallbackItem?.glassBorderColor : undefined);
+    const glassShadow = itemAttrs.glassShadow || itemAttrs.gs || (shouldUseFallbackFields ? fallbackItem?.glassShadow : undefined);
     let sticky: boolean | number | undefined = shouldUseFallbackFields ? fallbackItem?.sticky : undefined;
     if (itemAttrs.sticky) {
       const num = Number(itemAttrs.sticky);
@@ -319,6 +346,12 @@ export const parseSceneDsl = (
       offset: itemOffset,
       sticky,
       keyframes: itemKeyframes,
+      glass,
+      glassBlur,
+      glassOpacity,
+      glassTint,
+      glassBorderColor,
+      glassShadow,
     });
     index += 1;
   }

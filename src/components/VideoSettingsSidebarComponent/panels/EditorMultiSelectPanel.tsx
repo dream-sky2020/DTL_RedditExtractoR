@@ -387,6 +387,69 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
     toast.warning('选中的画面格中没有找到换行标记');
   };
 
+  const handleEnableGlassForSelectedItems = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    let affectedItemCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      return {
+        ...scene,
+        items: scene.items.map(item => {
+          affectedItemCount += 1;
+          return {
+            ...item,
+            glass: true,
+          };
+        }),
+      };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已将 ${affectedItemCount} 个 item 改为毛玻璃效果`);
+  };
+
+  const handleDisableGlassForSelectedItems = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    let affectedItemCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      return {
+        ...scene,
+        items: scene.items.map(item => {
+          const nextItem = { ...item };
+          if (
+            nextItem.glass !== undefined ||
+            nextItem.glassBlur !== undefined ||
+            nextItem.glassOpacity !== undefined ||
+            nextItem.glassTint !== undefined ||
+            nextItem.glassBorderColor !== undefined ||
+            nextItem.glassShadow !== undefined
+          ) {
+            affectedItemCount += 1;
+          }
+          delete nextItem.glass;
+          delete nextItem.glassBlur;
+          delete nextItem.glassOpacity;
+          delete nextItem.glassTint;
+          delete nextItem.glassBorderColor;
+          delete nextItem.glassShadow;
+          return nextItem;
+        }),
+      };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedItemCount > 0) {
+      toast.success(`已取消 ${affectedItemCount} 个 item 的毛玻璃属性`);
+      return;
+    }
+    toast.warning('选中的画面格中没有找到毛玻璃属性');
+  };
+
   const handleBatchLayoutChange = (layout: 'top' | 'center' | 'bottom') => {
     if (selectedSceneIds.length === 0) return;
 
@@ -712,6 +775,29 @@ export const EditorMultiSelectPanel: React.FC<EditorMultiSelectPanelProps> = ({
                   >
                     根据 [split] 裁剪
                   </Button>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <Button
+                      size="small"
+                      icon={<BorderInnerOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleEnableGlassForSelectedItems}
+                      style={{
+                        backgroundColor: selectedSceneIds.length > 0 ? '#13c2c2' : '#fff',
+                        color: selectedSceneIds.length > 0 ? '#fff' : '#000',
+                        borderColor: selectedSceneIds.length > 0 ? '#13c2c2' : '#d9d9d9',
+                      }}
+                    >
+                      item毛玻璃
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<ClearOutlined />}
+                      disabled={selectedSceneIds.length === 0}
+                      onClick={handleDisableGlassForSelectedItems}
+                    >
+                      取消毛玻璃
+                    </Button>
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                     <Button
                       size="small"

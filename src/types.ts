@@ -61,7 +61,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   sceneDisplayMode: 'normal',
 };
 
-export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try';
+export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try';
 
 export interface ReplyInfo {
   author: string;
@@ -97,6 +97,33 @@ export interface VideoCanvasConfig {
   };
 }
 
+export type RenderMode = 'preview' | 'final';
+export type BackgroundVideoFit = 'cover' | 'contain' | 'fill';
+export type BackgroundVideoPlaybackMode = 'play-once' | 'repeat-count';
+export type BackgroundVideoAfterEndMode = 'color' | 'image';
+export type BackgroundVideoTimelineMode = 'cut-at-dsl-end' | 'wait-for-background';
+
+export interface BackgroundVideoConfig {
+  enabled?: boolean;
+  src?: string;
+  fit?: BackgroundVideoFit;
+  opacity?: number;
+  overlayColor?: string;
+  blurredBackgroundEnabled?: boolean;
+  blurredBackgroundBlur?: number;
+  playbackRate?: number;
+  startOffset?: number;
+  audioEnabled?: boolean;
+  audioVolume?: number;
+  durationInSeconds?: number;
+  playbackMode?: BackgroundVideoPlaybackMode;
+  repeatCount?: number;
+  afterEndMode?: BackgroundVideoAfterEndMode;
+  afterEndColor?: string;
+  afterEndImageSrc?: string;
+  timelineMode?: BackgroundVideoTimelineMode;
+}
+
 export interface VideoContentItem {
   id: string;
   author: string;
@@ -116,6 +143,12 @@ export interface VideoContentItem {
   offset?: string;
   sticky?: boolean | number;
   keyframes?: string;
+  glass?: boolean;
+  glassBlur?: number;
+  glassOpacity?: number;
+  glassTint?: string;
+  glassBorderColor?: string;
+  glassShadow?: string;
 }
 
 export interface VideoScene {
@@ -152,6 +185,8 @@ export interface VideoConfig {
   sceneBackgroundColor?: string; // 默认场景背景颜色
   itemBackgroundColor?: string; // 默认项背景颜色
   canvas?: VideoCanvasConfig; // 画布尺寸配置（横版/竖版）
+  backgroundVideo?: BackgroundVideoConfig; // 最终导出专用背景视频
+  renderMode?: RenderMode; // preview 不渲染背景视频，final 才启用最终轨道
 }
 
 export interface AudioItem {

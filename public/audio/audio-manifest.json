@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-08T22:25:48.487099",
+  "updatedAt": "2026-05-11T16:19:57.295457",
   "items": {
     "public/audio/shortAudio/Unassigned/999-social-credit-siren.mp3": {
       "alias": "",
@@ -307,6 +307,12 @@
       "tags": [],
       "category": "",
       "previewVolume": 0.2
+    },
+    "public/audio/shortAudio/Unassigned/Dice_Roll.wav": {
+      "alias": "",
+      "tags": [],
+      "category": "",
+      "previewVolume": 0.25
     }
   }
 }

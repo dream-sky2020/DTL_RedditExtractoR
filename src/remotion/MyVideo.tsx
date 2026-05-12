@@ -1,11 +1,157 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Easing } from 'remotion';
-import { ItemAnimationType, VideoConfig, VideoScene, VideoContentItem } from '../types';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Easing, OffthreadVideo, staticFile, Loop, Audio } from 'remotion';
+import { BackgroundVideoConfig, ItemAnimationType, VideoConfig, VideoScene, VideoContentItem } from '../types';
 import { ScriptContentRenderer } from '../components/ScriptContentRenderer';
 import { SceneAudioMixer } from '../audio/SceneAudioMixer';
 import { buildAnimationStyle, parseAnimationStyle } from '../rendering/animation';
 
 const DEFAULT_ITEM_ANIMATION_FRAMES = 12;
+const BACKGROUND_VIDEO_PUBLIC_DIR = 'background-videos/';
+
+const clamp01 = (value: number | undefined, fallback: number): number => {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value as number));
+};
+
+const clampAudioVolume = (value: number | undefined, fallback: number): number => {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(0, value as number);
+};
+
+const normalizeBackgroundVideoSrc = (src?: string): string | null => {
+  const raw = (src || '').trim().replace(/\\/g, '/');
+  if (!raw) return null;
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  if (/^[a-z]:\//i.test(raw) || raw.includes('..')) return null;
+
+  const withoutLeadingSlash = raw.replace(/^\/+/, '');
+  const publicRelative = withoutLeadingSlash.startsWith('public/')
+    ? withoutLeadingSlash.slice('public/'.length)
+    : withoutLeadingSlash;
+
+  if (!publicRelative.startsWith(BACKGROUND_VIDEO_PUBLIC_DIR)) return null;
+  return publicRelative;
+};
+
+const resolveBackgroundVideoSrc = (src?: string): string | null => {
+  const normalized = normalizeBackgroundVideoSrc(src);
+  if (!normalized) return null;
+  if (/^(https?:|data:|blob:)/i.test(normalized)) return normalized;
+  return staticFile(normalized);
+};
+
+const getBackgroundPlayFrames = (backgroundVideo: BackgroundVideoConfig, fps: number): number | null => {
+  if (!backgroundVideo.durationInSeconds) return null;
+  const playbackRate = backgroundVideo.playbackRate && backgroundVideo.playbackRate > 0 ? backgroundVideo.playbackRate : 1;
+  const baseDuration = Math.max(0, backgroundVideo.durationInSeconds - (backgroundVideo.startOffset || 0)) / playbackRate;
+  const repeatCount = backgroundVideo.playbackMode === 'repeat-count'
+    ? Math.max(1, Math.floor(backgroundVideo.repeatCount || 1))
+    : 1;
+  return Math.max(1, Math.round(baseDuration * repeatCount * fps));
+};
+
+const BackgroundVideoTrack: React.FC<{
+  backgroundVideo?: BackgroundVideoConfig;
+  fps: number;
+  frame: number;
+}> = ({ backgroundVideo, fps, frame }) => {
+  if (!backgroundVideo?.enabled) return null;
+
+  const src = resolveBackgroundVideoSrc(backgroundVideo.src);
+  if (!src) return null;
+  const fallbackImageSrc = resolveBackgroundVideoSrc(backgroundVideo.afterEndImageSrc);
+  const playFrames = getBackgroundPlayFrames(backgroundVideo, fps);
+  const hasEnded = playFrames !== null && frame >= playFrames;
+
+  const playbackRate = Number.isFinite(backgroundVideo.playbackRate) && (backgroundVideo.playbackRate as number) > 0
+    ? (backgroundVideo.playbackRate as number)
+    : 1;
+  const startFrom = Math.max(0, Math.round((backgroundVideo.startOffset || 0) * fps));
+  const repeatCount = backgroundVideo.playbackMode === 'repeat-count'
+    ? Math.max(1, Math.floor(backgroundVideo.repeatCount || 1))
+    : 1;
+  const singleLoopFrames = backgroundVideo.durationInSeconds
+    ? Math.max(1, Math.round(Math.max(0, backgroundVideo.durationInSeconds - (backgroundVideo.startOffset || 0)) / playbackRate * fps))
+    : null;
+  const opacity = clamp01(backgroundVideo.opacity, 1);
+  const shouldRenderBlurredBackground = backgroundVideo.fit === 'contain' && backgroundVideo.blurredBackgroundEnabled;
+  const blurAmount = Math.max(0, backgroundVideo.blurredBackgroundBlur ?? 24);
+  const blurredVideo = !hasEnded && shouldRenderBlurredBackground ? (
+    <OffthreadVideo
+      src={src}
+      muted
+      startFrom={startFrom}
+      playbackRate={playbackRate}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        opacity,
+        filter: `blur(${blurAmount}px)`,
+        transform: 'scale(1.08)',
+      }}
+    />
+  ) : null;
+  const video = hasEnded ? null : (
+    <OffthreadVideo
+      src={src}
+      muted
+      startFrom={startFrom}
+      playbackRate={playbackRate}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        width: '100%',
+        height: '100%',
+        objectFit: backgroundVideo.fit || 'cover',
+        opacity,
+      }}
+    />
+  );
+  const audio = !hasEnded && backgroundVideo.audioEnabled ? (
+    <Audio
+      src={src}
+      volume={clampAudioVolume(backgroundVideo.audioVolume, 0.35)}
+      startFrom={startFrom}
+      playbackRate={playbackRate}
+    />
+  ) : null;
+  const media = (
+    <>
+      {blurredVideo}
+      {video}
+      {audio}
+    </>
+  );
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: '#000', zIndex: 0 }}>
+      {(video || audio) && backgroundVideo.playbackMode === 'repeat-count' && repeatCount > 1 && singleLoopFrames ? (
+        <Loop durationInFrames={singleLoopFrames} times={repeatCount}>
+          {media}
+        </Loop>
+      ) : media}
+      {hasEnded && (
+        fallbackImageSrc && backgroundVideo.afterEndMode === 'image' ? (
+          <img
+            src={fallbackImageSrc}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: backgroundVideo.fit || 'cover' }}
+          />
+        ) : (
+          <AbsoluteFill style={{ backgroundColor: backgroundVideo.afterEndColor || '#000000' }} />
+        )
+      )}
+      {backgroundVideo.overlayColor && (
+        <AbsoluteFill style={{ backgroundColor: backgroundVideo.overlayColor, zIndex: 2 }} />
+      )}
+    </AbsoluteFill>
+  );
+};
 
 const parseStyle = (str: string) => {
   const res: Record<string, any> = {};
@@ -273,12 +419,33 @@ const SceneItem: React.FC<SceneItemProps> = ({
     Object.assign(itemAnimateStyle, customStyle);
   }
 
+  const isGlassItem = item.glass === true;
+  const glassBlur = Math.max(0, item.glassBlur ?? 16);
+  const glassOpacity = clamp01(item.glassOpacity, 0.42);
+  const itemBaseStyle: React.CSSProperties = isGlassItem
+    ? {
+        background: item.glassTint || `rgba(255, 255, 255, ${glassOpacity})`,
+        border: `1px solid ${item.glassBorderColor || 'rgba(255, 255, 255, 0.38)'}`,
+        boxShadow: item.glassShadow || '0 18px 48px rgba(0, 0, 0, 0.28)',
+        backdropFilter: `blur(${glassBlur}px) saturate(1.35)`,
+        WebkitBackdropFilter: `blur(${glassBlur}px) saturate(1.35)`,
+      }
+    : {
+        background: item.backgroundColor || defaultItemBackgroundColor || '#f8f9fa',
+        border: '1px dashed #d9d9d9',
+      };
+  const resolvedQuoteBackgroundColor = isGlassItem
+    ? (quoteBackgroundColor || 'rgba(255, 255, 255, 0.14)')
+    : (quoteBackgroundColor || item.backgroundColor || defaultItemBackgroundColor);
+  const resolvedQuoteBorderColor = isGlassItem
+    ? (quoteBorderColor || 'rgba(255, 255, 255, 0.24)')
+    : quoteBorderColor;
+
   return (
     <div
       style={{
         position: 'relative',
-        background: item.backgroundColor || defaultItemBackgroundColor || '#f8f9fa',
-        border: '1px dashed #d9d9d9',
+        ...itemBaseStyle,
         borderRadius: 8,
         padding: '12px',
         opacity,
@@ -298,8 +465,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
           defaultQuoteFontSize={quoteFontSize}
           maxQuoteDepth={maxQuoteDepth}
           defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-          defaultBackgroundColor={quoteBackgroundColor || item.backgroundColor || defaultItemBackgroundColor}
-          defaultBorderColor={quoteBorderColor}
+          defaultBackgroundColor={resolvedQuoteBackgroundColor}
+          defaultBorderColor={resolvedQuoteBorderColor}
         />
       </div>
     </div>
@@ -327,7 +494,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   isRemotion = false,
 }) => {
   const layoutMode = scene.layout === 'center' ? 'center' : (scene.layout === 'bottom' ? 'bottom' : 'top');
-  const bgColor = scene.backgroundColor || '#ffffff';
+  const hasFinalBackgroundVideo = config.renderMode === 'final' && Boolean(config.backgroundVideo?.enabled && config.backgroundVideo?.src);
+  const bgColor = hasFinalBackgroundVideo ? 'transparent' : (scene.backgroundColor || '#ffffff');
 
   const stickyIdx = scene.items.findIndex(item => item.sticky);
   const hasSticky = stickyIdx !== -1;
@@ -368,6 +536,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
+        zIndex: 10,
         backgroundColor: bgColor,
         padding: 28,
         fontFamily: 'Inter, -apple-system, sans-serif',
@@ -491,12 +660,15 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
 export interface MyVideoProps extends VideoConfig {
   focusedSceneId?: string; // 可选：只渲染特定画面格用于预览
   disableAudio?: boolean;
+  disableSceneAudio?: boolean;
 }
 
 export const MyVideo: React.FC<MyVideoProps> = (props) => {
   const { scenes = [] } = props;
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const shouldRenderBackgroundVideo = props.renderMode === 'final' && Boolean(props.backgroundVideo?.enabled);
+  const shouldDisableSceneAudio = props.disableSceneAudio ?? props.disableAudio;
 
   // 计算每个分段的起止帧
   let currentStartFrame = 0;
@@ -521,11 +693,30 @@ export const MyVideo: React.FC<MyVideoProps> = (props) => {
     relativeFrame = frame - (activeScene?.start || 0);
   }
 
-  if (!activeScene) return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
+  if (!activeScene) {
+    return (
+      <AbsoluteFill style={{ backgroundColor: '#000' }}>
+        {shouldRenderBackgroundVideo && (
+          <BackgroundVideoTrack
+            backgroundVideo={props.backgroundVideo}
+            fps={fps}
+            frame={frame}
+          />
+        )}
+      </AbsoluteFill>
+    );
+  }
 
   return (
     <AbsoluteFill>
-      {!props.disableAudio && (
+      {shouldRenderBackgroundVideo && (
+        <BackgroundVideoTrack
+          backgroundVideo={props.backgroundVideo}
+          fps={fps}
+          frame={frame}
+        />
+      )}
+      {!shouldDisableSceneAudio && (
         <SceneAudioMixer
           scenes={scenes}
           fps={fps}

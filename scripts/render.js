@@ -1,5 +1,5 @@
 import { execSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import os from 'node:os';
 
@@ -66,6 +66,8 @@ async function main() {
   const outputFileArg = getArgValue('--output', 'out/video.mp4');
   const configPath = resolve(process.cwd(), configFileArg);
   const outputPath = resolve(process.cwd(), outputFileArg);
+  const finalPropsFileArg = `.render-props-${process.pid}.json`;
+  const finalPropsPath = resolve(process.cwd(), finalPropsFileArg);
 
   // 1. 检查 FFmpeg
   if (!checkFFmpeg()) {
@@ -93,6 +95,12 @@ async function main() {
     console.log('ℹ️ 未发现 video-config.json，将使用默认配置渲染。');
   }
 
+  const finalProps = {
+    ...props,
+    renderMode: 'final',
+  };
+  writeFileSync(finalPropsPath, JSON.stringify(finalProps, null, 2), 'utf-8');
+
   // 3. 运行 Remotion 渲染
   console.log('🎬 正在调用 Remotion 渲染引擎 (多线程模式)...');
   
@@ -104,7 +112,7 @@ async function main() {
     'src/remotion/index.tsx',
     'MyVideo',
     outputFileArg,
-    `--props=${configFileArg}`,
+    `--props=${finalPropsFileArg}`,
     `--concurrency=${concurrency}`, // 启用多线程并发渲染
     '--gl=angle', // Windows 下使用 ANGLE 硬件加速渲染 CSS
     '--chromium-flags=--disable-dev-shm-usage --no-sandbox', // 提高 Chromium 运行稳定性
@@ -158,36 +166,42 @@ async function main() {
   console.log(`并发线程: ${concurrency}`);
   
   // 必须包装成 Promise 并等待进程结束
-  await new Promise((resolvePromise, reject) => {
-    const renderProcess = spawn(command, args, {
-      stdio: ['inherit', 'pipe', 'pipe'], // 修改为 pipe 模式，以便 server.py 捕获
-      shell: !hasLocalRemotion && !canUseNpmCli && process.platform === 'win32'
-    });
+  try {
+    await new Promise((resolvePromise, reject) => {
+      const renderProcess = spawn(command, args, {
+        stdio: ['inherit', 'pipe', 'pipe'], // 修改为 pipe 模式，以便 server.py 捕获
+        shell: !hasLocalRemotion && !canUseNpmCli && process.platform === 'win32'
+      });
 
-    // 实时转发子进程输出到当前进程的 stdout
-    renderProcess.stdout.on('data', (data) => {
-      process.stdout.write(data);
-    });
+      // 实时转发子进程输出到当前进程的 stdout
+      renderProcess.stdout.on('data', (data) => {
+        process.stdout.write(data);
+      });
 
-    renderProcess.stderr.on('data', (data) => {
-      process.stderr.write(data);
-    });
+      renderProcess.stderr.on('data', (data) => {
+        process.stderr.write(data);
+      });
 
-    renderProcess.on('close', (code) => {
-      if (code === 0) {
-        const fullPath = outputPath;
-        console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
-        resolvePromise(true);
-      } else {
-        reject(new Error(`渲染失败，退出码: ${code || 1}`));
-      }
-    });
+      renderProcess.on('close', (code) => {
+        if (code === 0) {
+          const fullPath = outputPath;
+          console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
+          resolvePromise(true);
+        } else {
+          reject(new Error(`渲染失败，退出码: ${code || 1}`));
+        }
+      });
 
-    renderProcess.on('error', (err) => {
-      console.error('无法启动渲染进程:', err);
-      reject(err);
+      renderProcess.on('error', (err) => {
+        console.error('无法启动渲染进程:', err);
+        reject(err);
+      });
     });
-  });
+  } finally {
+    if (existsSync(finalPropsPath)) {
+      unlinkSync(finalPropsPath);
+    }
+  }
 }
 
 main().catch(err => {

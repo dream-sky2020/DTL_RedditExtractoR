@@ -15,8 +15,10 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TASKS_DIR = os.path.join(PROJECT_ROOT, 'tasks')
 CACHE_DIR = os.path.join(PROJECT_ROOT, 'public', 'cache')
 AUDIO_DIR = os.path.join(PROJECT_ROOT, 'public', 'audio')
+BACKGROUND_VIDEO_DIR = os.path.join(PROJECT_ROOT, 'public', 'background-videos')
 MANIFEST_FILENAME = 'audio-manifest.json'
 ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+ALLOWED_BACKGROUND_VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mov')
 
 # 确保目录存在
 for d in ['queued', 'running', 'success', 'error', 'cancelled']:
@@ -222,6 +224,31 @@ def list_audio():
             "files": audio_files,
             "items": merged_items,
             "manifest": manifest
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/list_background_videos', methods=['GET'])
+def list_background_videos():
+    try:
+        video_files = []
+        if os.path.exists(BACKGROUND_VIDEO_DIR):
+            for root, _, files in os.walk(BACKGROUND_VIDEO_DIR):
+                for file in files:
+                    if file.lower().endswith(ALLOWED_BACKGROUND_VIDEO_EXTENSIONS):
+                        full_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_path, os.path.join(PROJECT_ROOT, 'public'))
+                        public_relative_path = normalize_path(relative_path)
+                        video_files.append({
+                            "name": file,
+                            "path": public_relative_path,
+                            "url": f"/{public_relative_path}",
+                        })
+
+        video_files.sort(key=lambda item: item["path"])
+        return jsonify({
+            "success": True,
+            "files": video_files,
         })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500

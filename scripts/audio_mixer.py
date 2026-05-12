@@ -115,7 +115,53 @@ def get_total_duration(config):
     duration = 0
     for scene in config.get('scenes', []) or []:
         duration += max(0, parse_float(scene.get('duration'), 0))
+    background = config.get('backgroundVideo') or {}
+    if (
+        config.get('renderMode') == 'final'
+        and background.get('enabled')
+        and background.get('timelineMode') == 'wait-for-background'
+    ):
+        background_duration = parse_float(background.get('durationInSeconds'), 0)
+        playback_rate = max(0.001, parse_float(background.get('playbackRate'), 1))
+        start_offset = max(0, parse_float(background.get('startOffset'), 0))
+        base_duration = max(0, background_duration - start_offset) / playback_rate
+        repeat_count = 1
+        if background.get('playbackMode') == 'repeat-count':
+            repeat_count = max(1, int(parse_float(background.get('repeatCount'), 1)))
+        duration = max(duration, base_duration * repeat_count)
     return max(0.1, duration)
+
+
+def has_audio_stream(path):
+    try:
+        result = subprocess.run(
+            [
+                'ffprobe',
+                '-v', 'error',
+                '-select_streams', 'a:0',
+                '-show_entries', 'stream=index',
+                '-of', 'csv=p=0',
+                path,
+            ],
+            cwd=PROJECT_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0 and bool(result.stdout.strip())
+    except Exception:
+        return False
+
+
+def should_preserve_background_audio(config):
+    background = config.get('backgroundVideo') or {}
+    render_mode = config.get('renderMode')
+    return bool(
+        (render_mode is None or render_mode == 'final')
+        and background.get('enabled')
+        and background.get('audioEnabled')
+    )
 
 
 def ffmpeg_escape_filter_path(path):
@@ -131,11 +177,15 @@ def mix_audio(config_path, video_path, output_path):
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    if not tracks:
+    preserve_video_audio = should_preserve_background_audio(config) and has_audio_stream(video_path)
+
+    if not tracks and not preserve_video_audio:
         print("ℹ️ 未发现音频轨道，直接输出静音视频。")
         shutil.copyfile(video_path, output_path)
         return
 
+    if preserve_video_audio:
+        print("🎧 已检测到输入视频音轨，将保留并混入最终音频。")
     print(f"🎚️ 发现 {len(tracks)} 条音频轨道，开始使用 FFmpeg 混音...")
 
     cmd = [
@@ -152,6 +202,16 @@ def mix_audio(config_path, video_path, output_path):
 
     filter_parts = [f'[1:a]atrim=0:{total_duration:.3f},asetpts=PTS-STARTPTS[silence]']
     mix_inputs = ['[silence]']
+
+    if preserve_video_audio:
+        filter_parts.append(
+            f'[0:a]'
+            f'atrim=0:{total_duration:.3f},'
+            f'asetpts=PTS-STARTPTS,'
+            f'aformat=channel_layouts=stereo:sample_rates=48000'
+            f'[background_audio]'
+        )
+        mix_inputs.append('[background_audio]')
 
     for index, track in enumerate(tracks):
         input_index = index + 2
