@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Col,
+  ColorPicker,
   Empty,
   Form,
   Input,
@@ -24,6 +25,38 @@ import { useVideoStore } from '@/store';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '@/rendering/videoCanvas';
 
 const { Text, Title } = Typography;
+
+interface VisualColorInputProps {
+  value?: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  pickerFormat?: 'hex' | 'rgb';
+  disabled?: boolean;
+}
+
+const VisualColorInput: React.FC<VisualColorInputProps> = ({
+  value,
+  placeholder,
+  onChange,
+  pickerFormat = 'hex',
+  disabled = false,
+}) => (
+  <div style={{ display: 'flex', gap: 8 }}>
+    <ColorPicker
+      value={value}
+      disabled={disabled}
+      onChange={(color) => onChange(pickerFormat === 'rgb' ? color.toRgbString() : color.toHexString())}
+      showText
+    />
+    <Input
+      value={value}
+      disabled={disabled}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      style={{ flex: 1, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
+    />
+  </div>
+);
 
 const RENDER_API_BASE = 'http://localhost:5000';
 const DEFAULT_BACKGROUND_VIDEO: BackgroundVideoConfig = {
@@ -486,10 +519,11 @@ export const BackgroundVideoPage: React.FC = () => {
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item label="暗化/色彩遮罩">
-                  <Input
+                  <VisualColorInput
                     value={backgroundVideo.overlayColor}
                     placeholder="rgba(0,0,0,0.25)"
-                    onChange={(event) => updateBackgroundVideo({ overlayColor: event.target.value })}
+                    pickerFormat="rgb"
+                    onChange={(overlayColor) => updateBackgroundVideo({ overlayColor })}
                   />
                 </Form.Item>
               </Col>
@@ -509,10 +543,11 @@ export const BackgroundVideoPage: React.FC = () => {
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item label="结束后纯色背景">
-                  <Input
+                  <VisualColorInput
                     value={backgroundVideo.afterEndColor}
                     placeholder="#000000"
-                    onChange={(event) => updateBackgroundVideo({ afterEndColor: event.target.value })}
+                    disabled={backgroundVideo.afterEndMode !== 'color'}
+                    onChange={(afterEndColor) => updateBackgroundVideo({ afterEndColor })}
                   />
                 </Form.Item>
               </Col>

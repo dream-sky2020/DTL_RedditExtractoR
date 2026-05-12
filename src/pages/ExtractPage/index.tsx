@@ -13,7 +13,6 @@ import {
   Row,
   Col,
   message,
-  Collapse,
 } from 'antd';
 import {
   EditOutlined,
@@ -21,10 +20,10 @@ import {
   CodeOutlined,
   DeleteOutlined,
   RocketOutlined,
-  SyncOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { dialogs } from '../../components/Dialogs';
-import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
+import { useRedditStore, useSettingsStore } from '@/store';
 
 const { Text } = Typography;
 
@@ -58,10 +57,13 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
   } = useRedditStore();
 
   const { commentSortMode, replyOrderMode, colorArrangement } = useSettingsStore();
-  const { videoConfig, setVideoConfig } = useVideoStore();
 
   const handleFetch = () => {
     fetchRedditData(commentSortMode, replyOrderMode, colorArrangement);
+  };
+
+  const handleFetchAndAppend = () => {
+    fetchRedditData(commentSortMode, replyOrderMode, colorArrangement, 'append');
   };
 
   const copyToClipboard = async () => {
@@ -151,6 +153,15 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               onClick={handleFetch}
             >
               {toolButton}
+            </Button>
+            <Button
+              size="large"
+              loading={loading}
+              disabled={!redditUrl.trim()}
+              icon={<PlusOutlined />}
+              onClick={handleFetchAndAppend}
+            >
+              提取并追加到当前脚本
             </Button>
             <Button
               danger

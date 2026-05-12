@@ -10,14 +10,23 @@ import {
   AuthorProfile, 
   CommentSortMode, 
   ReplyOrderMode, 
-  ColorArrangementSettings 
+  ColorArrangementSettings,
+  VideoScene
 } from '@/types';
-import { 
-  RAW_REDDIT_DATA_STORAGE_KEY, 
-  AUTHOR_PROFILES_STORAGE_KEY 
-} from '@/constants/storage';
 import { hslToHex } from '@/utils/color/hslToHex';
 import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
+
+type FetchRedditDataMode = 'replace' | 'append';
+
+const suffixSceneIds = (scenes: VideoScene[], suffix: string): VideoScene[] =>
+  scenes.map((scene) => ({
+    ...scene,
+    id: `${scene.id}-${suffix}`,
+    items: scene.items.map((item) => ({
+      ...item,
+      id: `${item.id}-${suffix}`,
+    })),
+  }));
 
 interface RedditState {
   redditUrl: string;
@@ -41,7 +50,8 @@ interface RedditState {
   fetchRedditData: (
     commentSortMode: CommentSortMode,
     replyOrderMode: ReplyOrderMode,
-    colorArrangement: ColorArrangementSettings
+    colorArrangement: ColorArrangementSettings,
+    mode?: FetchRedditDataMode
   ) => Promise<void>;
   
   clearPersistedData: () => void;
@@ -142,7 +152,7 @@ export const useRedditStore = create<RedditState>()(
         });
       },
 
-      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement) => {
+      fetchRedditData: async (commentSortMode, replyOrderMode, colorArrangement, mode = 'replace') => {
         const { redditUrl, authorProfiles, buildProfilesForAuthors } = get();
         if (!redditUrl.trim()) return;
 
@@ -195,9 +205,21 @@ export const useRedditStore = create<RedditState>()(
             itemBackgroundColor: globalSettings.itemBackgroundColor,
           });
           
-          videoStore.setVideoConfig(newConfig);
+          if (mode === 'append') {
+            const suffix = `append-${Date.now()}`;
+            const currentConfig = videoStore.videoConfig;
+            videoStore.setVideoConfig({
+              ...currentConfig,
+              scenes: [
+                ...currentConfig.scenes,
+                ...suffixSceneIds(newConfig.scenes, suffix),
+              ],
+            });
+          } else {
+            videoStore.setVideoConfig(newConfig);
+          }
 
-          message.success('数据提取成功');
+          message.success(mode === 'append' ? '数据提取成功，已追加到当前脚本' : '数据提取成功');
         } catch (err) {
           console.error(err);
           const errorMsg = '抓取失败，请检查 URL 是否正确或 Python 后端是否运行。';

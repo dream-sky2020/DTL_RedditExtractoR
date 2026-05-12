@@ -35,6 +35,21 @@ import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';
 
+const interpolateColor = (start: [number, number, number], end: [number, number, number], ratio: number) => {
+  const clampedRatio = Math.max(0, Math.min(1, ratio));
+  const [r, g, b] = start.map((channel, index) =>
+    Math.round(channel + (end[index] - channel) * clampedRatio)
+  );
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+const formatDurationLabel = (duration: number) => {
+  const normalizedDuration = Number.isFinite(duration) ? duration : 0;
+  return Number.isInteger(normalizedDuration)
+    ? `[${normalizedDuration}s]`
+    : `[${normalizedDuration.toFixed(1)}s]`;
+};
+
 export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ onViewScene }) => {
   const {
     videoConfig,
@@ -187,6 +202,55 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const totalFrames = getTotalFrames(videoConfig, fps);
 
   const isCompact = sceneDisplayMode === 'compact';
+  const sceneDurationRange = useMemo(() => {
+    const durations = scenes.map((scene) => scene.duration).filter(Number.isFinite);
+    return {
+      min: durations.length ? Math.min(...durations) : 0,
+      max: durations.length ? Math.max(...durations) : 0,
+    };
+  }, [scenes]);
+
+  const getDurationColor = (duration: number) => {
+    const { min, max } = sceneDurationRange;
+    const ratio = max > min ? (duration - min) / (max - min) : 0;
+    return interpolateColor([126, 203, 255], [168, 7, 26], ratio);
+  };
+
+  const renderSceneCaption = (scene: typeof scenes[number], sceneIdx: number) => {
+    const isSelected = selectedSceneIds.includes(scene.id);
+
+    return (
+      <div style={{ marginTop: 8, textAlign: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            minWidth: 0,
+          }}
+        >
+          <Text strong ellipsis style={{
+            minWidth: 0,
+            fontSize: '12px',
+            color: isSelected ? 'var(--ant-primary-color)' : 'inherit'
+          }}>
+            {sceneIdx + 1}. {scene.title || '未命名画面'}
+          </Text>
+          <span
+            style={{
+              flex: '0 0 auto',
+              fontSize: '12px',
+              fontWeight: 700,
+              color: getDurationColor(scene.duration),
+            }}
+          >
+            {formatDurationLabel(scene.duration)}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     const maxGalleryPage = Math.max(1, Math.ceil(scenes.length / galleryPageSize));
@@ -285,18 +349,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                             setSelectedSceneIds={setSelectedSceneIds}
                             scenes={scenes}
                           />
-                          {!isCompact && (
-                            <div style={{ marginTop: 8, textAlign: 'center' }}>
-                              <Text strong ellipsis style={{ 
-                                width: '100%', 
-                                display: 'block', 
-                                fontSize: '12px',
-                                color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
-                              }}>
-                                {sceneIdx + 1}. {scene.title || '未命名画面'}
-                              </Text>
-                            </div>
-                          )}
+                          {!isCompact && renderSceneCaption(scene, sceneIdx)}
                         </div>
                       ))}
                     </div>
@@ -330,16 +383,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                             setSelectedSceneIds={setSelectedSceneIds}
                             scenes={scenes}
                           />
-                          <div style={{ marginTop: 8, textAlign: 'center' }}>
-                            <Text strong ellipsis style={{ 
-                              width: '100%', 
-                              display: 'block', 
-                              fontSize: '12px',
-                              color: selectedSceneIds.includes(scene.id) ? 'var(--ant-primary-color)' : 'inherit'
-                            }}>
-                              {sceneIdx + 1}. {scene.title || '未命名画面'}
-                            </Text>
-                          </div>
+                          {renderSceneCaption(scene, sceneIdx)}
                         </div>
                       </Col>
                     ))}

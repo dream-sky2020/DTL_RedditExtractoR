@@ -1,0 +1,1984 @@
+{
+  "id": "3c9e311f",
+  "title": "<#text#>Gebura is NOT smoking cigarettes</#text#>",
+  "status": "success",
+  "config": {
+    "title": "<#text#>Gebura is NOT smoking cigarettes</#text#>",
+    "subreddit": "libraryofruina",
+    "scenes": [
+      {
+        "id": "scene-post-1778339302998",
+        "type": "post",
+        "title": "贴子正文",
+        "layout": "center",
+        "backgroundColor": "#731e1e",
+        "duration": 5,
+        "items": [
+          {
+            "id": "post-content",
+            "author": "InhumanFlower12",
+            "content": "[style size=43 b align=center]<#text#>其实🤓...Gebura抽的不是香烟</#text#>[/style]\n[style size=34][style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>在游戏的剧情部分，多次看到Gebura在抽烟，且文本提到她抽的是香烟（Cigarettes）。这是不准确的，根据我对立绘的观察，那应该是小雪茄（Cigarillo），不是香烟。</#text#>\n[image w=100% mode=cover]https://preview.redd.it/cgqtsa0j3szg1.png?width=1024&format=png&auto=webp&s=49732a6c6d70fe329a2aae9600c2dd55bda88dbe[/image][/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f5f5dc",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-post-17783329302998",
+        "type": "post",
+        "title": "贴子正文",
+        "layout": "center",
+        "backgroundColor": "#731e1e",
+        "duration": 5,
+        "items": [
+          {
+            "id": "post-content",
+            "author": "InhumanFlower1342",
+            "content": "[style size=34][style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>香烟是由填充烟草的纸筒+吸口处的过滤嘴组合而成。而小雪茄是用烟叶代替纸张包裹的。此外，小雪茄通常也更便宜，但在图书馆里（那可是能让拥有无限可能性的光构成任何东西），我不认为价格会限制图书管理员们的消费。我也不认为Gebura当收尾人时很穷，所以我排除了她在第二人生中保留了这种廉价习惯的可能性。也许她只是更喜欢那个味道。但总之，她抽的不是香烟。</#text#>\n[image w=100% mode=cover mb=-100]https://preview.redd.it/74t8gngdlrzg1.png?width=480&format=png&auto=webp&s=660875cd5a43bc0c034364d2d5520db5c1d8e594[/image][/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f5f5dc",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okm49th",
+        "type": "comments",
+        "title": "评论 u/Rubo_motorni89",
+        "layout": "center",
+        "backgroundColor": "#6e1f21",
+        "duration": 1.5,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f5f5dd",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okj9fe2",
+        "type": "comments",
+        "title": "评论 u/starmadeshadows",
+        "layout": "center",
+        "backgroundColor": "#682024",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6de",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f4f6de",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okrtqj5",
+        "type": "comments",
+        "title": "评论 u/PokemonGotowork",
+        "layout": "center",
+        "backgroundColor": "#632127",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6df",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6df",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f4f6df",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okjdhgn",
+        "type": "comments",
+        "title": "评论 u/akamiskii",
+        "layout": "center",
+        "backgroundColor": "#5d222a",
+        "duration": 1.5,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6e0",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6e0",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f4f6e0",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f4f6e0",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okm0aci",
+        "type": "comments",
+        "title": "评论 u/throwawayhookup127",
+        "layout": "center",
+        "backgroundColor": "#58232e",
+        "duration": 1.5,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f6e1",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f6e1",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f6e1",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f6e1",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f3f6e1",
+            "enterAt": 0,
+            "exitAt": 1.5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okmdk8v",
+        "type": "comments",
+        "title": "评论 u/newcooker",
+        "layout": "center",
+        "backgroundColor": "#522431",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f3f7e2",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okl7j3j",
+        "type": "comments",
+        "title": "评论 u/Rene716",
+        "layout": "center",
+        "backgroundColor": "#4d2534",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f2f7e3",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okkg6uq",
+        "type": "comments",
+        "title": "评论 u/Whole_Inspector_1535",
+        "layout": "center",
+        "backgroundColor": "#472637",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f2f7e4",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okjb6r1",
+        "type": "comments",
+        "title": "评论 u/TheNikola2020",
+        "layout": "bottom",
+        "backgroundColor": "#42273a",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f2f7e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okjbdop",
+        "type": "comments",
+        "title": "评论 u/InhumanFlower12",
+        "layout": "bottom",
+        "backgroundColor": "#3c283d",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f1f8e5",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-oklkgm3",
+        "type": "comments",
+        "title": "评论 u/Terrible_Law_4365",
+        "layout": "bottom",
+        "backgroundColor": "#372940",
+        "duration": 3,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f1f8e6",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okm5zdb",
+        "type": "comments",
+        "title": "评论 u/InhumanFlower12",
+        "layout": "bottom",
+        "backgroundColor": "#312a43",
+        "duration": 3,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f1f8e7",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okiykkw",
+        "type": "comments",
+        "title": "评论 u/Doomsdat1",
+        "layout": "bottom",
+        "backgroundColor": "#2c2b46",
+        "duration": 3,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f0f8e8",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okjn7kh",
+        "type": "comments",
+        "title": "评论 u/JavaScriptAMA",
+        "layout": "bottom",
+        "backgroundColor": "#262c49",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjn7kh",
+            "author": "JavaScriptAMA",
+            "content": "[style size=34][style color=#5bd831 b]u/JavaScriptAMA:[/style] <#text#>今天学到了一个新词。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#f0f9e9",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okk6n9f",
+        "type": "comments",
+        "title": "评论 u/Mellowsnake",
+        "layout": "bottom",
+        "backgroundColor": "#212d4d",
+        "duration": 3,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjn7kh",
+            "author": "JavaScriptAMA",
+            "content": "[style size=34][style color=#5bd831 b]u/JavaScriptAMA:[/style] <#text#>今天学到了一个新词。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk6n9f",
+            "author": "Mellowsnake",
+            "content": "[style size=34]\n[style color=#31d89a b]u/Mellowsnake:[/style] <#text#>如果你说西班牙语的话，这确实有点让人困惑。因为在西语里，香烟（Cigarette）对应的词就是 Cigarillo，“-illo”和“-ette”一样是表示“小”的后缀。\n两者字面意思都是“小雪茄”。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#eff9ea",
+            "enterAt": 0,
+            "exitAt": 3,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okk7zdn",
+        "type": "comments",
+        "title": "评论 u/whyismyfriendsmall",
+        "layout": "bottom",
+        "backgroundColor": "#1b2e50",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okm49th",
+            "author": "Rubo_motorni89",
+            "content": "[style size=34][style color=#d8a131 b]u/Rubo_motorni89:[/style] <#text#>你已经火星了，其实我一直都知道那是雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjn7kh",
+            "author": "JavaScriptAMA",
+            "content": "[style size=34][style color=#5bd831 b]u/JavaScriptAMA:[/style] <#text#>今天学到了一个新词。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk6n9f",
+            "author": "Mellowsnake",
+            "content": "[style size=34]\n[style color=#31d89a b]u/Mellowsnake:[/style] <#text#>如果你说西班牙语的话，这确实有点让人困惑。因为在西语里，香烟（Cigarette）对应的词就是 Cigarillo，“-illo”和“-ette”一样是表示“小”的后缀。\n两者字面意思都是“小雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk7zdn",
+            "author": "whyismyfriendsmall",
+            "content": "[style size=34][style color=#a831d8 b]u/whyismyfriendsmall:[/style] <#text#>个人猜测：Gebura绝对会说西班牙语。说西班牙语的Gebura可太搞笑了。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#eff9eb",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okk99i5",
+        "type": "comments",
+        "title": "评论 u/Own-Cauliflower-543",
+        "layout": "bottom",
+        "backgroundColor": "#162f53",
+        "duration": 2,
+        "items": [
+          {
+            "id": "okj9fe2",
+            "author": "starmadeshadows",
+            "content": "[style size=34][style color=#31d8d1 b]u/starmadeshadows:[/style] <#text#>噢，我还以为你指的是大麻烟呢\n\n不过她可能确实在抽叶子，毕竟收尾人的压力是很大的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjn7kh",
+            "author": "JavaScriptAMA",
+            "content": "[style size=34][style color=#5bd831 b]u/JavaScriptAMA:[/style] <#text#>今天学到了一个新词。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk6n9f",
+            "author": "Mellowsnake",
+            "content": "[style size=34]\n[style color=#31d89a b]u/Mellowsnake:[/style] <#text#>如果你说西班牙语的话，这确实有点让人困惑。因为在西语里，香烟（Cigarette）对应的词就是 Cigarillo，“-illo”和“-ette”一样是表示“小”的后缀。\n两者字面意思都是“小雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk7zdn",
+            "author": "whyismyfriendsmall",
+            "content": "[style size=34][style color=#a831d8 b]u/whyismyfriendsmall:[/style] <#text#>个人猜测：Gebura绝对会说西班牙语。说西班牙语的Gebura可太搞笑了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk99i5",
+            "author": "Own-Cauliflower-543",
+            "content": "[style size=34]\n[style color=#3184d8 b]u/Own-Cauliflower-543:[/style] <#text#>等她掏出“大凉鞋”E.G.O 的时候你就知道厉害了。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#eff9ec",
+            "enterAt": 0,
+            "exitAt": 2,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      },
+      {
+        "id": "scene-okk9ozm",
+        "type": "comments",
+        "title": "评论 u/whyismyfriendsmall",
+        "layout": "bottom",
+        "backgroundColor": "#103056",
+        "duration": 5,
+        "items": [
+          {
+            "id": "okrtqj5",
+            "author": "PokemonGotowork",
+            "content": "[style size=34]\n[style color=#d83154 b]u/PokemonGotowork:[/style] <#text#>点进帖子之前，我本对楼主有更高的期待，比如其实Gebura在抽大麻。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjdhgn",
+            "author": "akamiskii",
+            "content": "[style size=34]\n[style color=#d83131 b]u/akamiskii:[/style] <#text#>青翠绿雾</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm0aci",
+            "author": "throwawayhookup127",
+            "content": "[style size=34]\n[style color=#314dd8 b]u/throwawayhookup127:[/style] <#text#>堇绿青烟</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okmdk8v",
+            "author": "newcooker",
+            "content": "[style size=34][style color=#ca31d8 b]u/newcooker:[/style] <#text#>迷你婴儿雪茄，你可以说那是“婴儿的第一支雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okl7j3j",
+            "author": "Rene716",
+            "content": "[style size=34][style color=#7031d8 b]u/Rene716:[/style] <#text#>小雪茄。\n参考“Moods”这个品牌。\n这是我能想到最接近的东西了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okkg6uq",
+            "author": "Whole_Inspector_1535",
+            "content": "[style size=34][style color=#31d877 b]u/Whole_Inspector_1535:[/style] <#text#>不，我敢打赌她抽的是纯正的“上头货（ZAZA）”，奈茨自产的那种。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjb6r1",
+            "author": "TheNikola2020",
+            "content": "[style size=34][style color=#7dd831 b]u/TheNikola2020:[/style] <#text#>如果她只是自己卷了烟呢？</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjbdop",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>那它依然算是小雪茄。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "oklkgm3",
+            "author": "Terrible_Law_4365",
+            "content": "[style size=34][style color=#d831ae b]u/Terrible_Law_4365:[/style] <#text#>1. 用烟叶包裹并不代表它就是小雪茄（比如 Chapman 牌香烟）。\n2. 小雪茄通常更贵，因为它们不是用碎烟叶做的。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okm5zdb",
+            "author": "InhumanFlower12",
+            "content": "[style size=34]\n[style color=#d8318b b]u/InhumanFlower12:[/style] <#text#>没错，我猜在都市里也是这样。至少在我的国家，“cigarillos”通常只是用棕色包装纸（如果是贵一点的会用烟叶）包裹的碎烟草，这样做只是为了规避烟草税和其他规定（比如各种苛刻奇怪的包装要求）。一盒 20 支装的这种“szivarka”平均只要 1000 匈牙利福林，而普通的香烟通常要 2000 福林左右。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okiykkw",
+            "author": "Doomsdat1",
+            "content": "[style size=34][style color=#9331d8 b]u/Doomsdat1:[/style] <#text#>拇指Gebura是正史，说真的。</#text#>\n\n\n[image]https://preview.redd.it/fvqmamxkaszg1.png?width=523&format=png&auto=webp&s=7dae80d6338c6f5953de0cd038d30204a3119dee[/image][/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okjn7kh",
+            "author": "JavaScriptAMA",
+            "content": "[style size=34][style color=#5bd831 b]u/JavaScriptAMA:[/style] <#text#>今天学到了一个新词。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk6n9f",
+            "author": "Mellowsnake",
+            "content": "[style size=34]\n[style color=#31d89a b]u/Mellowsnake:[/style] <#text#>如果你说西班牙语的话，这确实有点让人困惑。因为在西语里，香烟（Cigarette）对应的词就是 Cigarillo，“-illo”和“-ette”一样是表示“小”的后缀。\n两者字面意思都是“小雪茄”。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk7zdn",
+            "author": "whyismyfriendsmall",
+            "content": "[style size=34][style color=#a831d8 b]u/whyismyfriendsmall:[/style] <#text#>个人猜测：Gebura绝对会说西班牙语。说西班牙语的Gebura可太搞笑了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk99i5",
+            "author": "Own-Cauliflower-543",
+            "content": "[style size=34]\n[style color=#3184d8 b]u/Own-Cauliflower-543:[/style] <#text#>等她掏出“大凉鞋”E.G.O 的时候你就知道厉害了。</#text#>[/style]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none"
+          },
+          {
+            "id": "okk9ozm",
+            "author": "whyismyfriendsmall",
+            "content": "[style size=34]\n[style color=#a831d8 b]u/whyismyfriendsmall:[/style] <#text#>到那时她才真成了最强。哪怕是调律者也知道别去招惹拿着凉鞋的女人。</#text#>[/style]\n  [audio src=\"Dice_Roll.wav\" start=\"0\" end=\"2.5\" volume=\"0.25\"]\n  ",
+            "backgroundColor": "#eefaed",
+            "enterAt": 0,
+            "exitAt": 5,
+            "enterAnimation": "none",
+            "exitAnimation": "none",
+            "keyframes": "0 @linear: scale: 0, rotate: 0; 0.5 @elastic: scale: 1.05, rotate: 0; 0.8 @cubic-bezier(0.22, 1, 0.36, 1): scale: 1"
+          }
+        ],
+        "itemSpacing": 24
+      }
+    ],
+    "titleFontSize": 43,
+    "contentFontSize": 34,
+    "quoteFontSize": 26,
+    "quoteBackgroundColor": "#fff7d666",
+    "quoteBorderColor": "#e0e0e0",
+    "maxQuoteDepth": 3,
+    "defaultQuoteMaxLimit": 150,
+    "sceneBackgroundColor": "#731e1e",
+    "itemBackgroundColor": "#f5f5dc",
+    "canvas": {
+      "activePreset": "portrait",
+      "presets": {
+        "landscape": {
+          "width": 1920,
+          "height": 1080
+        },
+        "portrait": {
+          "width": 1080,
+          "height": 1920
+        }
+      }
+    },
+    "imageLayoutMode": "row"
+  },
+  "progress": {
+    "percent": 100,
+    "task": "渲染成功",
+    "detail": ""
+  },
+  "createdAt": "2026-05-10T13:39:14.574958",
+  "message": "任务已加入队列",
+  "startedAt": "2026-05-10T13:39:16.230842",
+  "endedAt": "2026-05-10T13:41:55.397288",
+  "outputPath": "D:\\RedditExtractoR\\out\\video-3c9e311f.mp4"
+}
