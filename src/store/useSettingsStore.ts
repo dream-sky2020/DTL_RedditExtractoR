@@ -68,6 +68,11 @@ interface SettingsState extends GlobalSettings {
   setTitleFontSize: (size: number) => void;
   setContentFontSize: (size: number) => void;
   setQuoteFontSize: (size: number) => void;
+  setTitleFontColor: (color: string) => void;
+  setContentFontColor: (color: string) => void;
+  setQuoteFontColor: (color: string) => void;
+  setTitleFontBold: (bold: boolean) => void;
+  setContentFontBold: (bold: boolean) => void;
   setMaxQuoteDepth: (depth: number) => void;
   setDefaultQuoteMaxLimit: (limit: number) => void;
   setSceneBackgroundColor: (color: string) => void;
@@ -165,6 +170,11 @@ export const useSettingsStore = create<SettingsState>()(
       setTitleFontSize: (titleFontSize) => set({ titleFontSize }),
       setContentFontSize: (contentFontSize) => set({ contentFontSize }),
       setQuoteFontSize: (quoteFontSize) => set({ quoteFontSize }),
+      setTitleFontColor: (titleFontColor) => set({ titleFontColor }),
+      setContentFontColor: (contentFontColor) => set({ contentFontColor }),
+      setQuoteFontColor: (quoteFontColor) => set({ quoteFontColor }),
+      setTitleFontBold: (titleFontBold) => set({ titleFontBold }),
+      setContentFontBold: (contentFontBold) => set({ contentFontBold }),
       setMaxQuoteDepth: (maxQuoteDepth) => set({ maxQuoteDepth }),
       setDefaultQuoteMaxLimit: (defaultQuoteMaxLimit) => set({ defaultQuoteMaxLimit }),
       setSceneBackgroundColor: (sceneBackgroundColor) => set({ sceneBackgroundColor }),
@@ -188,6 +198,11 @@ export const useSettingsStore = create<SettingsState>()(
           titleFontSize: state.titleFontSize,
           contentFontSize: state.contentFontSize,
           quoteFontSize: state.quoteFontSize,
+          titleFontColor: state.titleFontColor,
+          contentFontColor: state.contentFontColor,
+          quoteFontColor: state.quoteFontColor,
+          titleFontBold: state.titleFontBold,
+          contentFontBold: state.contentFontBold,
           maxQuoteDepth: state.maxQuoteDepth,
           defaultQuoteMaxLimit: state.defaultQuoteMaxLimit,
           sceneBackgroundColor: state.sceneBackgroundColor,

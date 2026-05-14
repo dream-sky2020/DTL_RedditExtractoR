@@ -132,6 +132,7 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'b', label: '加粗', type: 'boolean' },
       { name: 'i', label: '斜体', type: 'boolean' },
       { name: 'u', label: '下划线', type: 'boolean' },
+      { name: 'type', label: '标记类型', type: 'string', description: '用于标记文本种类，无实际渲染效果' },
     ],
     hasContent: true,
     contentLabel: '样式文本',

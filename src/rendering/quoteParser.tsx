@@ -24,6 +24,7 @@ export const parseQuotes = (
   showMediaControls: boolean = true,
   defaultMaxLimit: number = 150,
   defaultQuoteFontSize: number = 12,
+  defaultQuoteFontColor?: string,
   defaultBackgroundColor?: string,
   defaultBorderColor?: string,
 ): React.ReactNode => {
@@ -47,6 +48,7 @@ export const parseQuotes = (
     hideAudio,
     showMediaControls,
     defaultQuoteFontSize,
+    defaultQuoteFontColor,
     defaultBackgroundColor,
     defaultBorderColor
   });

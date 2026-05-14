@@ -65,6 +65,11 @@ interface VideoSettingsSidebarProps {
   titleFontSize: number;
   contentFontSize: number;
   quoteFontSize: number;
+  titleFontColor: string;
+  contentFontColor: string;
+  quoteFontColor: string;
+  titleFontBold: boolean;
+  contentFontBold: boolean;
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
@@ -88,6 +93,11 @@ interface VideoSettingsSidebarProps {
   onTitleFontSizeChange: (size: number) => void;
   onContentFontSizeChange: (size: number) => void;
   onQuoteFontSizeChange: (size: number) => void;
+  onTitleFontColorChange: (color: string) => void;
+  onContentFontColorChange: (color: string) => void;
+  onQuoteFontColorChange: (color: string) => void;
+  onTitleFontBoldChange: (bold: boolean) => void;
+  onContentFontBoldChange: (bold: boolean) => void;
   onMaxQuoteDepthChange: (depth: number) => void;
   onDefaultQuoteMaxLimitChange: (limit: number) => void;
   onSceneBackgroundColorChange: (color: string) => void;
@@ -152,6 +162,11 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     titleFontSize,
     contentFontSize,
     quoteFontSize,
+    titleFontColor,
+    contentFontColor,
+    quoteFontColor,
+    titleFontBold,
+    contentFontBold,
     maxQuoteDepth,
     defaultQuoteMaxLimit,
     sceneBackgroundColor,
@@ -173,6 +188,11 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     onTitleFontSizeChange,
     onContentFontSizeChange,
     onQuoteFontSizeChange,
+    onTitleFontColorChange,
+    onContentFontColorChange,
+    onQuoteFontColorChange,
+    onTitleFontBoldChange,
+    onContentFontBoldChange,
     onMaxQuoteDepthChange,
     onDefaultQuoteMaxLimitChange,
     onSceneBackgroundColorChange,
@@ -345,6 +365,16 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                   setContentFontSize={onContentFontSizeChange}
                   quoteFontSize={quoteFontSize}
                   setQuoteFontSize={onQuoteFontSizeChange}
+                  titleFontColor={titleFontColor}
+                  setTitleFontColor={onTitleFontColorChange}
+                  contentFontColor={contentFontColor}
+                  setContentFontColor={onContentFontColorChange}
+                  quoteFontColor={quoteFontColor}
+                  setQuoteFontColor={onQuoteFontColorChange}
+                  titleFontBold={titleFontBold}
+                  setTitleFontBold={onTitleFontBoldChange}
+                  contentFontBold={contentFontBold}
+                  setContentFontBold={onContentFontBoldChange}
                   maxQuoteDepth={maxQuoteDepth}
                   setMaxQuoteDepth={onMaxQuoteDepthChange}
                   defaultQuoteMaxLimit={defaultQuoteMaxLimit}

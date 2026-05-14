@@ -328,6 +328,7 @@ interface SceneItemProps {
   relativeFrame: number;
   fps: number;
   quoteFontSize?: number;
+  quoteFontColor?: string;
   maxQuoteDepth?: number;
   defaultQuoteMaxLimit?: number;
   defaultItemBackgroundColor?: string;
@@ -342,6 +343,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
   relativeFrame,
   fps,
   quoteFontSize,
+  quoteFontColor,
   maxQuoteDepth,
   defaultQuoteMaxLimit,
   defaultItemBackgroundColor,
@@ -463,6 +465,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
           playbackFrame={Math.max(0, relativeFrame - enterFrame)}
           fps={fps}
           defaultQuoteFontSize={quoteFontSize}
+          defaultQuoteFontColor={quoteFontColor}
           maxQuoteDepth={maxQuoteDepth}
           defaultQuoteMaxLimit={defaultQuoteMaxLimit}
           defaultBackgroundColor={resolvedQuoteBackgroundColor}
@@ -569,6 +572,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                   relativeFrame={frame}
                   fps={fps}
                   quoteFontSize={config.quoteFontSize}
+                  quoteFontColor={config.quoteFontColor}
                   maxQuoteDepth={config.maxQuoteDepth}
                   defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
                   defaultItemBackgroundColor={config.itemBackgroundColor}
@@ -611,6 +615,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                   relativeFrame={frame}
                   fps={fps}
                   quoteFontSize={config.quoteFontSize}
+                  quoteFontColor={config.quoteFontColor}
                   maxQuoteDepth={config.maxQuoteDepth}
                   defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
                   defaultItemBackgroundColor={config.itemBackgroundColor}

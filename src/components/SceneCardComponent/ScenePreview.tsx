@@ -196,6 +196,7 @@ export const ScenePreview: React.FC<ScenePreviewProps> = ({
                         maxQuoteDepth={videoConfig.maxQuoteDepth}
                         defaultQuoteMaxLimit={videoConfig.defaultQuoteMaxLimit}
                         defaultQuoteFontSize={videoConfig.quoteFontSize}
+                        defaultQuoteFontColor={videoConfig.quoteFontColor}
                         defaultBackgroundColor={videoConfig.quoteBackgroundColor || item.backgroundColor || videoConfig.itemBackgroundColor}
                         defaultBorderColor={videoConfig.quoteBorderColor}
                       />

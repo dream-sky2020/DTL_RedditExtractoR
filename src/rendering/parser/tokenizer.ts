@@ -111,7 +111,7 @@ export const tokenize = (
     const nextAnimateMatch = subText.match(/\[animate[^\]]*\]/);
     const nextAnimate = nextAnimateMatch && nextAnimateMatch.index != null ? currentPos + nextAnimateMatch.index : -1;
 
-    const nextTextTagMatch = subText.match(/<\/?#text#>/);
+    const nextTextTagMatch = subText.match(/<#text#?(?:\s[^>]*)?>|<\/#text#?>/);
     const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
 
     // Determine nearest tag
@@ -416,7 +416,7 @@ export const tokenize = (
         }
       }
     } else if (type === 'textTag') {
-      const match = text.substring(foundIdx).match(/^<\/?#text#>/);
+      const match = text.substring(foundIdx).match(/^<#text#?(?:\s[^>]*)?>|^<\/#text#?>/);
       if (match) {
         currentPos = foundIdx + match[0].length;
       }

@@ -12,6 +12,7 @@ interface ScriptContentRendererProps {
   maxQuoteDepth?: number;
   defaultQuoteMaxLimit?: number;
   defaultQuoteFontSize?: number;
+  defaultQuoteFontColor?: string;
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
 }
@@ -27,6 +28,7 @@ export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = React
   maxQuoteDepth = 4,
   defaultQuoteMaxLimit = 150,
   defaultQuoteFontSize = 12,
+  defaultQuoteFontColor,
   defaultBackgroundColor,
   defaultBorderColor,
 }) => {
@@ -38,8 +40,8 @@ export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = React
   }), [playbackFrame, fps]);
 
   const parsedContent = useMemo(() => {
-    return parseQuotes(content, -1, 0, maxQuoteDepth, [author], hideAudio, showMediaControls, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultBackgroundColor, defaultBorderColor);
-  }, [content, author, hideAudio, showMediaControls, maxQuoteDepth, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultBackgroundColor, defaultBorderColor]);
+    return parseQuotes(content, -1, 0, maxQuoteDepth, [author], hideAudio, showMediaControls, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor);
+  }, [content, author, hideAudio, showMediaControls, maxQuoteDepth, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor]);
 
   return (
     <PlaybackContext.Provider value={playbackValue}>

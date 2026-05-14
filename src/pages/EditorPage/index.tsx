@@ -40,6 +40,9 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
     titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize,
     contentFontSize, setContentFontSize, quoteFontSize, setQuoteFontSize,
+    titleFontColor, setTitleFontColor, contentFontColor, setContentFontColor,
+    quoteFontColor, setQuoteFontColor, titleFontBold, setTitleFontBold,
+    contentFontBold, setContentFontBold,
     maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
     sceneBackgroundColor, setSceneBackgroundColor, 
     sceneBackgroundColorEnd, setSceneBackgroundColorEnd,
@@ -73,11 +76,16 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
       localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
     },
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
-    setContentFontSize, setQuoteFontSize, setMaxQuoteDepth, setDefaultQuoteMaxLimit,
+    setContentFontSize, setQuoteFontSize, 
+    setTitleFontColor, setContentFontColor, setQuoteFontColor,
+    setTitleFontBold, setContentFontBold,
+    setMaxQuoteDepth, setDefaultQuoteMaxLimit,
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
     setQuoteBackgroundColor, setQuoteBorderColor,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
+    titleFontColor, contentFontColor, quoteFontColor,
+    titleFontBold, contentFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
@@ -305,6 +313,11 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         titleFontSize={titleFontSize}
         contentFontSize={contentFontSize}
         quoteFontSize={quoteFontSize}
+        titleFontColor={titleFontColor}
+        contentFontColor={contentFontColor}
+        quoteFontColor={quoteFontColor}
+        titleFontBold={titleFontBold}
+        contentFontBold={contentFontBold}
         maxQuoteDepth={maxQuoteDepth}
         defaultQuoteMaxLimit={defaultQuoteMaxLimit}
         sceneBackgroundColor={sceneBackgroundColor}
@@ -326,6 +339,11 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         onTitleFontSizeChange={videoSettingsHandlers.handleTitleFontSizeChange}
         onContentFontSizeChange={videoSettingsHandlers.handleContentFontSizeChange}
         onQuoteFontSizeChange={videoSettingsHandlers.handleQuoteFontSizeChange}
+        onTitleFontColorChange={videoSettingsHandlers.handleTitleFontColorChange}
+        onContentFontColorChange={videoSettingsHandlers.handleContentFontColorChange}
+        onQuoteFontColorChange={videoSettingsHandlers.handleQuoteFontColorChange}
+        onTitleFontBoldChange={videoSettingsHandlers.handleTitleFontBoldChange}
+        onContentFontBoldChange={videoSettingsHandlers.handleContentFontBoldChange}
         onMaxQuoteDepthChange={videoSettingsHandlers.handleMaxQuoteDepthChange}
         onDefaultQuoteMaxLimitChange={videoSettingsHandlers.handleDefaultQuoteMaxLimitChange}
         onSceneBackgroundColorChange={videoSettingsHandlers.handleSceneBackgroundColorChange}

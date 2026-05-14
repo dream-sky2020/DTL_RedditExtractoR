@@ -40,6 +40,11 @@ interface VideoSettingsOptions {
   setTitleFontSize: (size: number) => void;
   setContentFontSize: (size: number) => void;
   setQuoteFontSize: (size: number) => void;
+  setTitleFontColor: (color: string) => void;
+  setContentFontColor: (color: string) => void;
+  setQuoteFontColor: (color: string) => void;
+  setTitleFontBold: (bold: boolean) => void;
+  setContentFontBold: (bold: boolean) => void;
   setMaxQuoteDepth: (depth: number) => void;
   setDefaultQuoteMaxLimit: (limit: number) => void;
   setSceneBackgroundColor: (color: string) => void;
@@ -55,6 +60,11 @@ interface VideoSettingsOptions {
   titleFontSize: number;
   contentFontSize: number;
   quoteFontSize: number;
+  titleFontColor: string;
+  contentFontColor: string;
+  quoteFontColor: string;
+  titleFontBold: boolean;
+  contentFontBold: boolean;
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
@@ -73,17 +83,55 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
     rawResult, setResult, colorArrangement, setColorArrangement,
     allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles,
-    setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
-    setContentFontSize, setQuoteFontSize, setMaxQuoteDepth, setDefaultQuoteMaxLimit,
+    setImageLayoutMode, setSceneLayout, setTitleAlignment,     setTitleFontSize,
+    setContentFontSize, setQuoteFontSize, 
+    setTitleFontColor, setContentFontColor, setQuoteFontColor,
+    setTitleFontBold, setContentFontBold,
+    setMaxQuoteDepth, setDefaultQuoteMaxLimit,
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
     setQuoteBackgroundColor, setQuoteBorderColor,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
+    titleFontColor, contentFontColor, quoteFontColor,
+    titleFontBold, contentFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor
   } = opts;
+
+  // --- 统一的 [style] 标签更新逻辑 ---
+  const updateStyleInContent = (
+    content: string, 
+    type: 'title' | 'context', 
+    updates: Record<string, string | number | boolean>
+  ) => {
+    const typePattern = new RegExp(`type=${type}\\b`);
+    return content.split(/(\[style [^\]]*\])/g).map(part => {
+      if (part.startsWith('[style') && typePattern.test(part)) {
+        let newTag = part;
+        Object.entries(updates).forEach(([key, value]) => {
+          if (key === 'b') {
+            const hasB = /\bb\b/.test(newTag);
+            if (value && !hasB) {
+              newTag = newTag.slice(0, -1) + ' b]';
+            } else if (!value && hasB) {
+              newTag = newTag.replace(/\bb\b/, '').replace(/\s+/g, ' ').replace(' ]', ']');
+            }
+          } else {
+            const regex = new RegExp(`${key}=([^ \\]]+)`);
+            if (regex.test(newTag)) {
+              newTag = newTag.replace(regex, `${key}=${value}`);
+            } else {
+              newTag = newTag.slice(0, -1) + ` ${key}=${value}]`;
+            }
+          }
+        });
+        return newTag;
+      }
+      return part;
+    }).join('');
+  };
 
   // --- 内部辅助函数 ---
   const interpolateColor = (color1: string, color2: string, factor: number) => {
@@ -188,7 +236,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: `[style size=${titleSize} b align=${alignment}]${nextResult.title}[/style]\n\n[style size=${contentSize}]${nextResult.content || ''}[/style]`,
+        content: `[style size=${titleSize} color=${opts.titleFontColor}${opts.titleFontBold ? ' b' : ''} align=${alignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=title]${nextResult.content || ''}[/style]`,
       }]
     };
 
@@ -201,7 +249,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: c.id,
         author: c.author,
-        content: `[style size=${contentSize}]${c.body}[/style]`,
+        content: `[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=context]${c.body}[/style]`,
         replyChain: c.replyChain
       }]
     }));
@@ -324,19 +372,11 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   const handleTitleAlignmentChange = (alignment: TitleAlignmentType) => {
     setTitleAlignment(alignment);
     const newScenes = videoConfig.scenes.map(scene => {
-      if (scene.type === 'post' && scene.items.length > 0) {
-        const newItems = scene.items.map(item => {
-          let newContent = item.content;
-          if (newContent.includes('[style') && newContent.includes(' b')) {
-            newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-              return match.includes('align=') ? match.replace(/align=[^ \]]+/, `align=${alignment}`) : match.slice(0, -1) + ` align=${alignment}]`;
-            });
-          }
-          return { ...item, content: newContent };
-        });
-        return { ...scene, items: newItems };
-      }
-      return scene;
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'title', { align: alignment })
+      }));
+      return { ...scene, items: newItems };
     });
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleAlignment: alignment });
     setVideoConfig(newConfig);
@@ -345,19 +385,11 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   const handleTitleFontSizeChange = (size: number) => {
     setTitleFontSize(size);
     const newScenes = videoConfig.scenes.map(scene => {
-      if (scene.type === 'post' && scene.items.length > 0) {
-        const newItems = scene.items.map(item => {
-          let newContent = item.content;
-          if (newContent.includes('[style') && newContent.includes(' b')) {
-            newContent = newContent.replace(/(\[style [^\]]*b[^\]]*)\]/, (match) => {
-              return match.includes('size=') ? match.replace(/size=\d+/, `size=${size}`) : match.slice(0, -1) + ` size=${size}]`;
-            });
-          }
-          return { ...item, content: newContent };
-        });
-        return { ...scene, items: newItems };
-      }
-      return scene;
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'title', { size })
+      }));
+      return { ...scene, items: newItems };
     });
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontSize: size });
     setVideoConfig(newConfig);
@@ -366,19 +398,71 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   const handleContentFontSizeChange = (size: number) => {
     setContentFontSize(size);
     const newScenes = videoConfig.scenes.map(scene => {
-      const newItems = scene.items.map(item => {
-        let newContent = item.content;
-        newContent = newContent.split(/(\[style [^\]]*\])/g).map(part => {
-          if (part.startsWith('[style') && !part.includes(' b')) {
-            return part.includes('size=') ? part.replace(/size=\d+/, `size=${size}`) : part.slice(0, -1) + ` size=${size}]`;
-          }
-          return part;
-        }).join('');
-        return { ...item, content: newContent };
-      });
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'context', { size })
+      }));
       return { ...scene, items: newItems };
     });
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontSize: size });
+    setVideoConfig(newConfig);
+  };
+
+  const handleTitleFontColorChange = (color: string) => {
+    setTitleFontColor(color);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'title', { color })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontColor: color });
+    setVideoConfig(newConfig);
+  };
+
+  const handleContentFontColorChange = (color: string) => {
+    setContentFontColor(color);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'context', { color })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontColor: color });
+    setVideoConfig(newConfig);
+  };
+
+  const handleTitleFontBoldChange = (bold: boolean) => {
+    setTitleFontBold(bold);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'title', { b: bold })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, titleFontBold: bold });
+    setVideoConfig(newConfig);
+  };
+
+  const handleContentFontBoldChange = (bold: boolean) => {
+    setContentFontBold(bold);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'context', { b: bold })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, contentFontBold: bold });
+    setVideoConfig(newConfig);
+  };
+
+  const handleQuoteFontColorChange = (color: string) => {
+    setQuoteFontColor(color);
+    const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontColor: color });
     setVideoConfig(newConfig);
   };
 
@@ -487,7 +571,9 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleApplyCommentSort, handleRandomizeAliasesAndApply, handleClearAliasesAndApply,
     handleRearrangeColorsAndApply, updateAuthorProfile, handleImageLayoutModeChange,
     handleSceneLayoutChange, handleTitleAlignmentChange, handleTitleFontSizeChange,
-    handleContentFontSizeChange, handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
+    handleContentFontSizeChange, handleTitleFontColorChange, handleContentFontColorChange,
+    handleTitleFontBoldChange, handleContentFontBoldChange, handleQuoteFontColorChange,
+    handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
     handleDefaultQuoteMaxLimitChange, handleSceneBackgroundColorChange,
     handleSceneBackgroundColorEndChange, handleSceneBackgroundGradientModeChange,
     handleItemBackgroundColorChange, handleItemBackgroundColorEndChange,

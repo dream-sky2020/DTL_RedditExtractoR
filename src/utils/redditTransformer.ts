@@ -52,17 +52,18 @@ const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>)
     const color = profile.color?.trim();
     return color || AUTHOR_TAG_COLOR;
 };
-const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>) => {
+const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
     const displayName = getAuthorDisplayName(author, profiles);
     const color = getAuthorColor(author, profiles);
-    return `[style color=${color} b]u/${displayName}:[/style]`;
+    return `[style color=${color} b type=${type}]u/${displayName}:[/style]`;
 };
 
-const wrapText = (text: string) => {
+const wrapText = (text: string, type?: string) => {
     if (!text) return '';
     
     // 如果已经整体包裹了，说明是合法的，直接返回
     if (text.startsWith('<#text#>') && text.endsWith('</#text#>')) return text;
+    if (type && text.startsWith(`[style type=${type}]`) && text.endsWith('[/style]')) return text;
 
     // 常见的 DSL 标签（不应被包裹进翻译标签的）
     // 注意：我们要把标签作为分隔符，同时保留它们
@@ -92,14 +93,15 @@ const wrapText = (text: string) => {
         return `<#text#>${part}</#text#>`;
     });
 
-    return wrappedParts.join('');
+    const result = wrappedParts.join('');
+    return (type && result) ? `[style type=${type}]${result}[/style]` : result;
 };
 
 const stripLeadingAuthorHeader = (content: string) =>
     content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
 
-const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>) => {
-    const header = buildAuthorHeader(author, profiles);
+const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
+    const header = buildAuthorHeader(author, profiles, type);
     const normalized = (content || '').trim();
     if (!normalized) return header;
     if (normalized.startsWith(header)) return normalized;
@@ -230,9 +232,9 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
     return {
         ...data,
         author: getAuthorDisplayName(postAuthor, options.authorProfiles),
-        title: wrapText(data.title),
+        title: wrapText(data.title, 'title'),
         // 关键修正：content 已经是处理过的，不需要再次 wrapText
-        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles),
+        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles, 'title'),
         comments: options.replyOrder === 'global'
             ? sortFlatComments(normalizedComments, options.sortMode)
             : normalizedComments,
@@ -319,8 +321,8 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                 const commentAuthor = normalizeAuthor(c.author);
                 const displayAuthor = getAuthorDisplayName(commentAuthor, mergedOptions.authorProfiles);
                 // 关键修正：评论正文也需要先区分文本和图片再包裹
-                const currentRawContent = wrapText(cleanText);
-                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles);
+                const currentRawContent = wrapText(cleanText, 'context');
+                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles, 'context');
 
                 // 祖先引用构建规则：
                 // 1) 最外层是最近的父评论，最内层是最早的评论
@@ -339,7 +341,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                     const quoteAuthor = normalizeAuthor(quote.author);
                     const quoteAuthorName = getAuthorDisplayName(quoteAuthor, mergedOptions.authorProfiles);
                     const quoteAuthorToken = normalizeAuthorToken(quoteAuthorName);
-                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles)} `;
+                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles, 'context')} `;
                     const contentPart = nestedAncestorQuote
                         ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}`
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
@@ -442,23 +444,23 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
 
         if (!postText.includes('[row]')) {
             // 关键修正：先包装已有的 text，再拼接图片标签
-            postText = `${wrapText(postText)}${multiImageTag}`;
+            postText = `${wrapText(postText, 'context')}${multiImageTag}`;
         }
     } else if (postImages.length === 1) {
         // 如果是单图，使用 [image]
         if (!postText.includes(postImages[0])) {
             // 关键修正：先包装已有的 text，再拼接图片标签
-            postText = `${wrapText(postText)}\n[image]${postImages[0]}[/image]`;
+            postText = `${wrapText(postText, 'context')}\n[image]${postImages[0]}[/image]`;
         }
     } else {
         // 纯文本情况
-        postText = wrapText(postText);
+        postText = wrapText(postText, 'context');
     }
 
     // 构建最终对象
     return {
-        title: wrapText(postDetail.title),
-        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles),
+        title: wrapText(postDetail.title, 'title'),
+        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles, 'context'),
         image: postImg,
         images: postImages,
         author: getAuthorDisplayName(normalizeAuthor(postDetail.author), mergedOptions.authorProfiles),

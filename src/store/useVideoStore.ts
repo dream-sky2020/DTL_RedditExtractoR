@@ -23,6 +23,11 @@ interface VideoState {
       titleFontSize: number;
       contentFontSize: number;
       quoteFontSize: number;
+      titleFontColor: string;
+      contentFontColor: string;
+      quoteFontColor: string;
+      titleFontBold: boolean;
+      contentFontBold: boolean;
       quoteBackgroundColor: string;
       quoteBorderColor: string;
       maxQuoteDepth: number;
@@ -121,7 +126,9 @@ export const useVideoStore = create<VideoState>()(
       buildVideoConfigFromResult: (nextResult, globalSettings) => {
         const { 
           titleAlignment, titleFontSize, contentFontSize, 
-          quoteFontSize, quoteBackgroundColor, quoteBorderColor,
+          quoteFontSize, titleFontColor, contentFontColor,
+          quoteFontColor, titleFontBold, contentFontBold,
+          quoteBackgroundColor, quoteBorderColor,
           maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor,
           itemBackgroundColor 
         } = globalSettings;
@@ -135,7 +142,7 @@ export const useVideoStore = create<VideoState>()(
           items: [{
             id: 'post-content',
             author: nextResult.author,
-            content: `[style size=${titleFontSize} b align=${titleAlignment}]${nextResult.title}[/style]\n\n[style size=${contentFontSize}]${nextResult.content || ''}[/style]`,
+            content: `[style size=${titleFontSize} color=${titleFontColor}${titleFontBold ? ' b' : ''} align=${titleAlignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context]${nextResult.content || ''}[/style]`,
           }]
         };
 
@@ -148,7 +155,7 @@ export const useVideoStore = create<VideoState>()(
           items: [{
             id: c.id,
             author: c.author,
-            content: `[style size=${contentFontSize}]${c.body}[/style]`,
+            content: `[style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context]${c.body}[/style]`,
             replyChain: c.replyChain
           }]
         }));
@@ -160,6 +167,11 @@ export const useVideoStore = create<VideoState>()(
           titleFontSize,
           contentFontSize,
           quoteFontSize,
+          titleFontColor,
+          contentFontColor,
+          quoteFontColor,
+          titleFontBold,
+          contentFontBold,
           quoteBackgroundColor,
           quoteBorderColor,
           maxQuoteDepth,

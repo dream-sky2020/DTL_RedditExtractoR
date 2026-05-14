@@ -422,6 +422,7 @@ export interface RenderOptions {
   hideAudio?: boolean;
   showMediaControls?: boolean;
   defaultQuoteFontSize?: number;
+  defaultQuoteFontColor?: string;
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
   inRow?: boolean;
@@ -433,6 +434,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
     hideAudio: _hideAudio = false,
     showMediaControls = true,
     defaultQuoteFontSize = 12,
+    defaultQuoteFontColor,
     defaultBackgroundColor,
     defaultBorderColor,
     inRow = false,
@@ -456,6 +458,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
       case 'quote': {
         const resolvedBg = node.customStyle.backgroundColor || defaultBackgroundColor || 'var(--quote-bg)';
         const resolvedBorderColor = (node.customStyle.borderColor as string) || defaultBorderColor || 'var(--quote-border)';
+        const resolvedColor = node.customStyle.color || defaultQuoteFontColor || 'inherit';
 
         return (
           <div
@@ -466,6 +469,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
               margin: '4px 0',
               borderRadius: '4px',
               fontSize: `${defaultQuoteFontSize}px`,
+              color: resolvedColor,
               ...node.customStyle,
               border: `1px solid ${resolvedBorderColor}`,
               backgroundColor: resolvedBg,
@@ -476,7 +480,8 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
               {renderAST(node.children, {
                 ...options,
                 defaultBackgroundColor: resolvedBg,
-                defaultBorderColor: resolvedBorderColor
+                defaultBorderColor: resolvedBorderColor,
+                defaultQuoteFontColor: resolvedColor
               })}
             </div>
           </div>

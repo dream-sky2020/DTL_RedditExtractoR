@@ -26,6 +26,11 @@ export interface GlobalSettings {
   titleFontSize: number;
   contentFontSize: number;
   quoteFontSize: number;
+  titleFontColor: string;
+  contentFontColor: string;
+  quoteFontColor: string;
+  titleFontBold: boolean;
+  contentFontBold: boolean;
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
@@ -48,6 +53,11 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   titleFontSize: 64,
   contentFontSize: 32,
   quoteFontSize: 12,
+  titleFontColor: '#ffffff',
+  contentFontColor: '#ffffff',
+  quoteFontColor: '#ffffff',
+  titleFontBold: true,
+  contentFontBold: false,
   maxQuoteDepth: 4,
   defaultQuoteMaxLimit: 150,
   sceneBackgroundColor: '#ffffff',
@@ -178,6 +188,11 @@ export interface VideoConfig {
   titleFontSize?: number; // 标题字体大小
   contentFontSize?: number; // 正文字体大小
   quoteFontSize?: number; // 引用块字体大小
+  titleFontColor?: string; // 标题字体颜色
+  contentFontColor?: string; // 正文字体颜色
+  quoteFontColor?: string; // 引用块字体颜色
+  titleFontBold?: boolean; // 标题是否加粗
+  contentFontBold?: boolean; // 正文是否加粗
   quoteBackgroundColor?: string; // 引用块默认背景颜色
   quoteBorderColor?: string; // 引用块默认边框颜色
   maxQuoteDepth?: number; // 最大嵌套深度

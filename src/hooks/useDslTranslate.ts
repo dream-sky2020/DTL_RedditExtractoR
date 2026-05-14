@@ -16,7 +16,7 @@ export const useDslTranslate = () => {
       const dsl = sceneToDsl(scene);
       
       // 使用 <#text#> 标示提取内容
-      const textRegex = /<#text#>([\s\S]*?)<\/#text#>/g;
+      const textRegex = /<#text#?(?:\s[^>]*)?>([\s\S]*?)<\/#text#?>/g;
       let match;
       while ((match = textRegex.exec(dsl)) !== null) {
         const text = match[1].trim();
@@ -74,11 +74,11 @@ export const useDslTranslate = () => {
       // 执行替换
       translationMap.forEach((translated, original) => {
         const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`<#text#>${escapedOriginal}<\/#text#>`, 'g');
+        const regex = new RegExp(`(<#text#?(?:\\s[^>]*)?>)${escapedOriginal}(<\\/#text#?>)`, 'g');
         
         const count = (dsl.match(regex) || []).length;
         if (count > 0) {
-          dsl = dsl.replace(regex, `<#text#>${translated}</#text#>`);
+          dsl = dsl.replace(regex, `$1${translated}$2`);
           totalReplacements += count;
           changed = true;
         }
