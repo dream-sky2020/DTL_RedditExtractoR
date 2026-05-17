@@ -30,7 +30,7 @@ import { RenderTasksPage } from '../RenderTasksPage/index';
 import { ProjectsPage } from '../ProjectsPage/index';
 import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
-import { IdentityManagementPage } from '../IdentityManagementPage';
+import { IdentityManagementPage } from '../IdentityManagementPage/index';
 
 import { 
   ToolKey, 
@@ -80,7 +80,7 @@ interface MainLayoutProps {
   setSelectedSceneIdx: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = (props) => {
+export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
   const {
     collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool, currentProjectId,
     onMenuSelect,
@@ -386,3 +386,5 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
     </AntdApp>
   );
 };
+
+export default MainLayoutPage;

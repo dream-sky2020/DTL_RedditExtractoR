@@ -1,0 +1,49 @@
+为了避免类似的导出错误并提升代码质量，您可以向 AI 提供更具体的**工程化规范指令**。
+
+这次问题的核心在于 **Vite HMR（热更新）对具名导出（Named Export）的识别失效** 或 **模块路径解析不一致**。以下是您可以改进给 AI 的命令要求及建议：
+
+### 1. 给 AI 的建议指令（可加入到 Cursor Rules 或 Prompt 中）
+
+您可以要求 AI 在修改代码时遵循以下原则：
+
+*   **强制导出规范**：
+    > "对于页面组件（Pages），请统一使用 `export default` 进行导出，并在 `App.tsx` 中使用默认导入。这能减少 Vite 在热更新时出现的导出匹配错误。"
+*   **统一路径引用**：
+    > "在导入项目内部模块时，优先使用相对路径（如 `./` 或 `../`）而非别名（如 `@/`），除非是在跨度较大的目录结构间引用。这有助于编译器更准确地追踪依赖。"
+*   **严格检查导入一致性**：
+    > "在修改文件后，请务必检查所有引用该文件的位置。如果修改了导出方式（从具名改为默认，或反之），必须同步更新所有 `import` 语句。"
+*   **目录索引规范**：
+    > "引用目录下的 `index.tsx` 时，请显式写出完整路径（如 `./Folder/index`），避免依赖环境的隐式解析逻辑。"
+
+---
+
+### 2. 项目层面的改进建议
+
+为了从根本上减少此类问题，您可以考虑以下改进方案：
+
+#### A. 建立统一的导出层（Barrel Files）
+在 `src/pages/index.ts` 中统一导出所有页面：
+```typescript
+// src/pages/index.ts
+export { default as MainLayout } from './MainPages';
+export { ExtractPage } from './ExtractPage';
+// ...
+```
+这样在 `App.tsx` 中只需要一行导入，且结构清晰。
+
+#### B. 规范化文件命名
+目前您的项目混合使用了 `Folder/index.tsx` 和 `Folder/FileName.tsx`。
+*   **建议**：如果一个文件夹代表一个模块，内部主文件统一命名为 `index.tsx`，或者文件夹名与文件名保持一致（如 `MainPage/MainPage.tsx`）。
+
+#### C. 增加 Lint 规则
+您可以要求 AI 为您配置更严格的 ESLint 规则，例如：
+*   `import/no-unresolved`: 确保路径正确。
+*   `import/named`: 确保具名导出存在。
+*   `import/default`: 确保默认导出存在。
+
+### 总结：如何给 AI 下达“预防性”指令？
+
+下次当您让 AI 创建或重构组件时，可以这样说：
+> “请帮我重构 MainLayout 组件。**要求：** 1. 使用 `export default` 导出；2. 确保 `App.tsx` 中的导入路径同步更新为相对路径；3. 检查是否存在循环依赖；4. 保持导入风格与项目中现有的 `antd` 导入一致。”
+
+通过明确**导出类型**和**路径规范**，可以规避 90% 以上的 `SyntaxError: does not provide an export named` 类错误。

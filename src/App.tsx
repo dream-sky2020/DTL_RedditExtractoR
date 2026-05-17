@@ -5,7 +5,7 @@ import './style/tables.css';
 import {
   ToolKey,
 } from '@/types';
-import { MainLayout } from '@/pages/MainPages';
+import MainLayout from './pages/MainPages';
 
 // Hooks
 import { useVideoRender } from '@hooks/useVideoRender';
