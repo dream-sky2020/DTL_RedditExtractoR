@@ -484,42 +484,6 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setVideoConfig(newConfig);
   };
 
-  const handleSceneBackgroundColorChange = (color: string) => {
-    setSceneBackgroundColor(color);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundColor: color }));
-    setVideoConfig(newConfig);
-  };
-
-  const handleSceneBackgroundColorEndChange = (color: string) => {
-    setSceneBackgroundColorEnd(color);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundColorEnd: color }));
-    setVideoConfig(newConfig);
-  };
-
-  const handleSceneBackgroundGradientModeChange = (mode: boolean) => {
-    setSceneBackgroundGradientMode(mode);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { sceneBackgroundGradientMode: mode }));
-    setVideoConfig(newConfig);
-  };
-
-  const handleItemBackgroundColorChange = (color: string) => {
-    setItemBackgroundColor(color);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundColor: color }));
-    setVideoConfig(newConfig);
-  };
-
-  const handleItemBackgroundColorEndChange = (color: string) => {
-    setItemBackgroundColorEnd(color);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundColorEnd: color }));
-    setVideoConfig(newConfig);
-  };
-
-  const handleItemBackgroundGradientModeChange = (mode: boolean) => {
-    setItemBackgroundGradientMode(mode);
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig, { itemBackgroundGradientMode: mode }));
-    setVideoConfig(newConfig);
-  };
-
   const handleQuoteBackgroundColorChange = (color: string) => {
     setQuoteBackgroundColor(color);
     const newConfig = normalizeVideoConfig({ ...videoConfig, quoteBackgroundColor: color });
@@ -567,6 +531,104 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     message.success(`已将全部画面格及元素时长统一设为 ${duration}s`);
   };
 
+  const handleRefreshStyles = () => {
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => {
+        let newContent = item.content;
+        // 更新 title 类型的 style 标签
+        newContent = updateStyleInContent(newContent, 'title', {
+          size: titleFontSize,
+          color: titleFontColor,
+          align: titleAlignment,
+          b: titleFontBold
+        });
+        // 更新 context 类型的 style 标签
+        newContent = updateStyleInContent(newContent, 'context', {
+          size: contentFontSize,
+          color: contentFontColor,
+          b: contentFontBold
+        });
+        return { ...item, content: newContent };
+      });
+      return { ...scene, items: newItems };
+    });
+
+    const newConfig = normalizeVideoConfig({
+      ...videoConfig,
+      scenes: newScenes,
+      titleFontSize,
+      contentFontSize,
+      titleFontColor,
+      contentFontColor,
+      titleFontBold,
+      contentFontBold,
+      titleAlignment,
+    });
+    setVideoConfig(newConfig);
+    message.success('已刷新所有画面格样式（保留结构）');
+  };
+
+  const handleRearrangeScenes = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    if (!rawResult) {
+      message.warning('请先提取 Reddit 数据，再进行排序重排');
+      return;
+    }
+
+    setCommentSortMode(sortMode);
+    setReplyOrderMode(replyOrder);
+
+    // 重新获取排序后的结果，但仅用于获取 ID 顺序
+    const nextResult = transformRedditJson(rawResult, {
+      sortMode,
+      replyOrder,
+      authorProfiles,
+      imageLayoutMode: videoConfig.imageLayoutMode,
+    });
+
+    // 获取排序后的 ID 列表
+    const sortedIds = nextResult.comments.map((c: any) => 'scene-' + c.id);
+    // 贴子场景通常在最前面
+    const postSceneId = videoConfig.scenes.find(s => s.type === 'post')?.id;
+    const finalIdOrder = postSceneId ? [postSceneId, ...sortedIds] : sortedIds;
+
+    // 根据 ID 顺序重排现有的 scenes
+    const currentScenes = [...videoConfig.scenes];
+    const rearrangedScenes: VideoScene[] = [];
+    
+    finalIdOrder.forEach(id => {
+      const scene = currentScenes.find(s => s.id === id);
+      if (scene) {
+        rearrangedScenes.push(scene);
+      }
+    });
+
+    // 如果有些场景不在排序结果中（可能是手动添加的），把它们放在最后
+    currentScenes.forEach(scene => {
+      if (!rearrangedScenes.find(s => s.id === scene.id)) {
+        rearrangedScenes.push(scene);
+      }
+    });
+
+    const nextConfig = normalizeVideoConfig({
+      ...videoConfig,
+      scenes: rearrangedScenes,
+    });
+
+    setVideoConfig(nextConfig);
+    message.success('已根据新规则重排画面顺序（保留手动修改）');
+  };
+
+  const handleResetAndRebuild = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    rebuildFromRaw(sortMode, replyOrder, authorProfiles, '已重置并重新生成脚本');
+  };
+
+  const handleRefreshAliases = () => {
+    // 实际上 authorProfiles 改变后，渲染层会自动响应（如果它是从 store 读取的）
+    // 但为了保险，我们可以触发一次 config 的更新
+    setVideoConfig({ ...videoConfig });
+    message.success('已刷新代号映射');
+  };
+
   return {
     handleApplyCommentSort, handleRandomizeAliasesAndApply, handleClearAliasesAndApply,
     handleRearrangeColorsAndApply, updateAuthorProfile, handleImageLayoutModeChange,
@@ -574,11 +636,10 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleContentFontSizeChange, handleTitleFontColorChange, handleContentFontColorChange,
     handleTitleFontBoldChange, handleContentFontBoldChange, handleQuoteFontColorChange,
     handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
-    handleDefaultQuoteMaxLimitChange, handleSceneBackgroundColorChange,
-    handleSceneBackgroundColorEndChange, handleSceneBackgroundGradientModeChange,
-    handleItemBackgroundColorChange, handleItemBackgroundColorEndChange,
-    handleItemBackgroundGradientModeChange,
+    handleDefaultQuoteMaxLimitChange,
     handleQuoteBackgroundColorChange,
-    handleQuoteBorderColorChange, setAllSceneLayouts, addScene, setAllSceneDurations
+    handleQuoteBorderColorChange,
+    setAllSceneLayouts, addScene, setAllSceneDurations,
+    handleRefreshStyles, handleRearrangeScenes, handleResetAndRebuild, handleRefreshAliases
   };
 };

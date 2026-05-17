@@ -1,5 +1,5 @@
 import React from 'react';
-import { SceneRenderer } from '../../../remotion/MyVideo';
+import { SceneRenderer } from '../../../remotion/SceneRenderer';
 import { VideoConfig, VideoScene } from '../../../types';
 
 interface FramePlayerProps {

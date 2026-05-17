@@ -115,6 +115,8 @@ export const sceneToDsl = (scene: VideoScene): string => {
   if (scene.animateEasing) sceneAttrs.push(`animateEasing="${escapeAttr(scene.animateEasing)}"`);
   if (scene.offset) sceneAttrs.push(`offset="${escapeAttr(scene.offset)}"`);
   if (scene.keyframes) sceneAttrs.push(`keyframes="${escapeAttr(scene.keyframes)}"`);
+  if (scene.backgroundImage) sceneAttrs.push(`bgImage="${escapeAttr(scene.backgroundImage)}"`);
+  if (scene.backgroundImageMode) sceneAttrs.push(`bgMode="${escapeAttr(scene.backgroundImageMode)}"`);
 
   const itemBlocks = scene.items
     .map((item) => {
@@ -142,9 +144,16 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.glass !== undefined) itemAttrs.push(`glass=${item.glass ? 'true' : 'false'}`);
       if (item.glassBlur !== undefined) itemAttrs.push(`glassBlur=${item.glassBlur}`);
       if (item.glassOpacity !== undefined) itemAttrs.push(`glassOpacity=${item.glassOpacity}`);
-      if (item.glassTint) itemAttrs.push(`glassTint="${escapeAttr(item.glassTint)}"`);
       if (item.glassBorderColor) itemAttrs.push(`glassBorder="${escapeAttr(item.glassBorderColor)}"`);
       if (item.glassShadow) itemAttrs.push(`glassShadow="${escapeAttr(item.glassShadow)}"`);
+      if (item.glassDistort !== undefined) itemAttrs.push(`glassDistort=${item.glassDistort}`);
+      if (item.glassAberration !== undefined) itemAttrs.push(`glassAberration=${item.glassAberration}`);
+      if (item.glassEdgeGlow) itemAttrs.push(`glassEdgeGlow="${escapeAttr(item.glassEdgeGlow)}"`);
+      if (item.glassFresnel !== undefined) itemAttrs.push(`glassFresnel=${item.glassFresnel}`);
+      if (item.glassGrain !== undefined) itemAttrs.push(`glassGrain=${item.glassGrain}`);
+      if (item.glassRefraction !== undefined) itemAttrs.push(`glassRefraction=${item.glassRefraction}`);
+      if (item.backgroundImage) itemAttrs.push(`bgImage="${escapeAttr(item.backgroundImage)}"`);
+      if (item.backgroundImageMode) itemAttrs.push(`bgMode="${escapeAttr(item.backgroundImageMode)}"`);
       
       const content = encodeDslLineBreaks((item.content || '').trim());
       return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
@@ -218,6 +227,8 @@ export const parseSceneDsl = (
   const animateEasing = sceneAttrs.animateEasing || sceneAttrs.ae;
   const offset = sceneAttrs.offset || sceneAttrs.o || (shouldUseFallbackFields ? fallbackScene?.offset : undefined);
   const keyframes = sceneAttrs.keyframes || sceneAttrs.kf || (shouldUseFallbackFields ? fallbackScene?.keyframes : undefined);
+  const backgroundImage = sceneAttrs.bgImage || sceneAttrs.backgroundImage || sceneAttrs.bgi || (shouldUseFallbackFields ? fallbackScene?.backgroundImage : undefined);
+  const backgroundImageMode = (sceneAttrs.bgMode || sceneAttrs.backgroundImageMode || sceneAttrs.bgm || (shouldUseFallbackFields ? fallbackScene?.backgroundImageMode : undefined)) as any;
 
   const itemSpacingRaw = sceneAttrs.itemSpacing || sceneAttrs.is;
   let itemSpacing = itemSpacingRaw !== undefined
@@ -302,9 +313,16 @@ export const parseSceneDsl = (
     const glass = parseOptionalBoolean(itemAttrs.glass) ?? (shouldUseFallbackFields ? fallbackItem?.glass : undefined);
     const glassBlur = parseOptionalNumber(itemAttrs.glassBlur || itemAttrs.gb) ?? (shouldUseFallbackFields ? fallbackItem?.glassBlur : undefined);
     const glassOpacity = parseOptionalNumber(itemAttrs.glassOpacity || itemAttrs.go) ?? (shouldUseFallbackFields ? fallbackItem?.glassOpacity : undefined);
-    const glassTint = itemAttrs.glassTint || itemAttrs.gt || (shouldUseFallbackFields ? fallbackItem?.glassTint : undefined);
     const glassBorderColor = itemAttrs.glassBorder || itemAttrs.glassBorderColor || itemAttrs.gbc || (shouldUseFallbackFields ? fallbackItem?.glassBorderColor : undefined);
     const glassShadow = itemAttrs.glassShadow || itemAttrs.gs || (shouldUseFallbackFields ? fallbackItem?.glassShadow : undefined);
+    const glassDistort = parseOptionalNumber(itemAttrs.glassDistort || itemAttrs.gd) ?? (shouldUseFallbackFields ? fallbackItem?.glassDistort : undefined);
+    const glassAberration = parseOptionalNumber(itemAttrs.glassAberration || itemAttrs.ga) ?? (shouldUseFallbackFields ? fallbackItem?.glassAberration : undefined);
+    const glassEdgeGlow = itemAttrs.glassEdgeGlow || itemAttrs.geg || (shouldUseFallbackFields ? fallbackItem?.glassEdgeGlow : undefined);
+    const glassFresnel = parseOptionalNumber(itemAttrs.glassFresnel || itemAttrs.gf) ?? (shouldUseFallbackFields ? fallbackItem?.glassFresnel : undefined);
+    const glassGrain = parseOptionalNumber(itemAttrs.glassGrain || itemAttrs.gg) ?? (shouldUseFallbackFields ? fallbackItem?.glassGrain : undefined);
+    const glassRefraction = parseOptionalNumber(itemAttrs.glassRefraction || itemAttrs.gr) ?? (shouldUseFallbackFields ? fallbackItem?.glassRefraction : undefined);
+    const itemBackgroundImage = itemAttrs.bgImage || itemAttrs.backgroundImage || itemAttrs.bgi || (shouldUseFallbackFields ? fallbackItem?.backgroundImage : undefined);
+    const itemBackgroundImageMode = (itemAttrs.bgMode || itemAttrs.backgroundImageMode || itemAttrs.bgm || (shouldUseFallbackFields ? fallbackItem?.backgroundImageMode : undefined)) as any;
     let sticky: boolean | number | undefined = shouldUseFallbackFields ? fallbackItem?.sticky : undefined;
     if (itemAttrs.sticky) {
       const num = Number(itemAttrs.sticky);
@@ -349,9 +367,16 @@ export const parseSceneDsl = (
       glass,
       glassBlur,
       glassOpacity,
-      glassTint,
       glassBorderColor,
       glassShadow,
+      glassDistort,
+      glassAberration,
+      glassEdgeGlow,
+      glassFresnel,
+      glassGrain,
+      glassRefraction,
+      backgroundImage: itemBackgroundImage,
+      backgroundImageMode: itemBackgroundImageMode,
     });
     index += 1;
   }
@@ -392,6 +417,8 @@ export const parseSceneDsl = (
       animateEasing,
       offset,
       keyframes,
+      backgroundImage,
+      backgroundImageMode,
     },
     warnings,
   };

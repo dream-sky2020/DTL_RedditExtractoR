@@ -35,6 +35,17 @@ export interface QuoteNode extends BaseNode {
   maxLimit: number;
   itemId?: string;
   customStyle: React.CSSProperties;
+  glass?: boolean;
+  glassBlur?: number;
+  glassOpacity?: number;
+  glassBorderColor?: string;
+  glassShadow?: string;
+  glassDistort?: number;
+  glassAberration?: number;
+  glassEdgeGlow?: string;
+  glassFresnel?: number;
+  glassGrain?: number;
+  glassRefraction?: number;
   children: ASTNode[];
 }
 

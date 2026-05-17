@@ -71,7 +71,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   sceneDisplayMode: 'normal',
 };
 
-export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try';
+export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity';
 
 export interface ReplyInfo {
   author: string;
@@ -109,6 +109,7 @@ export interface VideoCanvasConfig {
 
 export type RenderMode = 'preview' | 'final';
 export type BackgroundVideoFit = 'cover' | 'contain' | 'fill';
+export type BackgroundImageMode = 'stretch' | 'contain' | 'cover' | 'repeat';
 export type BackgroundVideoPlaybackMode = 'play-once' | 'repeat-count';
 export type BackgroundVideoAfterEndMode = 'color' | 'image';
 export type BackgroundVideoTimelineMode = 'cut-at-dsl-end' | 'wait-for-background';
@@ -156,9 +157,16 @@ export interface VideoContentItem {
   glass?: boolean;
   glassBlur?: number;
   glassOpacity?: number;
-  glassTint?: string;
   glassBorderColor?: string;
   glassShadow?: string;
+  glassDistort?: number;
+  glassAberration?: number;
+  glassEdgeGlow?: string;
+  glassFresnel?: number;
+  glassGrain?: number;
+  glassRefraction?: number;
+  backgroundImage?: string;
+  backgroundImageMode?: BackgroundImageMode;
 }
 
 export interface VideoScene {
@@ -177,6 +185,8 @@ export interface VideoScene {
   animateEasing?: string;
   offset?: string;
   keyframes?: string;
+  backgroundImage?: string;
+  backgroundImageMode?: BackgroundImageMode;
 }
 
 export interface VideoConfig {

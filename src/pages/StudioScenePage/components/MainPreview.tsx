@@ -12,7 +12,7 @@ import { VideoConfig } from '../../../types';
 import { useFullscreen } from '@hooks/useFullscreen';
 import { usePlayback } from '@hooks/usePlayback';
 import { usePreviewTransform } from '@hooks/usePreviewTransform';
-import { SceneRenderer } from '../../../remotion/MyVideo';
+import { SceneRenderer } from '../../../remotion/SceneRenderer';
 import { PreviewHeightControl } from './PreviewHeightControl';
 import { PlaybackController } from './PlaybackController';
 import { ZoomController } from './ZoomController';

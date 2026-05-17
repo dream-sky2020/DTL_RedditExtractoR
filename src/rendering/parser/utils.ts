@@ -20,7 +20,25 @@ export const parseInlineAttrs = (input: string): Record<string, string> => {
 export const parseQuoteStartTag = (
   source: string,
   defaultMaxLimit: number
-): { fullTag: string; author: string; maxLimit: number; itemId: string; customStyle: React.CSSProperties; maxQuoteDepthOverride?: number } | null => {
+): { 
+  fullTag: string; 
+  author: string; 
+  maxLimit: number; 
+  itemId: string; 
+  customStyle: React.CSSProperties; 
+  maxQuoteDepthOverride?: number;
+  glass?: boolean;
+  glassBlur?: number;
+  glassOpacity?: number;
+  glassBorderColor?: string;
+  glassShadow?: string;
+  glassDistort?: number;
+  glassAberration?: number;
+  glassEdgeGlow?: string;
+  glassFresnel?: number;
+  glassGrain?: number;
+  glassRefraction?: number;
+} | null => {
   const startTagMatch = source.match(/^\[quote(?:=[^\]]*|\s[^\]]*)?\]/);
   if (!startTagMatch) return null;
 
@@ -58,7 +76,37 @@ export const parseQuoteStartTag = (
   if (attrs.bold === 'true' || attrs.bold === '') customStyle.fontWeight = 'bold';
   if (attrs.italic === 'true' || attrs.italic === '') customStyle.fontStyle = 'italic';
 
-  return { fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride };
+  const glass = attrs.glass === 'true' || attrs.glass === '';
+  const glassBlur = attrs.glassblur || attrs.gb ? Number(attrs.glassblur || attrs.gb) : undefined;
+  const glassOpacity = attrs.glassopacity || attrs.go ? Number(attrs.glassopacity || attrs.go) : undefined;
+  const glassBorderColor = attrs.glassborder || attrs.glassbordercolor || attrs.gbc;
+  const glassShadow = attrs.glassshadow || attrs.gs;
+  const glassDistort = attrs.glassdistort || attrs.gd ? Number(attrs.glassdistort || attrs.gd) : undefined;
+  const glassAberration = attrs.glassaberration || attrs.ga ? Number(attrs.glassaberration || attrs.ga) : undefined;
+  const glassEdgeGlow = attrs.glassedgeglow || attrs.geg;
+  const glassFresnel = attrs.glassfresnel || attrs.gf ? Number(attrs.glassfresnel || attrs.gf) : undefined;
+  const glassGrain = attrs.glassgrain || attrs.gg ? Number(attrs.glassgrain || attrs.gg) : undefined;
+  const glassRefraction = attrs.glassrefraction || attrs.gr ? Number(attrs.glassrefraction || attrs.gr) : undefined;
+
+  return { 
+    fullTag, 
+    author, 
+    maxLimit, 
+    itemId, 
+    customStyle, 
+    maxQuoteDepthOverride,
+    glass,
+    glassBlur,
+    glassOpacity,
+    glassBorderColor,
+    glassShadow,
+    glassDistort,
+    glassAberration,
+    glassEdgeGlow,
+    glassFresnel,
+    glassGrain,
+    glassRefraction
+  };
 };
 
 export const parseMediaSequence = (source: string, defaultDuration: number = 2.5): MediaItem[] =>

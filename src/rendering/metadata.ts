@@ -47,6 +47,13 @@ const ANIMATION_OPTIONS = [
   { label: '缩小 (zoom-out)', value: 'zoom-out' },
 ];
 
+const BACKGROUND_IMAGE_MODE_OPTIONS = [
+  { label: '拉伸铺满 (stretch)', value: 'stretch' },
+  { label: '等比完整 (contain)', value: 'contain' },
+  { label: '等比裁剪 (cover)', value: 'cover' },
+  { label: '不断重复 (repeat)', value: 'repeat' },
+];
+
 export const TAGS_METADATA: Record<string, TagMetadata> = {
   'scene': {
     tagName: 'scene',
@@ -66,6 +73,8 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'ae', label: '动画缓动', type: 'select', options: EASING_OPTIONS, alias: ['animateEasing'] },
       { name: 'o', label: '偏移', type: 'css', alias: ['offset'], placeholder: 'x: 10; y: 20' },
       { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, y: 20, rotate: -8; 0.5 @ease-out: scaleX: 1.1, scaleY: 1.1; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, y: 0, rotate: 0' },
+      { name: 'bgImage', label: '背景图片', type: 'string', alias: ['backgroundImage', 'bgi'], placeholder: 'https://... 或本地路径' },
+      { name: 'bgMode', label: '背景模式', type: 'select', options: BACKGROUND_IMAGE_MODE_OPTIONS, defaultValue: 'cover', alias: ['backgroundImageMode', 'bgm'] },
     ],
     hasContent: true,
     contentLabel: '场景内容',
@@ -89,12 +98,19 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'o', label: '偏移', type: 'css', alias: ['offset'], placeholder: 'x: 10; y: 20' },
       { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, y: 20, rotate: -8; 0.5 @ease-out: scaleX: 1.1, scaleY: 1.1; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, y: 0, rotate: 0' },
       { name: 'sticky', label: '强制居中', type: 'boolean', description: '使该项强制在场景中心，其他项自动让位' },
-      { name: 'glass', label: '毛玻璃', type: 'boolean', description: '开启后该 item 使用半透明毛玻璃卡片渲染' },
+      { name: 'glass', label: '玻璃', type: 'boolean', description: '开启后该 item 使用半透明玻璃卡片渲染' },
       { name: 'glassBlur', label: '玻璃模糊', type: 'number', min: 0, step: 1, defaultValue: 16, alias: ['gb'] },
       { name: 'glassOpacity', label: '玻璃透明度', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0.42, alias: ['go'] },
-      { name: 'glassTint', label: '玻璃底色', type: 'string', placeholder: 'rgba(245,245,220,0.42)', alias: ['gt'] },
       { name: 'glassBorder', label: '玻璃边框', type: 'string', placeholder: 'rgba(255,255,255,0.35)', alias: ['glassBorderColor', 'gbc'] },
       { name: 'glassShadow', label: '玻璃阴影', type: 'string', placeholder: '0 18px 48px rgba(0,0,0,0.28)', alias: ['gs'] },
+      { name: 'glassDistort', label: '边缘畸变', type: 'number', min: 0, max: 50, defaultValue: 0, alias: ['gd'] },
+      { name: 'glassAberration', label: '色散强度', type: 'number', min: 0, max: 15, defaultValue: 0, alias: ['ga'] },
+      { name: 'glassEdgeGlow', label: '边缘内发光', type: 'color', placeholder: 'rgba(255,255,255,0.5)', alias: ['geg'] },
+      { name: 'glassFresnel', label: '菲涅尔系数', type: 'number', min: 0.1, max: 0.8, step: 0.1, defaultValue: 0.3, alias: ['gf'] },
+      { name: 'glassGrain', label: '磨砂颗粒', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0, alias: ['gg'] },
+      { name: 'glassRefraction', label: '折射率', type: 'number', min: 1.0, max: 2.0, step: 0.05, defaultValue: 1.0, alias: ['gr'] },
+      { name: 'bgImage', label: '背景图片', type: 'string', alias: ['backgroundImage', 'bgi'], placeholder: 'https://... 或本地路径' },
+      { name: 'bgMode', label: '背景模式', type: 'select', options: BACKGROUND_IMAGE_MODE_OPTIONS, defaultValue: 'cover', alias: ['backgroundImageMode', 'bgm'] },
     ],
     hasContent: true,
     contentLabel: '项目正文',
@@ -105,11 +121,13 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     properties: [
       { name: 'w', label: '宽度', type: 'string', alias: ['width'], placeholder: '100% 或 500' },
       { name: 'h', label: '高度/最大高度', type: 'number', alias: ['mh', 'max-height', 'height'] },
-      { name: 'mode', label: '填充模式', type: 'select', options: [
-        { label: '自适应 (contain)', value: 'contain' },
-        { label: '裁剪 (cover)', value: 'cover' },
-        { label: '拉伸 (fill)', value: 'fill' }
-      ], defaultValue: 'contain' },
+      {
+        name: 'mode', label: '填充模式', type: 'select', options: [
+          { label: '自适应 (contain)', value: 'contain' },
+          { label: '裁剪 (cover)', value: 'cover' },
+          { label: '拉伸 (fill)', value: 'fill' }
+        ], defaultValue: 'contain'
+      },
       { name: 'pos', label: '位置', type: 'string', placeholder: 'center, top, bottom...' },
       { name: 'mt', label: '上边距', type: 'number', alias: ['marginTop'] },
       { name: 'mb', label: '下边距', type: 'number', alias: ['marginBottom'] },
@@ -124,11 +142,13 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     properties: [
       { name: 'color', label: '文字颜色', type: 'color' },
       { name: 'size', label: '字号', type: 'number', min: 1, defaultValue: 24 },
-      { name: 'align', label: '对齐方式', type: 'select', options: [
-        { label: '左对齐', value: 'left' },
-        { label: '居中', value: 'center' },
-        { label: '右对齐', value: 'right' }
-      ] },
+      {
+        name: 'align', label: '对齐方式', type: 'select', options: [
+          { label: '左对齐', value: 'left' },
+          { label: '居中', value: 'center' },
+          { label: '右对齐', value: 'right' }
+        ]
+      },
       { name: 'b', label: '加粗', type: 'boolean' },
       { name: 'i', label: '斜体', type: 'boolean' },
       { name: 'u', label: '下划线', type: 'boolean' },
@@ -146,25 +166,31 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'cell', label: '单元格尺寸', type: 'string', description: '同时作为内部图片默认宽高，例如 cell=240' },
       { name: 'itemw', label: '内部图片宽度', type: 'string', alias: ['imagew', 'iw'] },
       { name: 'itemh', label: '内部图片高度', type: 'string', alias: ['imageh', 'ih'] },
-      { name: 'mode', label: '内部图片填充', type: 'select', options: [
-        { label: '自适应 (contain)', value: 'contain' },
-        { label: '裁剪 (cover)', value: 'cover' },
-        { label: '拉伸 (fill)', value: 'fill' }
-      ], defaultValue: 'contain' },
-      { name: 'align', label: '垂直对齐', type: 'select', options: [
-        { label: '起点', value: 'start' },
-        { label: '居中', value: 'center' },
-        { label: '终点', value: 'end' },
-        { label: '基线', value: 'baseline' },
-        { label: '拉伸', value: 'stretch' }
-      ], defaultValue: 'center' },
-      { name: 'justify', label: '水平分布', type: 'select', options: [
-        { label: '起点', value: 'start' },
-        { label: '居中', value: 'center' },
-        { label: '终点', value: 'end' },
-        { label: '两端对齐', value: 'between' },
-        { label: '平均分布', value: 'around' }
-      ], defaultValue: 'start' },
+      {
+        name: 'mode', label: '内部图片填充', type: 'select', options: [
+          { label: '自适应 (contain)', value: 'contain' },
+          { label: '裁剪 (cover)', value: 'cover' },
+          { label: '拉伸 (fill)', value: 'fill' }
+        ], defaultValue: 'contain'
+      },
+      {
+        name: 'align', label: '垂直对齐', type: 'select', options: [
+          { label: '起点', value: 'start' },
+          { label: '居中', value: 'center' },
+          { label: '终点', value: 'end' },
+          { label: '基线', value: 'baseline' },
+          { label: '拉伸', value: 'stretch' }
+        ], defaultValue: 'center'
+      },
+      {
+        name: 'justify', label: '水平分布', type: 'select', options: [
+          { label: '起点', value: 'start' },
+          { label: '居中', value: 'center' },
+          { label: '终点', value: 'end' },
+          { label: '两端对齐', value: 'between' },
+          { label: '平均分布', value: 'around' }
+        ], defaultValue: 'start'
+      },
     ],
     hasContent: true,
     contentLabel: '行内内容',
@@ -197,6 +223,17 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'bc', label: '边框颜色', type: 'color', alias: ['bordercolor'] },
       { name: 'bold', label: '加粗', type: 'boolean' },
       { name: 'italic', label: '斜体', type: 'boolean' },
+      { name: 'glass', label: '玻璃', type: 'boolean' },
+      { name: 'gb', label: '玻璃模糊', type: 'number', alias: ['glassBlur'] },
+      { name: 'go', label: '玻璃透明度', type: 'number', min: 0, max: 1, step: 0.05, alias: ['glassOpacity'] },
+      { name: 'gbc', label: '玻璃边框', type: 'color', alias: ['glassBorder', 'glassBorderColor'] },
+      { name: 'gs', label: '玻璃阴影', type: 'string', alias: ['glassShadow'] },
+      { name: 'gd', label: '边缘畸变', type: 'number', alias: ['glassDistort'] },
+      { name: 'ga', label: '色散强度', type: 'number', alias: ['glassAberration'] },
+      { name: 'geg', label: '边缘内发光', type: 'color', alias: ['glassEdgeGlow'] },
+      { name: 'gf', label: '菲涅尔系数', type: 'number', min: 0.1, max: 0.8, step: 0.1, alias: ['glassFresnel'] },
+      { name: 'gg', label: '磨砂颗粒', type: 'number', min: 0, max: 1, step: 0.05, alias: ['glassGrain'] },
+      { name: 'gr', label: '折射率', type: 'number', min: 1.0, max: 2.0, step: 0.05, alias: ['glassRefraction'] },
     ],
     hasContent: true,
     contentLabel: '引用内容',

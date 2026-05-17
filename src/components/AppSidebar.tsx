@@ -77,6 +77,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '视频脚本编辑',
           },
           {
+            key: 'identity',
+            icon: <EyeOutlined />,
+            label: '身份与代号管理',
+          },
+          {
             key: 'preview',
             icon: <VideoCameraOutlined />,
             label: '视频预览',

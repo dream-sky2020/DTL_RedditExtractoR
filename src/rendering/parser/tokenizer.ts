@@ -153,7 +153,11 @@ export const tokenize = (
         continue;
       }
 
-      const { fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride } = parsed;
+      const { 
+        fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride,
+        glass, glassBlur, glassOpacity, glassBorderColor, glassShadow,
+        glassDistort, glassAberration, glassEdgeGlow, glassFresnel, glassGrain, glassRefraction
+      } = parsed;
       const startTagEnd = foundIdx + fullTag.length;
 
       // Find closing tag with nesting support
@@ -185,6 +189,17 @@ export const tokenize = (
           maxLimit,
           itemId,
           customStyle,
+          glass,
+          glassBlur,
+          glassOpacity,
+          glassBorderColor,
+          glassShadow,
+          glassDistort,
+          glassAberration,
+          glassEdgeGlow,
+          glassFresnel,
+          glassGrain,
+          glassRefraction,
           children: tokenize(text.substring(startTagEnd, endTagIdx), {
             ...options,
             maxQuoteDepth: maxQuoteDepthOverride ?? options.maxQuoteDepth,

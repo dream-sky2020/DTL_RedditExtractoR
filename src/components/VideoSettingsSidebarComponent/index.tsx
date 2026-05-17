@@ -1,288 +1,90 @@
-import React, { useState } from 'react';
-import {
-  Space,
-  Button,
-  Typography,
-  Divider,
-  Form,
-} from 'antd';
-import {
-  EditOutlined,
-  DownOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import { 
-  VideoConfig, 
-  ImageLayoutMode, 
-  SceneLayoutType, 
-  TitleAlignmentType,
-  AuthorProfile, 
-  CommentSortMode, 
-  ReplyOrderMode,
-  ColorArrangementSettings
-} from '../../types';
-import { BasicMetaSection } from './sections/BasicMetaSection';
-import { SortStrategySection } from './sections/SortStrategySection';
-import { LayoutSection } from './sections/LayoutSection';
-import { CanvasConfigSection } from './sections/CanvasConfigSection';
-import { TypographySection } from './sections/TypographySection';
-import { DefaultColorsSection } from './sections/DefaultColorsSection';
-import { QuoteStyleSection } from './sections/QuoteStyleSection';
-import { PrivacyConfigPanel } from './panels/PrivacyConfigPanel';
-import { QuickActionsPanel } from './panels/QuickActionsPanel';
+import React from 'react';
+import { Space, Typography, Divider } from 'antd';
+import { EditOutlined } from '@ant-design/icons';
 import { SidebarWidthSection } from './sections/SidebarWidthSection';
-import { StudioPreviewPanel } from './panels/StudioPreviewPanel';
-import { EditorMultiSelectPanel } from './panels/EditorMultiSelectPanel';
-import { HistoryPanel } from './panels/HistoryPanel';
+import { StudioPreviewSection } from './sections/StudioPreviewSection';
+import { GlobalConfigSection } from './sections/GlobalConfigSection';
+import { TextStyleSection } from './sections/TextStyleSection';
+import { BackgroundColorSection } from './sections/BackgroundColorSection';
+import { QuoteSettingsSection } from './sections/QuoteSettingsSection';
+import { HistorySection } from './sections/HistorySection';
+import { MultiSelectSection } from './sections/MultiSelectSection';
+import { BatchSelectionSection } from './sections/BatchSelectionSection';
+import { BatchDuplicateSection } from './sections/BatchDuplicateSection';
+import { BatchSplitSection } from './sections/BatchSplitSection';
+import { BatchClearQuotesSection } from './sections/BatchClearQuotesSection';
+import { BatchCleanTextSection } from './sections/BatchCleanTextSection';
+import { BatchDeleteSection } from './sections/BatchDeleteSection';
+import { BatchTranslateSection } from './sections/BatchTranslateSection';
+import { BatchMergeSection } from './sections/BatchMergeSection';
+import { BatchGlassSection } from './sections/BatchGlassSection';
+import { BatchLayoutTypeSection } from './sections/BatchLayoutTypeSection';
+import { BatchDurationSection } from './sections/BatchDurationSection';
+import { BatchSpacingSection } from './sections/BatchSpacingSection';
+import { BatchOffsetSection } from './sections/BatchOffsetSection';
+import { BatchStickySection } from './sections/BatchStickySection';
+import { BatchContentSection } from './sections/BatchContentSection';
+import { BatchChatFlowSection } from './sections/BatchChatFlowSection';
+import { BatchBgImageSection } from './sections/BatchBgImageSection';
+import { SceneReorderSection } from './sections/SceneReorderSection';
+import { QuickActionsSection } from './sections/QuickActionsSection';
+import { VideoSettingsSidebarProps } from './types';
+import { useVideoSettingsSidebar } from './useVideoSettingsSidebar';
+import { CollapsibleSection } from './components/CollapsibleSection';
 
 const { Text } = Typography;
 
-interface VideoSettingsSidebarProps {
-  // Sidebar UI State
-  sidebarWidth: number;
-  SIDEBAR_MIN_WIDTH: number;
-  SIDEBAR_MAX_WIDTH: number;
-  FIXED_SIDEBAR_TOP_OFFSET: number;
-  isSidebarResizing: boolean;
-  startSidebarResize: (event: React.MouseEvent<HTMLDivElement>) => void;
-  updateSidebarWidthByInput: (value: number | null) => void;
-  resetSidebarWidthToDefault: () => void;
-
-  // Header
-  toolTitle?: string;
-  toolDesc?: string;
-
-  // Video Config & State
-  draftConfig: VideoConfig;
-  setDraftConfig: (config: VideoConfig) => void;
-  
-  // Shared Settings Logic
-  commentSortMode: CommentSortMode;
-  replyOrderMode: ReplyOrderMode;
-  imageLayoutMode: ImageLayoutMode;
-  sceneLayout: SceneLayoutType;
-  titleAlignment: TitleAlignmentType;
-  titleFontSize: number;
-  contentFontSize: number;
-  quoteFontSize: number;
-  titleFontColor: string;
-  contentFontColor: string;
-  quoteFontColor: string;
-  titleFontBold: boolean;
-  contentFontBold: boolean;
-  maxQuoteDepth: number;
-  defaultQuoteMaxLimit: number;
-  sceneBackgroundColor: string;
-  sceneBackgroundColorEnd: string;
-  sceneBackgroundGradientMode: boolean;
-  itemBackgroundColor: string;
-  itemBackgroundColorEnd: string;
-  itemBackgroundGradientMode: boolean;
-  quoteBackgroundColor: string;
-  quoteBorderColor: string;
-  
-  // Handlers for Settings (Moving logic here)
-  onApplyCommentSort: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  onRandomizeAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  onClearAliasesAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => void;
-  onRearrangeColorsAndApply: (sortMode: CommentSortMode, replyOrder: ReplyOrderMode, settings: ColorArrangementSettings) => void;
-  onUpdateAuthorProfile: (author: string, updates: Partial<AuthorProfile>) => void;
-  onImageLayoutModeChange: (mode: ImageLayoutMode) => void;
-  onSceneLayoutChange: (layout: SceneLayoutType) => void;
-  onTitleAlignmentChange: (alignment: TitleAlignmentType) => void;
-  onTitleFontSizeChange: (size: number) => void;
-  onContentFontSizeChange: (size: number) => void;
-  onQuoteFontSizeChange: (size: number) => void;
-  onTitleFontColorChange: (color: string) => void;
-  onContentFontColorChange: (color: string) => void;
-  onQuoteFontColorChange: (color: string) => void;
-  onTitleFontBoldChange: (bold: boolean) => void;
-  onContentFontBoldChange: (bold: boolean) => void;
-  onMaxQuoteDepthChange: (depth: number) => void;
-  onDefaultQuoteMaxLimitChange: (limit: number) => void;
-  onSceneBackgroundColorChange: (color: string) => void;
-  onSceneBackgroundColorEndChange: (color: string) => void;
-  onSceneBackgroundGradientModeChange: (mode: boolean) => void;
-  onItemBackgroundColorChange: (color: string) => void;
-  onItemBackgroundColorEndChange: (color: string) => void;
-  onItemBackgroundGradientModeChange: (mode: boolean) => void;
-  onQuoteBackgroundColorChange: (color: string) => void;
-  onQuoteBorderColorChange: (color: string) => void;
-  onSetAllSceneLayouts: (layout: 'top' | 'center') => void;
-  onSetAllSceneDurations: (duration: number) => void;
-  onAddScene: () => void;
-
-  // Shared Data
-  canApplyCommentSort: boolean;
-  allAuthors: string[];
-  authorProfiles: Record<string, AuthorProfile>;
-  colorArrangement: ColorArrangementSettings;
-  setColorArrangement: (settings: ColorArrangementSettings | ((prev: ColorArrangementSettings) => ColorArrangementSettings)) => void;
-
-  // Mode-Specific Features
-  mode: 'editor' | 'studio';
-
-  // Editor-Specific
-  isMultiSelectMode?: boolean;
-  setIsMultiSelectMode?: (mode: boolean) => void;
-  selectedSceneIds?: string[];
-  setSelectedSceneIds?: (ids: string[]) => void;
-  onRemoveSelectedScenes?: () => void;
-  onOpenTranslationModal?: () => void;
-
-  // Studio-Specific
-  galleryPage?: number;
-  galleryPageSize?: number;
-  setGalleryPageSize?: (size: number) => void;
-  previewLayoutMode?: 'auto' | 'fixed';
-  setPreviewLayoutMode?: (mode: 'auto' | 'fixed') => void;
-  previewMinWidth?: number;
-  setPreviewMinWidth?: (width: number) => void;
-}
-
 export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props) => {
   const {
-    sidebarWidth,
-    SIDEBAR_MIN_WIDTH,
-    SIDEBAR_MAX_WIDTH,
-    FIXED_SIDEBAR_TOP_OFFSET,
-    isSidebarResizing,
-    startSidebarResize,
-    updateSidebarWidthByInput,
-    resetSidebarWidthToDefault,
-    toolTitle = '操作面板',
-    toolDesc,
-    draftConfig,
-    setDraftConfig,
-    commentSortMode,
-    replyOrderMode,
-    imageLayoutMode,
-    sceneLayout,
-    titleAlignment,
-    titleFontSize,
-    contentFontSize,
-    quoteFontSize,
-    titleFontColor,
-    contentFontColor,
-    quoteFontColor,
-    titleFontBold,
-    contentFontBold,
-    maxQuoteDepth,
-    defaultQuoteMaxLimit,
-    sceneBackgroundColor,
-    sceneBackgroundColorEnd,
-    sceneBackgroundGradientMode,
-    itemBackgroundColor,
-    itemBackgroundColorEnd,
-    itemBackgroundGradientMode,
-    quoteBackgroundColor,
-    quoteBorderColor,
-    onApplyCommentSort,
-    onRandomizeAliasesAndApply,
-    onClearAliasesAndApply,
-    onRearrangeColorsAndApply,
-    onUpdateAuthorProfile,
-    onImageLayoutModeChange,
-    onSceneLayoutChange,
-    onTitleAlignmentChange,
-    onTitleFontSizeChange,
-    onContentFontSizeChange,
-    onQuoteFontSizeChange,
-    onTitleFontColorChange,
-    onContentFontColorChange,
-    onQuoteFontColorChange,
-    onTitleFontBoldChange,
-    onContentFontBoldChange,
-    onMaxQuoteDepthChange,
-    onDefaultQuoteMaxLimitChange,
-    onSceneBackgroundColorChange,
-    onSceneBackgroundColorEndChange,
-    onSceneBackgroundGradientModeChange,
-    onItemBackgroundColorChange,
-    onItemBackgroundColorEndChange,
-    onItemBackgroundGradientModeChange,
-    onQuoteBackgroundColorChange,
-    onQuoteBorderColorChange,
-    onSetAllSceneLayouts,
-    onSetAllSceneDurations,
+    sidebarWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, FIXED_SIDEBAR_TOP_OFFSET,
+    isSidebarResizing, startSidebarResize, updateSidebarWidthByInput, resetSidebarWidthToDefault,
+    toolTitle = '操作面板', toolDesc, draftConfig, setDraftConfig,
+    commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment,
+    titleFontSize, contentFontSize, quoteFontSize, titleFontColor, contentFontColor, quoteFontColor,
+    titleFontBold, contentFontBold, maxQuoteDepth, defaultQuoteMaxLimit,
+    sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
+    itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
+    quoteBackgroundColor, quoteBorderColor, onApplyCommentSort,
+    onRefreshStyles, onRearrangeScenes, onResetAndRebuild,
+    onImageLayoutModeChange, onSceneLayoutChange, onTitleAlignmentChange,
+    onTitleFontSizeChange, onContentFontSizeChange, onQuoteFontSizeChange,
+    onTitleFontColorChange, onContentFontColorChange, onQuoteFontColorChange,
+    onTitleFontBoldChange, onContentFontBoldChange, onMaxQuoteDepthChange,
+    onDefaultQuoteMaxLimitChange, onSceneBackgroundColorChange, onSceneBackgroundColorEndChange,
+    onSceneBackgroundGradientModeChange, onItemBackgroundColorChange, onItemBackgroundColorEndChange,
+    onItemBackgroundGradientModeChange, onQuoteBackgroundColorChange, onQuoteBorderColorChange,
     onAddScene,
-    canApplyCommentSort,
-    allAuthors,
-    authorProfiles,
-    colorArrangement,
-    setColorArrangement,
-    mode,
-    // Editor specific
-    isMultiSelectMode,
-    setIsMultiSelectMode,
-    selectedSceneIds,
-    setSelectedSceneIds,
-    onRemoveSelectedScenes,
-    onOpenTranslationModal,
-    // Studio specific
-    galleryPage,
-    galleryPageSize,
-    setGalleryPageSize,
-    previewLayoutMode,
-    setPreviewLayoutMode,
-    previewMinWidth,
-    setPreviewMinWidth,
+    canApplyCommentSort, mode, isMultiSelectMode, setIsMultiSelectMode, selectedSceneIds, setSelectedSceneIds,
+    onRemoveSelectedScenes, onOpenTranslationModal, galleryPageSize, setGalleryPageSize,
+    previewLayoutMode, setPreviewLayoutMode, previewMinWidth, setPreviewMinWidth,
   } = props;
 
-  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
-  const [isPrivacyCollapsed, setIsPrivacyCollapsed] = useState(false);
-  const [isMultiSelectCollapsed, setIsMultiSelectCollapsed] = useState(false);
-  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
+  const state = useVideoSettingsSidebar(props);
 
   return (
     <div
       id={`${mode}-page-sidebar`}
       style={{
-        position: 'fixed',
-        right: 0,
-        top: FIXED_SIDEBAR_TOP_OFFSET,
-        bottom: 0,
-        width: sidebarWidth,
-        overflowY: 'auto',
-        zIndex: 20,
-        borderLeft: '1px solid var(--brand-border)',
-        background: 'var(--brand-dark)',
+        position: 'fixed', right: 0, top: FIXED_SIDEBAR_TOP_OFFSET, bottom: 0,
+        width: sidebarWidth, overflowY: 'auto', zIndex: 20,
+        borderLeft: '1px solid var(--brand-border)', background: 'var(--brand-dark)',
       }}
     >
       <div
         id={`${mode}-page-sidebar-resizer`}
-        role="separator"
-        aria-label="调整右侧面板宽度"
+        role="separator" aria-label="调整右侧面板宽度"
         onMouseDown={startSidebarResize}
         style={{
-          position: 'absolute',
-          left: -4,
-          top: 0,
-          bottom: 0,
-          width: 8,
-          cursor: 'col-resize',
-          zIndex: 21,
+          position: 'absolute', left: -4, top: 0, bottom: 0, width: 8, cursor: 'col-resize', zIndex: 21,
           background: isSidebarResizing ? 'rgba(24,144,255,0.22)' : 'transparent',
         }}
       />
-      <div
-        id={`${mode}-page-sidebar-inner`}
-        style={{
-          borderRadius: 0,
-          border: 'none',
-          background: 'transparent',
-          overflow: 'hidden',
-        }}
-      >
+      <div id={`${mode}-page-sidebar-inner`} style={{ borderRadius: 0, border: 'none', background: 'transparent', overflow: 'hidden' }}>
         <div
           id={`${mode}-page-sidebar-header`}
           style={{
-            padding: '10px 14px',
-            borderBottom: '1px solid var(--brand-border)',
-            background: 'var(--brand-dark)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            padding: '10px 14px', borderBottom: '1px solid var(--brand-border)',
+            background: 'var(--brand-dark)', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}
         >
           <Space size="small">
@@ -293,196 +95,194 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
         </div>
 
         <div id={`${mode}-page-sidebar-content`} style={{ padding: 16 }}>
-          {/* Sidebar Width Config */}
           <SidebarWidthSection
-            sidebarWidth={sidebarWidth}
-            SIDEBAR_MIN_WIDTH={SIDEBAR_MIN_WIDTH}
-            SIDEBAR_MAX_WIDTH={SIDEBAR_MAX_WIDTH}
-            updateSidebarWidthByInput={updateSidebarWidthByInput}
-            resetSidebarWidthToDefault={resetSidebarWidthToDefault}
+            sidebarWidth={sidebarWidth} SIDEBAR_MIN_WIDTH={SIDEBAR_MIN_WIDTH} SIDEBAR_MAX_WIDTH={SIDEBAR_MAX_WIDTH}
+            updateSidebarWidthByInput={updateSidebarWidthByInput} resetSidebarWidthToDefault={resetSidebarWidthToDefault}
           />
 
-          {/* Studio Specific: Gallery Config */}
           {mode === 'studio' && setPreviewLayoutMode && (
-            <StudioPreviewPanel
-              previewLayoutMode={previewLayoutMode}
-              setPreviewLayoutMode={setPreviewLayoutMode}
-              previewMinWidth={previewMinWidth}
-              setPreviewMinWidth={setPreviewMinWidth}
-              galleryPageSize={galleryPageSize}
-              setGalleryPageSize={setGalleryPageSize}
+            <StudioPreviewSection
+              previewLayoutMode={previewLayoutMode} setPreviewLayoutMode={setPreviewLayoutMode}
+              previewMinWidth={previewMinWidth} setPreviewMinWidth={setPreviewMinWidth}
+              galleryPageSize={galleryPageSize} setGalleryPageSize={setGalleryPageSize}
             />
           )}
 
-          {/* Global Config Section */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text strong style={{ color: 'var(--text-primary)' }}>整体配置</Text>
-            <Button
-              size="small"
-              type="text"
-              onClick={() => setIsConfigCollapsed((prev) => !prev)}
-              icon={isConfigCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {isConfigCollapsed ? '展开' : '收起'}
-            </Button>
-          </div>
-          {!isConfigCollapsed && (
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 8,
-                background: 'var(--panel-bg-darker)',
-                border: '1px solid var(--brand-border)',
-                marginBottom: 16,
-              }}
-            >
-              <Form layout="vertical" variant="filled">
-                <BasicMetaSection idPrefix={mode} draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
-                <SortStrategySection
-                  idPrefix={mode}
-                  editorSortMode={commentSortMode}
-                  setEditorSortMode={(mode) => onApplyCommentSort(mode, replyOrderMode)}
-                  editorReplyOrderMode={replyOrderMode}
-                  setEditorReplyOrderMode={(order) => onApplyCommentSort(commentSortMode, order)}
-                />
-                <LayoutSection
-                  idPrefix={mode}
-                  titleAlignment={titleAlignment}
-                  setTitleAlignment={onTitleAlignmentChange}
-                  imageLayoutMode={imageLayoutMode}
-                  setImageLayoutMode={onImageLayoutModeChange}
-                  sceneLayout={sceneLayout}
-                  setSceneLayout={onSceneLayoutChange}
-                />
-                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
-                <CanvasConfigSection idPrefix={mode} draftConfig={draftConfig} setDraftConfig={setDraftConfig} />
-                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
-                <TypographySection
-                  titleFontSize={titleFontSize}
-                  setTitleFontSize={onTitleFontSizeChange}
-                  contentFontSize={contentFontSize}
-                  setContentFontSize={onContentFontSizeChange}
-                  quoteFontSize={quoteFontSize}
-                  setQuoteFontSize={onQuoteFontSizeChange}
-                  titleFontColor={titleFontColor}
-                  setTitleFontColor={onTitleFontColorChange}
-                  contentFontColor={contentFontColor}
-                  setContentFontColor={onContentFontColorChange}
-                  quoteFontColor={quoteFontColor}
-                  setQuoteFontColor={onQuoteFontColorChange}
-                  titleFontBold={titleFontBold}
-                  setTitleFontBold={onTitleFontBoldChange}
-                  contentFontBold={contentFontBold}
-                  setContentFontBold={onContentFontBoldChange}
-                  maxQuoteDepth={maxQuoteDepth}
-                  setMaxQuoteDepth={onMaxQuoteDepthChange}
-                  defaultQuoteMaxLimit={defaultQuoteMaxLimit}
-                  setDefaultQuoteMaxLimit={onDefaultQuoteMaxLimitChange}
-                />
-                <DefaultColorsSection
-                  sceneBackgroundColor={sceneBackgroundColor}
-                  setSceneBackgroundColor={onSceneBackgroundColorChange}
-                  sceneBackgroundColorEnd={sceneBackgroundColorEnd}
-                  setSceneBackgroundColorEnd={onSceneBackgroundColorEndChange}
-                  sceneBackgroundGradientMode={sceneBackgroundGradientMode}
-                  setSceneBackgroundGradientMode={onSceneBackgroundGradientModeChange}
-                  itemBackgroundColor={itemBackgroundColor}
-                  setItemBackgroundColor={onItemBackgroundColorChange}
-                  itemBackgroundColorEnd={itemBackgroundColorEnd}
-                  setItemBackgroundColorEnd={onItemBackgroundColorEndChange}
-                  itemBackgroundGradientMode={itemBackgroundGradientMode}
-                  setItemBackgroundGradientMode={onItemBackgroundGradientModeChange}
-                />
-                <Divider style={{ margin: '12px 0', borderColor: 'var(--brand-border)' }} />
-                <QuoteStyleSection
-                  quoteBackgroundColor={quoteBackgroundColor}
-                  setQuoteBackgroundColor={onQuoteBackgroundColorChange}
-                  quoteBorderColor={quoteBorderColor}
-                  setQuoteBorderColor={onQuoteBorderColorChange}
-                />
-              </Form>
-            </div>
-          )}
-
-          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
-
-          {/* Privacy Config Section */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text strong style={{ color: 'var(--text-primary)' }}>用户隐私与身份映射</Text>
-            <Button
-              size="small"
-              type="text"
-              onClick={() => setIsPrivacyCollapsed((prev) => !prev)}
-              icon={isPrivacyCollapsed ? <DownOutlined style={{ color: 'var(--text-primary)' }} /> : <UpOutlined style={{ color: 'var(--text-primary)' }} />}
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {isPrivacyCollapsed ? '展开' : '收起'}
-            </Button>
-          </div>
-          {!isPrivacyCollapsed && (
-            <PrivacyConfigPanel
-              idPrefix={mode}
-              editorColorArrangement={colorArrangement}
-              setEditorColorArrangement={setColorArrangement}
-              onRearrangeColorsAndApply={(sort, reply, settings) => onRearrangeColorsAndApply(sort, reply, settings)}
-              editorSortMode={commentSortMode}
-              editorReplyOrderMode={replyOrderMode}
-              allAuthors={allAuthors}
-              authorProfiles={authorProfiles}
-              onUpdateAuthorProfile={onUpdateAuthorProfile}
-            />
-          )}
-
-          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
-
-          {/* History Panel (Undo/Redo) */}
-          <HistoryPanel 
-            isCollapsed={isHistoryCollapsed} 
-            setIsCollapsed={setIsHistoryCollapsed} 
+          <GlobalConfigSection
+            idPrefix={mode} isCollapsed={state.isConfigCollapsed} onToggle={() => state.setIsConfigCollapsed(!state.isConfigCollapsed)}
+            draftConfig={draftConfig} setDraftConfig={setDraftConfig} commentSortMode={commentSortMode} replyOrderMode={replyOrderMode}
+            onApplyCommentSort={onApplyCommentSort} titleAlignment={titleAlignment} onTitleAlignmentChange={onTitleAlignmentChange}
+            imageLayoutMode={imageLayoutMode} onImageLayoutModeChange={onImageLayoutModeChange}
+            sceneLayout={sceneLayout} onSceneLayoutChange={onSceneLayoutChange}
           />
 
           <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
 
-          {/* Multi-select Section (Available in both Editor and Studio) */}
+          <CollapsibleSection title="文本样式" isCollapsed={state.isTextStyleCollapsed} onToggle={() => state.setIsTextStyleCollapsed(!state.isTextStyleCollapsed)}>
+            <TextStyleSection
+              titleFontSize={titleFontSize} setTitleFontSize={onTitleFontSizeChange}
+              contentFontSize={contentFontSize} setContentFontSize={onContentFontSizeChange}
+              titleFontColor={titleFontColor} setTitleFontColor={onTitleFontColorChange}
+              contentFontColor={contentFontColor} setContentFontColor={onContentFontColorChange}
+              titleFontBold={titleFontBold} setTitleFontBold={onTitleFontBoldChange}
+              contentFontBold={contentFontBold} setContentFontBold={onContentFontBoldChange}
+            />
+          </CollapsibleSection>
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          <CollapsibleSection title="背景颜色" isCollapsed={state.isBackgroundColorCollapsed} onToggle={() => state.setIsBackgroundColorCollapsed(!state.isBackgroundColorCollapsed)}>
+            <BackgroundColorSection
+              sceneBackgroundColor={sceneBackgroundColor} setSceneBackgroundColor={onSceneBackgroundColorChange}
+              sceneBackgroundColorEnd={sceneBackgroundColorEnd} setSceneBackgroundColorEnd={onSceneBackgroundColorEndChange}
+              sceneBackgroundGradientMode={sceneBackgroundGradientMode} setSceneBackgroundGradientMode={onSceneBackgroundGradientModeChange}
+              itemBackgroundColor={itemBackgroundColor} setItemBackgroundColor={onItemBackgroundColorChange}
+              itemBackgroundColorEnd={itemBackgroundColorEnd} setItemBackgroundColorEnd={onItemBackgroundColorEndChange}
+              itemBackgroundGradientMode={itemBackgroundGradientMode} setItemBackgroundGradientMode={onItemBackgroundGradientModeChange}
+            />
+          </CollapsibleSection>
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          <CollapsibleSection title="引用设置" isCollapsed={state.isQuoteSettingsCollapsed} onToggle={() => state.setIsQuoteSettingsCollapsed(!state.isQuoteSettingsCollapsed)}>
+            <QuoteSettingsSection
+              quoteFontSize={quoteFontSize} setQuoteFontSize={onQuoteFontSizeChange}
+              quoteFontColor={quoteFontColor} setQuoteFontColor={onQuoteFontColorChange}
+              maxQuoteDepth={maxQuoteDepth} setMaxQuoteDepth={onMaxQuoteDepthChange}
+              defaultQuoteMaxLimit={defaultQuoteMaxLimit} setDefaultQuoteMaxLimit={onDefaultQuoteMaxLimitChange}
+              quoteBackgroundColor={quoteBackgroundColor} setQuoteBackgroundColor={onQuoteBackgroundColorChange}
+              quoteBorderColor={quoteBorderColor} setQuoteBorderColor={onQuoteBorderColorChange}
+            />
+          </CollapsibleSection>
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          <HistorySection isCollapsed={state.isHistoryCollapsed} setIsCollapsed={state.setIsHistoryCollapsed} />
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
           {setIsMultiSelectMode && selectedSceneIds && setSelectedSceneIds && (
             <>
-              <EditorMultiSelectPanel
-                isMultiSelectMode={Boolean(isMultiSelectMode)}
-                setIsMultiSelectMode={setIsMultiSelectMode}
-                selectedSceneIds={selectedSceneIds}
-                setSelectedSceneIds={setSelectedSceneIds}
-                isCollapsed={isMultiSelectCollapsed}
-                setIsCollapsed={setIsMultiSelectCollapsed}
-                onRemoveSelectedScenes={onRemoveSelectedScenes}
-                onOpenTranslationModal={onOpenTranslationModal}
+              <MultiSelectSection
+                isMultiSelectMode={Boolean(isMultiSelectMode)} setIsMultiSelectMode={setIsMultiSelectMode}
+                selectedSceneIds={selectedSceneIds} setSelectedSceneIds={setSelectedSceneIds}
+                isCollapsed={state.isMultiSelectCollapsed} setIsCollapsed={state.setIsMultiSelectCollapsed}
                 draftConfig={draftConfig}
-                setDraftConfig={setDraftConfig}
-                galleryPage={galleryPage}
-                galleryPageSize={galleryPageSize}
               />
+              <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+              <CollapsibleSection title="批量选择" isCollapsed={state.isBatchSelectionCollapsed} onToggle={() => state.setIsBatchSelectionCollapsed(!state.isBatchSelectionCollapsed)}>
+                <BatchSelectionSection selectedSceneIds={selectedSceneIds} handleSelectAll={state.handleSelectAll} handleSelectCurrentPage={state.handleSelectCurrentPage} onClearSelection={() => setSelectedSceneIds([])} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="新建画面格" isCollapsed={state.isBatchDuplicateCollapsed} onToggle={() => state.setIsBatchDuplicateCollapsed(!state.isBatchDuplicateCollapsed)}>
+                <BatchDuplicateSection selectedSceneIds={selectedSceneIds} handleDuplicateSelectedScene={state.handleDuplicateSelectedScene} onAddScene={onAddScene} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="根据符号裁剪" isCollapsed={state.isBatchSplitCollapsed} onToggle={() => state.setIsBatchSplitCollapsed(!state.isBatchSplitCollapsed)}>
+                <BatchSplitSection selectedSceneIds={selectedSceneIds} handleOpenSplitModal={state.handleOpenSplitModal} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="清理引用" isCollapsed={state.isBatchClearQuotesCollapsed} onToggle={() => state.setIsBatchClearQuotesCollapsed(!state.isBatchClearQuotesCollapsed)}>
+                <BatchClearQuotesSection selectedSceneIds={selectedSceneIds} handleClearQuotes={state.handleClearQuotes} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="去除换行" isCollapsed={state.isBatchCleanTextCollapsed} onToggle={() => state.setIsBatchCleanTextCollapsed(!state.isBatchCleanTextCollapsed)}>
+                <BatchCleanTextSection selectedSceneIds={selectedSceneIds} handleRemoveLineBreakTags={state.handleRemoveLineBreakTags} handleRemoveFirstLineBreakTag={state.handleRemoveFirstLineBreakTag} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量删除" isCollapsed={state.isBatchDeleteCollapsed} onToggle={() => state.setIsBatchDeleteCollapsed(!state.isBatchDeleteCollapsed)}>
+                <BatchDeleteSection selectedSceneIds={selectedSceneIds} onRemoveSelectedScenes={onRemoveSelectedScenes} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量翻译" isCollapsed={state.isBatchTranslateCollapsed} onToggle={() => state.setIsBatchTranslateCollapsed(!state.isBatchTranslateCollapsed)}>
+                <BatchTranslateSection selectedSceneIds={selectedSceneIds} onOpenTranslationModal={onOpenTranslationModal} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量合并" isCollapsed={state.isBatchMergeCollapsed} onToggle={() => state.setIsBatchMergeCollapsed(!state.isBatchMergeCollapsed)}>
+                <BatchMergeSection selectedSceneIds={selectedSceneIds} mergeScenes={state.mergeScenes} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="item玻璃" isCollapsed={state.isBatchGlassCollapsed} onToggle={() => state.setIsBatchGlassCollapsed(!state.isBatchGlassCollapsed)}>
+                <BatchGlassSection
+                  selectedSceneIds={selectedSceneIds} batchGlassBlur={state.batchGlassBlur} setBatchGlassBlur={state.setBatchGlassBlur}
+                  batchGlassOpacity={state.batchGlassOpacity} setBatchGlassOpacity={state.setBatchGlassOpacity}
+                  batchGlassBorder={state.batchGlassBorder} setBatchGlassBorder={state.setBatchGlassBorder}
+                  batchGlassShadow={state.batchGlassShadow} setBatchGlassShadow={state.setBatchGlassShadow}
+                  batchGlassDistort={state.batchGlassDistort} setBatchGlassDistort={state.setBatchGlassDistort}
+                  batchGlassAberration={state.batchGlassAberration} setBatchGlassAberration={state.setBatchGlassAberration}
+                  batchGlassEdgeGlow={state.batchGlassEdgeGlow} setBatchGlassEdgeGlow={state.setBatchGlassEdgeGlow}
+                  batchGlassFresnel={state.batchGlassFresnel} setBatchGlassFresnel={state.setBatchGlassFresnel}
+                  batchGlassGrain={state.batchGlassGrain} setBatchGlassGrain={state.setBatchGlassGrain}
+                  batchGlassRefraction={state.batchGlassRefraction} setBatchGlassRefraction={state.setBatchGlassRefraction}
+                  handleEnableGlassForSelectedItems={state.handleEnableGlassForSelectedItems} handleDisableGlassForSelectedItems={state.handleDisableGlassForSelectedItems}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量布局" isCollapsed={state.isBatchLayoutTypeCollapsed} onToggle={() => state.setIsBatchLayoutTypeCollapsed(!state.isBatchLayoutTypeCollapsed)}>
+                <BatchLayoutTypeSection selectedSceneIds={selectedSceneIds} handleBatchLayoutChange={state.handleBatchLayoutChange} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="修改时长" isCollapsed={state.isBatchDurationCollapsed} onToggle={() => state.setIsBatchDurationCollapsed(!state.isBatchDurationCollapsed)}>
+                <BatchDurationSection selectedSceneIds={selectedSceneIds} batchSceneDuration={state.batchSceneDuration} setBatchSceneDuration={state.setBatchSceneDuration} handleBatchSceneDurationChange={state.handleBatchSceneDurationChange} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="统一间距" isCollapsed={state.isBatchSpacingCollapsed} onToggle={() => state.setIsBatchSpacingCollapsed(!state.isBatchSpacingCollapsed)}>
+                <BatchSpacingSection selectedSceneIds={selectedSceneIds} batchItemSpacing={state.batchItemSpacing} setBatchItemSpacing={state.setBatchItemSpacing} handleBatchItemSpacingChange={state.handleBatchItemSpacingChange} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="统一偏移" isCollapsed={state.isBatchOffsetCollapsed} onToggle={() => state.setIsBatchOffsetCollapsed(!state.isBatchOffsetCollapsed)}>
+                <BatchOffsetSection selectedSceneIds={selectedSceneIds} offsetX={state.offsetX} setOffsetX={state.setOffsetX} offsetY={state.offsetY} setOffsetY={state.setOffsetY} handleBatchOffsetChange={state.handleBatchOffsetChange} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="设置居中项" isCollapsed={state.isBatchStickyCollapsed} onToggle={() => state.setIsBatchStickyCollapsed(!state.isBatchStickyCollapsed)}>
+                <BatchStickySection selectedSceneIds={selectedSceneIds} stickyItemIndex={state.stickyItemIndex} setStickyItemIndex={state.setStickyItemIndex} stickyValue={state.stickyValue} setStickyValue={state.setStickyValue} handleBatchStickyChange={state.handleBatchStickyChange} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量内容与动画" isCollapsed={state.isBatchContentCollapsed} onToggle={() => state.setIsBatchContentCollapsed(!state.isBatchContentCollapsed)}>
+                <BatchContentSection
+                  selectedSceneIds={selectedSceneIds} insertTextItemIndex={state.insertTextItemIndex} setInsertTextItemIndex={state.setInsertTextItemIndex}
+                  insertTextMode={state.insertTextMode} setInsertTextMode={state.setInsertTextMode} insertTextValue={state.insertTextValue} setInsertTextValue={state.setInsertTextValue}
+                  insertTextWeightedOptions={state.insertTextWeightedOptions} setInsertTextWeightedOptions={state.setInsertTextWeightedOptions}
+                  animationItemIndex={state.animationItemIndex} setAnimationItemIndex={state.setAnimationItemIndex}
+                  animationKeyframes={state.animationKeyframes} setAnimationKeyframes={state.setAnimationKeyframes}
+                  canInsertText={state.canInsertText} handleBatchInsertTextToItem={state.handleBatchInsertTextToItem} handleBatchItemKeyframesChange={state.handleBatchItemKeyframesChange}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量聊天流处理" isCollapsed={state.isBatchChatFlowCollapsed} onToggle={() => state.setIsBatchChatFlowCollapsed(!state.isBatchChatFlowCollapsed)}>
+                <BatchChatFlowSection selectedSceneIds={selectedSceneIds} historyLimit={state.historyLimit} setHistoryLimit={state.setHistoryLimit} handleChatFlow={state.handleChatFlow} />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="批量背景图" isCollapsed={state.isBatchBgImageCollapsed} onToggle={() => state.setIsBatchBgImageCollapsed(!state.isBatchBgImageCollapsed)}>
+                <BatchBgImageSection 
+                  selectedSceneIds={selectedSceneIds} 
+                  batchBgImage={state.batchBgImage} 
+                  setBatchBgImage={state.setBatchBgImage} 
+                  batchItemBgImage={state.batchItemBgImage}
+                  setBatchItemBgImage={state.setBatchItemBgImage}
+                  handleBatchBgImageChange={state.handleBatchBgImageChange} 
+                  handleBatchItemBgImageChange={state.handleBatchItemBgImageChange}
+                  handleClearBatchBgImage={state.handleClearBatchBgImage}
+                  handleClearBatchItemBgImage={state.handleClearBatchItemBgImage}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection title="画面格重排" isCollapsed={state.isSceneReorderCollapsed} onToggle={() => state.setIsSceneReorderCollapsed(!state.isSceneReorderCollapsed)}>
+                <SceneReorderSection selectedSceneIds={selectedSceneIds} totalScenes={draftConfig.scenes.length} />
+              </CollapsibleSection>
+
               <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
             </>
           )}
 
-          {/* Quick Actions Section */}
-          <div style={{ marginBottom: 8 }}>
-            <Text strong style={{ color: 'var(--text-primary)' }}>画面流快捷操作</Text>
-          </div>
-          <QuickActionsPanel
-            idPrefix={mode}
-            canApplyCommentSort={canApplyCommentSort}
-            onApplyCommentSort={onApplyCommentSort}
-            editorSortMode={commentSortMode}
-            editorReplyOrderMode={replyOrderMode}
-            allAuthors={allAuthors}
-            onRandomizeAliasesAndApply={onRandomizeAliasesAndApply}
-            onClearAliasesAndApply={onClearAliasesAndApply}
-            setAllSceneLayouts={onSetAllSceneLayouts}
-            setAllSceneDurations={onSetAllSceneDurations}
-            addScene={onAddScene}
-            scenes={draftConfig.scenes}
-            onLoadScenes={(scenes) => setDraftConfig({ ...draftConfig, scenes })}
+          <div style={{ marginBottom: 8 }}><Text strong style={{ color: 'var(--text-primary)' }}>画面流快捷操作</Text></div>
+          <QuickActionsSection
+            idPrefix={mode} canApplyCommentSort={canApplyCommentSort} onApplyCommentSort={onApplyCommentSort}
+            onRefreshStyles={onRefreshStyles}
+            onRearrangeScenes={onRearrangeScenes} onResetAndRebuild={onResetAndRebuild}
+            editorSortMode={commentSortMode} editorReplyOrderMode={replyOrderMode}
+            scenes={draftConfig.scenes} onLoadScenes={(scenes) => setDraftConfig({ ...draftConfig, scenes })}
           />
         </div>
       </div>

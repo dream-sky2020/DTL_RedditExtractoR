@@ -398,7 +398,7 @@ export const BackgroundVideoPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col xs={24} md={8}>
-                <Form.Item label="完整显示时启用毛玻璃背景">
+                <Form.Item label="完整显示时启用玻璃背景">
                   <Switch
                     checked={Boolean(backgroundVideo.blurredBackgroundEnabled)}
                     disabled={backgroundVideo.fit !== 'contain'}
@@ -407,7 +407,7 @@ export const BackgroundVideoPage: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item label="毛玻璃模糊强度（px）">
+                <Form.Item label="玻璃模糊强度（px）">
                   <InputNumber
                     min={0}
                     max={80}

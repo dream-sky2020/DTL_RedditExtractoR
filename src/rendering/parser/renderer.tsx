@@ -1,11 +1,36 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { interpolate, Easing } from 'remotion';
+import { interpolate, Easing, staticFile } from 'remotion';
 import { ASTNode, MediaItem, EasingType } from './types';
 import { buildAnimationStyle } from '../animation';
 
 const { Text } = Typography;
+
+const hexToRgba = (hex: string | undefined, opacity: number): string => {
+  if (!hex || hex === 'transparent' || hex === 'inherit') return `rgba(255, 255, 255, ${opacity})`;
+  if (hex.startsWith('rgba')) return hex;
+  if (hex.startsWith('rgb')) {
+    return hex.replace('rgb', 'rgba').replace(')', `, ${opacity})`);
+  }
+  
+  let r = 255, g = 255, b = 255;
+  if (hex.startsWith('#')) {
+    const h = hex.replace('#', '');
+    if (h.length === 3) {
+      r = parseInt(h[0] + h[0], 16);
+      g = parseInt(h[1] + h[1], 16);
+      b = parseInt(h[2] + h[2], 16);
+    } else if (h.length === 6) {
+      r = parseInt(h.substring(0, 2), 16);
+      g = parseInt(h.substring(2, 4), 16);
+      b = parseInt(h.substring(4, 6), 16);
+    }
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  
+  return hex;
+};
 
 // --- Context ---
 export const PlaybackContext = createContext<{
@@ -274,6 +299,23 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
   return { mediaStyle, wrapperStyle, isHeightSet };
 };
 
+const getMediaUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http') || url.startsWith('data:')) return url;
+  
+  // 绝对路径处理 (支持 Windows 盘符或 Unix 根目录)
+  if (/^[a-zA-Z]:\//.test(url) || url.startsWith('/')) {
+    // 浏览器禁止直接加载 file:// 协议，通过后端代理读取
+    return `http://localhost:5000/proxy_local_file?path=${encodeURIComponent(url)}`;
+  }
+
+  try {
+    return staticFile(url);
+  } catch (e) {
+    return url;
+  }
+};
+
 // --- Components ---
 const MediaContent: React.FC<{
   mediaItems: MediaItem[];
@@ -289,8 +331,9 @@ const MediaContent: React.FC<{
   useEffect(() => {
     setManualIndex(0);
     mediaItems.forEach((item) => {
+      const resolvedUrl = getMediaUrl(item.url);
       const img = new Image();
-      img.src = item.url;
+      img.src = resolvedUrl;
       img.onload = () => {
         setLoadedUrls((prev) => new Set(prev).add(item.url));
       };
@@ -341,7 +384,7 @@ const MediaContent: React.FC<{
         {mediaItems.map((item, index) => (
           <img
             key={item.url}
-            src={item.url}
+            src={getMediaUrl(item.url)}
             style={{
               ...mediaStyle,
               width: mediaStyle.width || (isHeightSet ? 'auto' : '100%'),
@@ -456,9 +499,35 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
       }
 
       case 'quote': {
-        const resolvedBg = node.customStyle.backgroundColor || defaultBackgroundColor || 'var(--quote-bg)';
-        const resolvedBorderColor = (node.customStyle.borderColor as string) || defaultBorderColor || 'var(--quote-border)';
+        const isGlass = node.glass === true;
+        const glassBlur = Math.max(0, node.glassBlur ?? 16);
+        const glassOpacity = node.glassOpacity ?? 0.42;
+        
+        const resolvedBg = isGlass 
+          ? hexToRgba(node.customStyle.backgroundColor || (defaultBackgroundColor as string), glassOpacity)
+          : (node.customStyle.backgroundColor || defaultBackgroundColor || 'var(--quote-bg)');
+        const resolvedBorderColor = isGlass
+          ? (node.glassBorderColor || 'rgba(255, 255, 255, 0.38)')
+          : ((node.customStyle.borderColor as string) || defaultBorderColor || 'var(--quote-border)');
         const resolvedColor = node.customStyle.color || defaultQuoteFontColor || 'inherit';
+
+        const glassStyles: React.CSSProperties = isGlass ? {
+          backdropFilter: [
+            `blur(${glassBlur}px)`,
+            `saturate(1.35)`,
+            node.glassAberration ? `contrast(1.1) brightness(1.05)` : '',
+          ].filter(Boolean).join(' '),
+          WebkitBackdropFilter: [
+            `blur(${glassBlur}px)`,
+            `saturate(1.35)`,
+          ].filter(Boolean).join(' '),
+          boxShadow: [
+            node.glassShadow || '0 4px 14px rgba(0, 0, 0, 0.15)',
+            node.glassEdgeGlow ? `inset 0 0 8px 1px ${node.glassEdgeGlow}` : ''
+          ].filter(Boolean).join(', '),
+          overflow: 'hidden',
+          position: 'relative',
+        } : {};
 
         return (
           <div
@@ -474,9 +543,33 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
               border: `1px solid ${resolvedBorderColor}`,
               backgroundColor: resolvedBg,
               borderColor: resolvedBorderColor,
+              ...glassStyles,
             }}
           >
-            <div style={{ color: 'inherit' }}>
+            {/* 菲涅尔效果层 */}
+            {isGlass && node.glassFresnel && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                background: `radial-gradient(circle at center, transparent 30%, rgba(255,255,255,${node.glassFresnel * 0.4}) 100%)`,
+                zIndex: 0,
+              }} />
+            )}
+            
+            {/* 磨砂颗粒层 */}
+            {isGlass && node.glassGrain && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                opacity: node.glassGrain * 0.1,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                zIndex: 0,
+              }} />
+            )}
+
+            <div style={{ color: 'inherit', position: 'relative', zIndex: 1 }}>
               {renderAST(node.children, {
                 ...options,
                 defaultBackgroundColor: resolvedBg,

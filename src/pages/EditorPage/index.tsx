@@ -51,7 +51,6 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     itemBackgroundColorEnd, setItemBackgroundColorEnd,
     itemBackgroundGradientMode, setItemBackgroundGradientMode,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
-    colorArrangement, setColorArrangement,
     editorUiSettings,
     setEditorPaginationSettings,
   } = useSettingsStore();
@@ -64,6 +63,8 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     authorProfiles,
     setAuthorProfiles,
   } = useRedditStore();
+
+  const { colorArrangement, setColorArrangement } = useSettingsStore();
 
   // 使用自定义 Hook 处理视频设置逻辑
   const videoSettingsHandlers = useVideoSettings({
@@ -329,10 +330,9 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         quoteBackgroundColor={quoteBackgroundColor}
         quoteBorderColor={quoteBorderColor}
         onApplyCommentSort={videoSettingsHandlers.handleApplyCommentSort}
-        onRandomizeAliasesAndApply={videoSettingsHandlers.handleRandomizeAliasesAndApply}
-        onClearAliasesAndApply={videoSettingsHandlers.handleClearAliasesAndApply}
-        onRearrangeColorsAndApply={videoSettingsHandlers.handleRearrangeColorsAndApply}
-        onUpdateAuthorProfile={videoSettingsHandlers.updateAuthorProfile}
+        onRefreshStyles={videoSettingsHandlers.handleRefreshStyles}
+        onRearrangeScenes={videoSettingsHandlers.handleRearrangeScenes}
+        onResetAndRebuild={videoSettingsHandlers.handleResetAndRebuild}
         onImageLayoutModeChange={videoSettingsHandlers.handleImageLayoutModeChange}
         onSceneLayoutChange={videoSettingsHandlers.handleSceneLayoutChange}
         onTitleAlignmentChange={videoSettingsHandlers.handleTitleAlignmentChange}
@@ -346,22 +346,16 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         onContentFontBoldChange={videoSettingsHandlers.handleContentFontBoldChange}
         onMaxQuoteDepthChange={videoSettingsHandlers.handleMaxQuoteDepthChange}
         onDefaultQuoteMaxLimitChange={videoSettingsHandlers.handleDefaultQuoteMaxLimitChange}
-        onSceneBackgroundColorChange={videoSettingsHandlers.handleSceneBackgroundColorChange}
-        onSceneBackgroundColorEndChange={videoSettingsHandlers.handleSceneBackgroundColorEndChange}
-        onSceneBackgroundGradientModeChange={videoSettingsHandlers.handleSceneBackgroundGradientModeChange}
-        onItemBackgroundColorChange={videoSettingsHandlers.handleItemBackgroundColorChange}
-        onItemBackgroundColorEndChange={videoSettingsHandlers.handleItemBackgroundColorEndChange}
-        onItemBackgroundGradientModeChange={videoSettingsHandlers.handleItemBackgroundGradientModeChange}
+        onSceneBackgroundColorChange={setSceneBackgroundColor}
+        onSceneBackgroundColorEndChange={setSceneBackgroundColorEnd}
+        onSceneBackgroundGradientModeChange={setSceneBackgroundGradientMode}
+        onItemBackgroundColorChange={setItemBackgroundColor}
+        onItemBackgroundColorEndChange={setItemBackgroundColorEnd}
+        onItemBackgroundGradientModeChange={setItemBackgroundGradientMode}
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
-        onSetAllSceneLayouts={videoSettingsHandlers.setAllSceneLayouts}
-        onSetAllSceneDurations={videoSettingsHandlers.setAllSceneDurations}
         onAddScene={videoSettingsHandlers.addScene}
         canApplyCommentSort={!!rawResult}
-        allAuthors={allAuthors}
-        authorProfiles={authorProfiles}
-        colorArrangement={colorArrangement}
-        setColorArrangement={setColorArrangement}
         isMultiSelectMode={isMultiSelectMode}
         setIsMultiSelectMode={setIsMultiSelectMode}
         selectedSceneIds={selectedSceneIds}

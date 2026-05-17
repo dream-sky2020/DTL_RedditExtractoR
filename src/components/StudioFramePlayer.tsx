@@ -1,7 +1,7 @@
 import React from 'react';
 import { Typography, Tag } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
-import { SceneRenderer } from '../remotion/MyVideo';
+import { SceneRenderer } from '../remotion/SceneRenderer';
 import { getSceneStartFrame } from './VideoPreviewPlayer';
 import { VideoConfig, VideoScene } from '../types';
 

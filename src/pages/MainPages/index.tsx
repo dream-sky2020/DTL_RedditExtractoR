@@ -30,6 +30,7 @@ import { RenderTasksPage } from '../RenderTasksPage/index';
 import { ProjectsPage } from '../ProjectsPage/index';
 import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
+import { IdentityManagementPage } from '../IdentityManagementPage';
 
 import { 
   ToolKey, 
@@ -123,6 +124,12 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
         return {
           title: '项目管理',
           desc: '创建、切换和维护本地项目。',
+          button: '',
+        };
+      case 'identity':
+        return {
+          title: '身份与代号管理',
+          desc: '管理所有用户的代号与颜色映射，支持全局库同步与画面预览。',
           button: '',
         };
       case 'preview':
@@ -271,6 +278,10 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'projects' && (
               <ProjectsPage />
+            )}
+
+            {activeTool === 'identity' && (
+              <IdentityManagementPage />
             )}
 
             {activeTool === 'preview' && (

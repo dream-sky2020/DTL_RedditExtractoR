@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Form, Input, Slider, Row, Col, Typography, Space, Radio, InputNumber, Select, ColorPicker, Button } from 'antd';
+import axios from 'axios';
+import { Form, Input, Slider, Row, Col, Typography, Space, Radio, InputNumber, Select, ColorPicker, Button, message } from 'antd';
+import { FileImageOutlined } from '@ant-design/icons';
 import { getMetadataForTag, PropertyMetadata, getAllTags } from '../rendering/metadata';
 import { EASING_OPTIONS } from '../rendering/animation';
 
@@ -107,6 +109,48 @@ const formatKeyframes = (frames: ParsedKeyframe[]): string =>
     })
     .filter(Boolean)
     .join('; ');
+
+const LocalImageInput: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handlePickFile = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('http://localhost:5000/pick_file');
+      if (response.data.success && response.data.path) {
+        onChange(response.data.path);
+        message.success(`已选择本地图片: ${response.data.path}`);
+      }
+    } catch (err) {
+      console.error('选择文件失败:', err);
+      message.error('无法调用本地文件选择器，请确保 scripts/server.py 正在运行。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Space.Compact style={{ width: '100%' }}>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+      <Button 
+        icon={<FileImageOutlined />} 
+        onClick={handlePickFile}
+        loading={loading}
+        title="选择本地图片 (支持任意路径)"
+      >
+        本地
+      </Button>
+    </Space.Compact>
+  );
+};
 
 const KeyframesField: React.FC<{
   value?: string;
@@ -376,6 +420,15 @@ export const PropertyConfigContent: React.FC<PropertyConfigContentProps> = ({
     switch (prop.type) {
       case 'string':
       case 'css':
+        if (prop.name === 'bgImage') {
+          return (
+            <LocalImageInput
+              value={value}
+              onChange={nextValue => handleValueChange(prop.name, nextValue)}
+              placeholder={prop.placeholder}
+            />
+          );
+        }
         return (
           <Input 
             value={value} 
@@ -442,9 +495,9 @@ export const PropertyConfigContent: React.FC<PropertyConfigContentProps> = ({
             {metadata.hasContent && (
               <Form.Item label={metadata.contentLabel || '内容'}>
                 {selectedTagName === 'image' ? (
-                  <Input 
+                  <LocalImageInput 
                     value={content} 
-                    onChange={e => setContent(e.target.value)} 
+                    onChange={val => setContent(val)} 
                     placeholder={metadata.contentPlaceholder || '请输入内容...'}
                   />
                 ) : (

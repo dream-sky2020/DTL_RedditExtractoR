@@ -40,6 +40,18 @@ interface MultiSelectUiSettings {
   insertTextWeightedOptions: string;
   animationItemIndex: number;
   animationKeyframes: string;
+  batchGlassBlur: number;
+  batchGlassOpacity: number;
+  batchGlassBorder: string;
+  batchGlassShadow: string;
+  batchGlassDistort: number;
+  batchGlassAberration: number;
+  batchGlassEdgeGlow: string;
+  batchGlassFresnel: number;
+  batchGlassGrain: number;
+  batchGlassRefraction: number;
+  batchBgImage: string;
+  batchItemBgImage: string;
 }
 
 interface EditorUiSettings {
@@ -123,6 +135,18 @@ const DEFAULT_EDITOR_UI_SETTINGS: EditorUiSettings = {
     insertTextWeightedOptions: '',
     animationItemIndex: 1,
     animationKeyframes: '',
+    batchGlassBlur: 16,
+    batchGlassOpacity: 0.42,
+    batchGlassBorder: 'rgba(255, 255, 255, 0.35)',
+    batchGlassShadow: '0 18px 48px rgba(0, 0, 0, 0.28)',
+    batchGlassDistort: 0,
+    batchGlassAberration: 0,
+    batchGlassEdgeGlow: 'rgba(255, 255, 255, 0.5)',
+    batchGlassFresnel: 0.3,
+    batchGlassGrain: 0,
+    batchGlassRefraction: 1.0,
+    batchBgImage: '',
+    batchItemBgImage: '',
   },
 };
 

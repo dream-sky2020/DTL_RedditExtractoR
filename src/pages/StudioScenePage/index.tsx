@@ -26,7 +26,7 @@ import {
 import { VideoConfig, VideoScene } from '../../types';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { sceneToDsl, parseSceneDsl } from '../../rendering/sceneDsl';
-import { SceneRenderer } from '../../remotion/MyVideo';
+import { SceneRenderer } from '../../remotion/SceneRenderer';
 import { dialogs } from '../../components/Dialogs';
 import { useDslGlobalReplace } from '@hooks/useDslGlobalReplace';
 import { useVideoStore } from '@/store';
@@ -444,20 +444,32 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
               </Space>
             }
             className="panel-card"
-            bordered={false}
+            variant="borderless"
             extra={
               <Space size="middle">
                 <Space>
                   <Text type="secondary">预览帧偏移</Text>
-                  <InputNumber
-                    size="small"
-                    min={0}
-                    max={300}
-                    value={frameOffset}
-                    onChange={(val) => setFrameOffset(val || 0)}
-                    addonAfter="帧"
-                    style={{ width: 100 }}
-                  />
+                  <Space.Compact>
+                    <InputNumber
+                      size="small"
+                      min={0}
+                      max={300}
+                      value={frameOffset}
+                      onChange={(val) => setFrameOffset(val || 0)}
+                      style={{ width: 60 }}
+                    />
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      padding: '0 8px', 
+                      background: '#f5f5f5', 
+                      border: '1px solid #d9d9d9',
+                      borderLeft: 0,
+                      borderRadius: '0 4px 4px 0',
+                      fontSize: '12px',
+                      color: 'rgba(0,0,0,0.45)'
+                    }}>帧</span>
+                  </Space.Compact>
                 </Space>
                 <Divider type="vertical" />
                 <Space>

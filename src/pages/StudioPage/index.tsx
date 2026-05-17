@@ -310,20 +310,32 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
                 </Space>
               }
               className="panel-card"
-              bordered={false}
+              variant="borderless"
               extra={
                 <Space size="middle">
                   <Space>
                     <Text type="secondary">预览帧偏移</Text>
-                    <InputNumber 
-                      size="small" 
-                      min={0} 
-                      max={300} 
-                      value={frameOffset} 
-                      onChange={(val) => setFrameOffset(val || 0)} 
-                      addonAfter="帧"
-                      style={{ width: 100 }}
-                    />
+                    <Space.Compact>
+                      <InputNumber 
+                        size="small" 
+                        min={0} 
+                        max={300} 
+                        value={frameOffset} 
+                        onChange={(val) => setFrameOffset(val || 0)} 
+                        style={{ width: 60 }}
+                      />
+                      <span style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        padding: '0 8px', 
+                        background: '#f5f5f5', 
+                        border: '1px solid #d9d9d9',
+                        borderLeft: 0,
+                        borderRadius: '0 4px 4px 0',
+                        fontSize: '12px',
+                        color: 'rgba(0,0,0,0.45)'
+                      }}>帧</span>
+                    </Space.Compact>
                   </Space>
                   <Divider type="vertical" />
                 </Space>
@@ -457,10 +469,9 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         quoteBackgroundColor={quoteBackgroundColor}
         quoteBorderColor={quoteBorderColor}
         onApplyCommentSort={videoSettingsHandlers.handleApplyCommentSort}
-        onRandomizeAliasesAndApply={videoSettingsHandlers.handleRandomizeAliasesAndApply}
-        onClearAliasesAndApply={videoSettingsHandlers.handleClearAliasesAndApply}
-        onRearrangeColorsAndApply={videoSettingsHandlers.handleRearrangeColorsAndApply}
-        onUpdateAuthorProfile={videoSettingsHandlers.updateAuthorProfile}
+        onRefreshStyles={videoSettingsHandlers.handleRefreshStyles}
+        onRearrangeScenes={videoSettingsHandlers.handleRearrangeScenes}
+        onResetAndRebuild={videoSettingsHandlers.handleResetAndRebuild}
         onImageLayoutModeChange={videoSettingsHandlers.handleImageLayoutModeChange}
         onSceneLayoutChange={videoSettingsHandlers.handleSceneLayoutChange}
         onTitleAlignmentChange={videoSettingsHandlers.handleTitleAlignmentChange}
@@ -474,22 +485,16 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         onContentFontBoldChange={videoSettingsHandlers.handleContentFontBoldChange}
         onMaxQuoteDepthChange={videoSettingsHandlers.handleMaxQuoteDepthChange}
         onDefaultQuoteMaxLimitChange={videoSettingsHandlers.handleDefaultQuoteMaxLimitChange}
-        onSceneBackgroundColorChange={videoSettingsHandlers.handleSceneBackgroundColorChange}
-        onSceneBackgroundColorEndChange={videoSettingsHandlers.handleSceneBackgroundColorEndChange}
-        onSceneBackgroundGradientModeChange={videoSettingsHandlers.handleSceneBackgroundGradientModeChange}
-        onItemBackgroundColorChange={videoSettingsHandlers.handleItemBackgroundColorChange}
-        onItemBackgroundColorEndChange={videoSettingsHandlers.handleItemBackgroundColorEndChange}
-        onItemBackgroundGradientModeChange={videoSettingsHandlers.handleItemBackgroundGradientModeChange}
+        onSceneBackgroundColorChange={setSceneBackgroundColor}
+        onSceneBackgroundColorEndChange={setSceneBackgroundColorEnd}
+        onSceneBackgroundGradientModeChange={setSceneBackgroundGradientMode}
+        onItemBackgroundColorChange={setItemBackgroundColor}
+        onItemBackgroundColorEndChange={setItemBackgroundColorEnd}
+        onItemBackgroundGradientModeChange={setItemBackgroundGradientMode}
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
-        onSetAllSceneLayouts={videoSettingsHandlers.setAllSceneLayouts}
-        onSetAllSceneDurations={videoSettingsHandlers.setAllSceneDurations}
         onAddScene={videoSettingsHandlers.addScene}
         canApplyCommentSort={!!rawResult}
-        allAuthors={allAuthors}
-        authorProfiles={authorProfiles}
-        colorArrangement={colorArrangement}
-        setColorArrangement={setColorArrangement}
         galleryPage={galleryPage}
         galleryPageSize={galleryPageSize}
         setGalleryPageSize={setGalleryPageSize}
