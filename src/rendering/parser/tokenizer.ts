@@ -1,11 +1,11 @@
 import React from 'react';
 import { ASTNode, QuoteNode, ImageNode, GalleryNode, StyleNode, RowNode, DepthLimitNode, AnimateNode, EasingType } from './types';
-import { 
-  QUOTE_OPEN_TAG_RE, 
+import {
+  QUOTE_OPEN_TAG_RE,
   QUOTE_OPEN_TAG_GLOBAL_RE,
-  parseQuoteStartTag, 
-  parseMediaSequence, 
-  parseInlineAttrs 
+  parseQuoteStartTag,
+  parseMediaSequence,
+  parseInlineAttrs
 } from './utils';
 
 export interface TokenizerOptions {
@@ -48,7 +48,7 @@ const buildRowMediaAttrStr = (
 const findNextIgnoredTag = (subText: string, currentPos: number): number => {
   let nearest = -1;
   for (const tag of IGNORE_TAGS) {
-    const match = subText.match(new RegExp(`\\[${tag}[^\\]]*\\]`));
+    const match = subText.match(new RegExp(`\\[#${tag}[^#]*#\\]`));
     if (!match || match.index == null) continue;
     const idx = currentPos + match.index;
     if (nearest === -1 || idx < nearest) {
@@ -59,12 +59,12 @@ const findNextIgnoredTag = (subText: string, currentPos: number): number => {
 };
 
 const matchIgnoredTagAt = (text: string, start: number): RegExpMatchArray | null => {
-  const pattern = `^\\[(?:${IGNORE_TAGS.join('|')})[^\\]]*\\]`;
+  const pattern = `^\\[#(?:${IGNORE_TAGS.join('|')})[^#]*#\\]`;
   return text.substring(start).match(new RegExp(pattern));
 };
 
 export const tokenize = (
-  text: string, 
+  text: string,
   options: TokenizerOptions = {},
   currentDepth: number = 0
 ): ASTNode[] => {
@@ -89,36 +89,39 @@ export const tokenize = (
 
   while (currentPos < text.length) {
     const subText = text.substring(currentPos);
-    
+
     // Find next tags
     const nextQuoteMatch = subText.match(QUOTE_OPEN_TAG_RE);
     const nextQuote = nextQuoteMatch && nextQuoteMatch.index != null ? currentPos + nextQuoteMatch.index : -1;
-    
-    const nextImageMatch = subText.match(/\[image[^\]]*\]/);
+
+    const nextImageMatch = subText.match(/\[#image[^#]*#\]/);
     const nextImage = nextImageMatch && nextImageMatch.index != null ? currentPos + nextImageMatch.index : -1;
-    
-    const nextStyleMatch = subText.match(/\[style[^\]]*\]/);
+
+    const nextStyleMatch = subText.match(/\[#style[^#]*#\]/);
     const nextStyle = nextStyleMatch && nextStyleMatch.index != null ? currentPos + nextStyleMatch.index : -1;
-    
-    const nextGalleryMatch = subText.match(/\[gallery[^\]]*\]/);
+
+    const nextGalleryMatch = subText.match(/\[#gallery[^#]*#\]/);
     const nextGallery = nextGalleryMatch && nextGalleryMatch.index != null ? currentPos + nextGalleryMatch.index : -1;
-    
+
     const nextIgnoredTag = findNextIgnoredTag(subText, currentPos);
-    
-    const nextRowMatch = subText.match(/\[row[^\]]*\]/);
+
+    const nextRowMatch = subText.match(/\[#row[^#]*#\]/);
     const nextRow = nextRowMatch && nextRowMatch.index != null ? currentPos + nextRowMatch.index : -1;
 
-    const nextAnimateMatch = subText.match(/\[animate[^\]]*\]/);
+    const nextAnimateMatch = subText.match(/\[#animate[^#]*#\]/);
     const nextAnimate = nextAnimateMatch && nextAnimateMatch.index != null ? currentPos + nextAnimateMatch.index : -1;
+
+    const nextAvatarMatch = subText.match(/\[#avatar[^#]*#\]/);
+    const nextAvatar = nextAvatarMatch && nextAvatarMatch.index != null ? currentPos + nextAvatarMatch.index : -1;
 
     const nextTextTagMatch = subText.match(/<#text#?(?:\s[^>]*)?>|<\/#text#?>/);
     const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
 
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
@@ -126,6 +129,7 @@ export const tokenize = (
     if (nextIgnoredTag !== -1) indices.push({ idx: nextIgnoredTag, type: 'ignoredTag' });
     if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
     if (nextAnimate !== -1) indices.push({ idx: nextAnimate, type: 'animate' });
+    if (nextAvatar !== -1) indices.push({ idx: nextAvatar, type: 'avatar' });
     if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
 
     indices.sort((a, b) => a.idx - b.idx);
@@ -148,12 +152,12 @@ export const tokenize = (
     if (type === 'quote') {
       const parsed = parseQuoteStartTag(text.substring(foundIdx), defaultMaxLimit);
       if (!parsed) {
-        nodes.push({ type: 'text', content: '[quote=' });
-        currentPos = foundIdx + 7;
+        nodes.push({ type: 'text', content: '[#quote=' });
+        currentPos = foundIdx + 8;
         continue;
       }
 
-      const { 
+      const {
         fullTag, author, maxLimit, itemId, customStyle, maxQuoteDepthOverride,
         glass, glassBlur, glassOpacity, glassBorderColor, glassShadow,
         glassDistort, glassAberration, glassEdgeGlow, glassFresnel, glassGrain, glassRefraction
@@ -169,16 +173,16 @@ export const tokenize = (
         const remaining = text.substring(searchPos);
         const nextStartMatch = remaining.match(QUOTE_OPEN_TAG_RE);
         const nextStart = nextStartMatch && nextStartMatch.index != null ? searchPos + nextStartMatch.index : -1;
-        const nextEnd = text.indexOf('[/quote]', searchPos);
-        
+        const nextEnd = text.indexOf('[/#quote#]', searchPos);
+
         if (nextEnd === -1) break;
         if (nextStart !== -1 && nextStart < nextEnd) {
           depth++;
-          searchPos = nextStart + 7;
+          searchPos = nextStart + 8;
         } else {
           depth--;
           if (depth === 0) endTagIdx = nextEnd;
-          else searchPos = nextEnd + 8;
+          else searchPos = nextEnd + 10;
         }
       }
 
@@ -206,17 +210,17 @@ export const tokenize = (
             authorPath: [...authorPath, author]
           }, currentDepth + 1)
         });
-        currentPos = endTagIdx + 8;
+        currentPos = endTagIdx + 10;
       } else {
         nodes.push({ type: 'text', content: fullTag });
         currentPos = startTagEnd;
       }
     } else if (type === 'image') {
-      const match = text.substring(foundIdx).match(/^\[image([^\]]*)\]/);
+      const match = text.substring(foundIdx).match(/^\[#image([^#]*)#\]/);
       if (match) {
         const attrStr = match[1];
         const startTagEnd = foundIdx + match[0].length;
-        const endTagIdx = text.indexOf('[/image]', startTagEnd);
+        const endTagIdx = text.indexOf('[/#image#]', startTagEnd);
         if (endTagIdx !== -1) {
           const contentStr = text.substring(startTagEnd, endTagIdx);
           nodes.push({
@@ -224,42 +228,42 @@ export const tokenize = (
             attrStr,
             mediaItems: parseMediaSequence(contentStr)
           });
-          currentPos = endTagIdx + 8;
+          currentPos = endTagIdx + 10;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;
         }
       }
     } else if (type === 'style') {
-      const match = text.substring(foundIdx).match(/^\[style([^\]]*)\]/);
+      const match = text.substring(foundIdx).match(/^\[#style([^#]*)#\]/);
       if (match) {
         const attrStr = match[1];
         const startTagEnd = foundIdx + match[0].length;
-        
+
         let depth = 1;
         let searchPos = startTagEnd;
         let endTagIdx = -1;
         while (depth > 0 && searchPos < text.length) {
-          const nextStart = text.indexOf('[style', searchPos);
-          const nextEnd = text.indexOf('[/style]', searchPos);
+          const nextStart = text.indexOf('[#style', searchPos);
+          const nextEnd = text.indexOf('[/#style#]', searchPos);
           if (nextEnd === -1) break;
           if (nextStart !== -1 && nextStart < nextEnd) {
             depth++;
-            searchPos = nextStart + 6;
+            searchPos = nextStart + 7;
           } else {
             depth--;
             if (depth === 0) endTagIdx = nextEnd;
-            else searchPos = nextEnd + 8;
+            else searchPos = nextEnd + 10;
           }
         }
 
         if (endTagIdx !== -1) {
           const style: React.CSSProperties = {};
-          const colorMatch = attrStr.match(/color=([^ \]]+)/);
+          const colorMatch = attrStr.match(/color=([^ #\]]+)/);
           if (colorMatch) style.color = colorMatch[1];
           const sizeMatch = attrStr.match(/size=(\d+)/);
           if (sizeMatch) style.fontSize = parseInt(sizeMatch[1]);
-          const alignMatch = attrStr.match(/align=([^ \]]+)/);
+          const alignMatch = attrStr.match(/align=([^ #\]]+)/);
           if (alignMatch) {
             style.textAlign = alignMatch[1] as any;
             style.display = 'block';
@@ -274,18 +278,18 @@ export const tokenize = (
             style,
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
-          currentPos = endTagIdx + 8;
+          currentPos = endTagIdx + 10;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;
         }
       }
     } else if (type === 'gallery') {
-      const match = text.substring(foundIdx).match(/\[gallery([^\]]*)\]/);
+      const match = text.substring(foundIdx).match(/\[#gallery([^#]*)#\]/);
       if (match) {
         const attrStr = match[1];
         const startTagEnd = foundIdx + match[0].length;
-        const endTagIdx = text.indexOf('[/gallery]', startTagEnd);
+        const endTagIdx = text.indexOf('[/#gallery#]', startTagEnd);
         if (endTagIdx !== -1) {
           const contentStr = text.substring(startTagEnd, endTagIdx);
           let defaultDuration = 2.5;
@@ -296,7 +300,7 @@ export const tokenize = (
             attrStr,
             mediaItems: parseMediaSequence(contentStr, defaultDuration)
           });
-          currentPos = endTagIdx + 10;
+          currentPos = endTagIdx + 12;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;
@@ -310,25 +314,25 @@ export const tokenize = (
         currentPos = foundIdx + 1;
       }
     } else if (type === 'row') {
-      const match = text.substring(foundIdx).match(/^\[row([^\]]*)\]/);
+      const match = text.substring(foundIdx).match(/^\[#row([^#]*)#\]/);
       if (match) {
         const attrStr = match[1];
         const startTagEnd = foundIdx + match[0].length;
-        
+
         let depth = 1;
         let searchPos = startTagEnd;
         let endTagIdx = -1;
         while (depth > 0 && searchPos < text.length) {
-          const nextStart = text.indexOf('[row', searchPos);
-          const nextEnd = text.indexOf('[/row]', searchPos);
+          const nextStart = text.indexOf('[#row', searchPos);
+          const nextEnd = text.indexOf('[/#row#]', searchPos);
           if (nextEnd === -1) break;
           if (nextStart !== -1 && nextStart < nextEnd) {
             depth++;
-            searchPos = nextStart + 4;
+            searchPos = nextStart + 5;
           } else {
             depth--;
             if (depth === 0) endTagIdx = nextEnd;
-            else searchPos = nextEnd + 6;
+            else searchPos = nextEnd + 8;
           }
         }
 
@@ -367,38 +371,38 @@ export const tokenize = (
             mediaAttrStr: buildRowMediaAttrStr(attrs, isGrid),
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
-          currentPos = endTagIdx + 6;
+          currentPos = endTagIdx + 8;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;
         }
       }
     } else if (type === 'animate') {
-      const match = text.substring(foundIdx).match(/^\[animate([^\]]*)\]/);
+      const match = text.substring(foundIdx).match(/^\[#animate([^#]*)#\]/);
       if (match) {
         const attrStr = match[1];
         const startTagEnd = foundIdx + match[0].length;
-        
+
         let depth = 1;
         let searchPos = startTagEnd;
         let endTagIdx = -1;
         while (depth > 0 && searchPos < text.length) {
-          const nextStart = text.indexOf('[animate', searchPos);
-          const nextEnd = text.indexOf('[/animate]', searchPos);
+          const nextStart = text.indexOf('[#animate', searchPos);
+          const nextEnd = text.indexOf('[/#animate#]', searchPos);
           if (nextEnd === -1) break;
           if (nextStart !== -1 && nextStart < nextEnd) {
             depth++;
-            searchPos = nextStart + 8;
+            searchPos = nextStart + 9;
           } else {
             depth--;
             if (depth === 0) endTagIdx = nextEnd;
-            else searchPos = nextEnd + 10;
+            else searchPos = nextEnd + 12;
           }
         }
 
         if (endTagIdx !== -1) {
           const attrs = parseInlineAttrs(attrStr);
-          
+
           const parseStyleStr = (str: string): React.CSSProperties => {
             const style: React.CSSProperties = {};
             if (!str) return style;
@@ -424,7 +428,27 @@ export const tokenize = (
             easing: attrs.easing || 'ease-out',
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
-          currentPos = endTagIdx + 10;
+          currentPos = endTagIdx + 12;
+        } else {
+          nodes.push({ type: 'text', content: match[0] });
+          currentPos = startTagEnd;
+        }
+      }
+    } else if (type === 'avatar') {
+      const match = text.substring(foundIdx).match(/^\[#avatar([^#]*)#\]/);
+      if (match) {
+        const attrStr = match[1];
+        const startTagEnd = foundIdx + match[0].length;
+        const endTagIdx = text.indexOf('[/#avatar#]', startTagEnd);
+        if (endTagIdx !== -1) {
+          const url = text.substring(startTagEnd, endTagIdx).trim();
+          const typeMatch = attrStr.match(/type=([^ #\]]+)/);
+          nodes.push({
+            type: 'avatar',
+            url,
+            avatarType: typeMatch ? typeMatch[1] : undefined
+          });
+          currentPos = endTagIdx + 11;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;

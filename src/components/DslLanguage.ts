@@ -4,13 +4,13 @@ import { tags as t } from '@lezer/highlight';
 // 使用 StreamLanguage 实现简单的 DSL 高亮
 export const dslLanguage = StreamLanguage.define({
   token(stream) {
-    // 匹配开始标签 [tag 或 <tag
-    if (stream.match(/^\[[\/]?[a-zA-Z0-9]+/) || stream.match(/^<[\/]?[a-zA-Z0-9]+/)) {
+    // 匹配开始标签 [#tag# 或 <#tag#
+    if (stream.match(/^\[#[\/]?[a-zA-Z0-9]+#/) || stream.match(/^<#[\/]?[a-zA-Z0-9]+#/)) {
       return 'keyword'; // 使用 keyword 标签，通常显示为深粉色/紫色
     }
     
-    // 匹配结束括号 ] 或 >
-    if (stream.match(/^\]/) || stream.match(/^>/)) {
+    // 匹配结束括号 #] 或 #>
+    if (stream.match(/^#\]/) || stream.match(/^#>/)) {
       return 'punctuation';
     }
 

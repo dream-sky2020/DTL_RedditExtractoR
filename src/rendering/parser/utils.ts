@@ -1,9 +1,9 @@
 import React from 'react';
 import { MediaItem } from './types';
 
-export const INLINE_ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]+))/g;
-export const QUOTE_OPEN_TAG_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/;
-export const QUOTE_OPEN_TAG_GLOBAL_RE = /\[quote(?:=[^\]]*|\s[^\]]*)?\]/g;
+export const INLINE_ATTR_RE = /([a-zA-Z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s#\]]+))/g;
+export const QUOTE_OPEN_TAG_RE = /\[#quote(?:=[^#]*|\s[^#]*)?#\]/;
+export const QUOTE_OPEN_TAG_GLOBAL_RE = /\[#quote(?:=[^#]*|\s[^#]*)?#\]/g;
 
 export const parseInlineAttrs = (input: string): Record<string, string> => {
   const attrs: Record<string, string> = {};
@@ -20,12 +20,12 @@ export const parseInlineAttrs = (input: string): Record<string, string> => {
 export const parseQuoteStartTag = (
   source: string,
   defaultMaxLimit: number
-): { 
-  fullTag: string; 
-  author: string; 
-  maxLimit: number; 
-  itemId: string; 
-  customStyle: React.CSSProperties; 
+): {
+  fullTag: string;
+  author: string;
+  maxLimit: number;
+  itemId: string;
+  customStyle: React.CSSProperties;
   maxQuoteDepthOverride?: number;
   glass?: boolean;
   glassBlur?: number;
@@ -39,11 +39,11 @@ export const parseQuoteStartTag = (
   glassGrain?: number;
   glassRefraction?: number;
 } | null => {
-  const startTagMatch = source.match(/^\[quote(?:=[^\]]*|\s[^\]]*)?\]/);
+  const startTagMatch = source.match(/^\[#quote(?:=[^#]*|\s[^#]*)?#\]/);
   if (!startTagMatch) return null;
 
   const fullTag = startTagMatch[0];
-  let tail = fullTag.slice('[quote'.length, -1).trim();
+  let tail = fullTag.slice('[#quote'.length, -2).trim();
   let positionalAuthor = '';
 
   if (tail.startsWith('=')) {
@@ -60,7 +60,7 @@ export const parseQuoteStartTag = (
   const maxFromAttr = Number(attrs.max);
   const maxLimit = Number.isFinite(maxFromAttr) && maxFromAttr > 0 ? maxFromAttr : defaultMaxLimit;
   const itemId = (attrs.id || '').trim();
-  
+
   // 新增：解析 depth 属性作为嵌套深度覆盖
   const depthFromAttr = Number(attrs.depth);
   const maxQuoteDepthOverride = Number.isFinite(depthFromAttr) && depthFromAttr > 0 ? depthFromAttr : undefined;
@@ -88,12 +88,12 @@ export const parseQuoteStartTag = (
   const glassGrain = attrs.glassgrain || attrs.gg ? Number(attrs.glassgrain || attrs.gg) : undefined;
   const glassRefraction = attrs.glassrefraction || attrs.gr ? Number(attrs.glassrefraction || attrs.gr) : undefined;
 
-  return { 
-    fullTag, 
-    author, 
-    maxLimit, 
-    itemId, 
-    customStyle, 
+  return {
+    fullTag,
+    author,
+    maxLimit,
+    itemId,
+    customStyle,
     maxQuoteDepthOverride,
     glass,
     glassBlur,

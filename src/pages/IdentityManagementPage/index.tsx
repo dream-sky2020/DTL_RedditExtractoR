@@ -250,7 +250,15 @@ export const IdentityManagementPage: React.FC = () => {
                 dataIndex: 'author',
                 render: (val) => (
                   <Space>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: authorProfiles[val]?.color || '#ccc' }} />
+                    {authorProfiles[val]?.avatar ? (
+                      <img 
+                        src={`http://localhost:5000/proxy_local_file?path=${encodeURIComponent(authorProfiles[val].avatar)}`} 
+                        style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} 
+                        alt="avatar"
+                      />
+                    ) : (
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', background: authorProfiles[val]?.color || '#ccc' }} />
+                    )}
                     <Text style={{ 
                       color: selectedAuthor === val ? 'var(--text-primary)' : '#000', 
                       fontSize: 12 
@@ -306,6 +314,20 @@ export const IdentityManagementPage: React.FC = () => {
                       />
                     </div>
                   </div>
+
+                  {authorProfiles[selectedAuthor]?.avatar && (
+                    <div>
+                      <Text style={{ display: 'block', marginBottom: 8, color: 'var(--text-secondary)' }}>当前头像</Text>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <img 
+                          src={`http://localhost:5000/proxy_local_file?path=${encodeURIComponent(authorProfiles[selectedAuthor].avatar)}`} 
+                          style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--brand-border)', objectFit: 'cover' }} 
+                          alt="avatar"
+                        />
+                        <Text type="secondary" style={{ fontSize: 12 }}>{authorProfiles[selectedAuthor].avatar}</Text>
+                      </div>
+                    </div>
+                  )}
 
                   <Divider style={{ margin: '12px 0' }} />
 

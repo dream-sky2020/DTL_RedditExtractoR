@@ -28,7 +28,7 @@ export const BatchCleanTextSection: React.FC<BatchCleanTextSectionProps> = ({
           borderColor: hasSelected ? '#fa8c16' : '#d9d9d9',
         }}
       >
-        去除 [\n]
+        去除 [#\\n#]
       </Button>
       <Button
         block
@@ -41,7 +41,7 @@ export const BatchCleanTextSection: React.FC<BatchCleanTextSectionProps> = ({
           borderColor: hasSelected ? '#fa8c16' : '#d9d9d9',
         }}
       >
-        去除第一个 [\n]
+        去除第一个 [#\\n#]
       </Button>
     </Space>
   );

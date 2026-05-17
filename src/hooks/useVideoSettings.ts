@@ -1,14 +1,14 @@
-import { message } from 'antd';
-import { 
-  VideoConfig, 
-  VideoScene, 
-  TitleAlignmentType, 
-  ImageLayoutMode, 
+import { toast } from '@components/Toast';
+import {
+  VideoConfig,
+  VideoScene,
+  TitleAlignmentType,
+  ImageLayoutMode,
   SceneLayoutType,
-  AuthorProfile, 
-  CommentSortMode, 
+  AuthorProfile,
+  CommentSortMode,
   ReplyOrderMode,
-  ColorArrangementSettings 
+  ColorArrangementSettings
 } from '../types';
 import { normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../rendering/videoCanvas';
 import { transformRedditJson } from '../utils/redditTransformer';
@@ -83,8 +83,8 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
     rawResult, setResult, colorArrangement, setColorArrangement,
     allAuthors, authorProfiles, setAuthorProfiles, persistAuthorProfiles,
-    setImageLayoutMode, setSceneLayout, setTitleAlignment,     setTitleFontSize,
-    setContentFontSize, setQuoteFontSize, 
+    setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
+    setContentFontSize, setQuoteFontSize,
     setTitleFontColor, setContentFontColor, setQuoteFontColor,
     setTitleFontBold, setContentFontBold,
     setMaxQuoteDepth, setDefaultQuoteMaxLimit,
@@ -94,7 +94,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
     titleFontColor, contentFontColor, quoteFontColor,
     titleFontBold, contentFontBold,
-    maxQuoteDepth, defaultQuoteMaxLimit, 
+    maxQuoteDepth, defaultQuoteMaxLimit,
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor
@@ -102,28 +102,28 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
 
   // --- 统一的 [style] 标签更新逻辑 ---
   const updateStyleInContent = (
-    content: string, 
-    type: 'title' | 'context', 
+    content: string,
+    type: 'title' | 'context',
     updates: Record<string, string | number | boolean>
   ) => {
     const typePattern = new RegExp(`type=${type}\\b`);
-    return content.split(/(\[style [^\]]*\])/g).map(part => {
-      if (part.startsWith('[style') && typePattern.test(part)) {
+    return content.split(/(\[#style [^#]*#\])/g).map(part => {
+      if (part.startsWith('[#style') && typePattern.test(part)) {
         let newTag = part;
         Object.entries(updates).forEach(([key, value]) => {
           if (key === 'b') {
             const hasB = /\bb\b/.test(newTag);
             if (value && !hasB) {
-              newTag = newTag.slice(0, -1) + ' b]';
+              newTag = newTag.slice(0, -2) + ' b#]';
             } else if (!value && hasB) {
-              newTag = newTag.replace(/\bb\b/, '').replace(/\s+/g, ' ').replace(' ]', ']');
+              newTag = newTag.replace(/\bb\b/, '').replace(/\s+/g, ' ').replace(' #]', '#]');
             }
           } else {
-            const regex = new RegExp(`${key}=([^ \\]]+)`);
+            const regex = new RegExp(`${key}=([^ #]+)`);
             if (regex.test(newTag)) {
               newTag = newTag.replace(regex, `${key}=${value}`);
             } else {
-              newTag = newTag.slice(0, -1) + ` ${key}=${value}]`;
+              newTag = newTag.slice(0, -2) + ` ${key}=${value}#]`;
             }
           }
         });
@@ -138,7 +138,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     if (color1 === 'transparent' || color2 === 'transparent') {
       return factor < 0.5 ? color1 : color2;
     }
-    
+
     const hex = (x: string) => {
       const h = x.replace('#', '');
       if (h.length === 3) return h.split('').map(c => c + c).join('');
@@ -172,7 +172,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     const total = config.scenes.length;
     const nextScenes = config.scenes.map((scene, index) => {
       const factor = total > 1 ? index / (total - 1) : 0;
-      
+
       const currentSceneBg = sMode ? interpolateColor(sColor, sColorEnd, factor) : sColor;
       const currentItemBg = iMode ? interpolateColor(iColor, iColorEnd, factor) : iColor;
 
@@ -236,7 +236,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: `[style size=${titleSize} color=${opts.titleFontColor}${opts.titleFontBold ? ' b' : ''} align=${alignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=title]${nextResult.content || ''}[/style]`,
+        content: `[#style size=${titleSize} color=${titleFontColor}${titleFontBold ? ' b' : ''} align=${alignment} type=title#]${nextResult.title}[/#style#]\n\n[#style size=${contentSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context#]${nextResult.content || ''}[/#style#]`,
       }]
     };
 
@@ -249,24 +249,29 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: c.id,
         author: c.author,
-        content: `[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=context]${c.body}[/style]`,
+        content: `[#style size=${contentSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context#]${c.body}[/#style#]`,
         replyChain: c.replyChain
       }]
     }));
 
-    const baseConfig = {
+    const baseConfig: VideoConfig = {
       title: nextResult.title,
       subreddit: nextResult.subreddit,
       scenes: [postScene, ...commentScenes],
       titleFontSize: titleSize,
       contentFontSize: contentSize,
-      quoteFontSize: opts.quoteFontSize,
-      quoteBackgroundColor: opts.quoteBackgroundColor,
-      quoteBorderColor: opts.quoteBorderColor,
-      maxQuoteDepth: opts.maxQuoteDepth,
-      defaultQuoteMaxLimit: opts.defaultQuoteMaxLimit,
-      sceneBackgroundColor: opts.sceneBackgroundColor,
-      itemBackgroundColor: opts.itemBackgroundColor,
+      quoteFontSize: quoteFontSize,
+      titleFontColor: titleFontColor,
+      contentFontColor: contentFontColor,
+      quoteFontColor: quoteFontColor,
+      titleFontBold: titleFontBold,
+      contentFontBold: contentFontBold,
+      quoteBackgroundColor: quoteBackgroundColor,
+      quoteBorderColor: quoteBorderColor,
+      maxQuoteDepth: maxQuoteDepth,
+      defaultQuoteMaxLimit: defaultQuoteMaxLimit,
+      sceneBackgroundColor: sceneBackgroundColor,
+      itemBackgroundColor: itemBackgroundColor,
       canvas,
     };
 
@@ -280,34 +285,40 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     successMessage: string,
   ) => {
     if (!rawResult) {
-      message.warning('请先提取 Reddit 数据，再进行排序重排');
+      toast.warning('请先提取 Reddit 数据，再进行排序重排');
       return;
     }
 
-    setCommentSortMode(sortMode);
-    setReplyOrderMode(replyOrder);
+    try {
+      setCommentSortMode(sortMode);
+      setReplyOrderMode(replyOrder);
 
-    const nextResult = transformRedditJson(rawResult, {
-      sortMode,
-      replyOrder,
-      authorProfiles: profiles,
-      imageLayoutMode: videoConfig.imageLayoutMode,
-    });
-    const nextConfig = {
-      ...buildVideoConfigFromResult(
+      const nextResult = transformRedditJson(rawResult, {
+        sortMode,
+        replyOrder,
+        authorProfiles: profiles,
+        imageLayoutMode: videoConfig.imageLayoutMode,
+      });
+
+      const nextConfig = buildVideoConfigFromResult(
         nextResult,
         titleAlignment,
         titleFontSize,
         contentFontSize,
-        videoConfig.canvas || createDefaultVideoCanvasConfig()
-      ),
-      imageLayoutMode: videoConfig.imageLayoutMode,
-    };
+        createDefaultVideoCanvasConfig()
+      );
 
-    setResult(nextResult);
-    const normalizedConfig = normalizeVideoConfig(nextConfig);
-    setVideoConfig(normalizedConfig);
-    message.success(successMessage);
+      // 确保保留 imageLayoutMode
+      nextConfig.imageLayoutMode = videoConfig.imageLayoutMode;
+
+      setResult(nextResult);
+      const normalizedConfig = normalizeVideoConfig(nextConfig);
+      setVideoConfig(normalizedConfig);
+      toast.success(successMessage);
+    } catch (err) {
+      console.error('Rebuild failed:', err);
+      toast.error('脚本重建失败，请检查控制台输出');
+    }
   };
 
   // --- 导出的处理函数 ---
@@ -500,7 +511,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
     setVideoConfig(newConfig);
-    message.success(`已将全部画面格布局设为 ${layout}`);
+    toast.success(`已将全部画面格布局设为 ${layout}`);
   };
 
   const addScene = () => {
@@ -528,7 +539,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     }));
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
     setVideoConfig(newConfig);
-    message.success(`已将全部画面格及元素时长统一设为 ${duration}s`);
+    toast.success(`已将全部画面格及元素时长统一设为 ${duration}s`);
   };
 
   const handleRefreshStyles = () => {
@@ -565,12 +576,12 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       titleAlignment,
     });
     setVideoConfig(newConfig);
-    message.success('已刷新所有画面格样式（保留结构）');
+    toast.success('已刷新所有画面格样式（保留结构）');
   };
 
   const handleRearrangeScenes = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
     if (!rawResult) {
-      message.warning('请先提取 Reddit 数据，再进行排序重排');
+      toast.warning('请先提取 Reddit 数据，再进行排序重排');
       return;
     }
 
@@ -594,7 +605,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     // 根据 ID 顺序重排现有的 scenes
     const currentScenes = [...videoConfig.scenes];
     const rearrangedScenes: VideoScene[] = [];
-    
+
     finalIdOrder.forEach(id => {
       const scene = currentScenes.find(s => s.id === id);
       if (scene) {
@@ -615,7 +626,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     });
 
     setVideoConfig(nextConfig);
-    message.success('已根据新规则重排画面顺序（保留手动修改）');
+    toast.success('已根据新规则重排画面顺序（保留手动修改）');
   };
 
   const handleResetAndRebuild = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
@@ -623,10 +634,10 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const handleRefreshAliases = () => {
-    // 实际上 authorProfiles 改变后，渲染层会自动响应（如果它是从 store 读取的）
+    // 实际上 authorProfiles 改变后，渲染层会自动响应（如果它是从 store 读取特）
     // 但为了保险，我们可以触发一次 config 的更新
     setVideoConfig({ ...videoConfig });
-    message.success('已刷新代号映射');
+    toast.success('已刷新代号映射');
   };
 
   return {

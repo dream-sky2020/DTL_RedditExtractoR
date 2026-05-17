@@ -26,7 +26,7 @@ export const BatchSplitSection: React.FC<BatchSplitSectionProps> = ({
         borderColor: isSingleSelected ? '#722ed1' : '#d9d9d9',
       }}
     >
-      根据 [split] 裁剪
+      根据 [#split#] 裁剪
     </Button>
   );
 };

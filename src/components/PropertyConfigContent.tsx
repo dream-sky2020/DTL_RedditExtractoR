@@ -493,14 +493,14 @@ export const PropertyConfigContent: React.FC<PropertyConfigContentProps> = ({
         <Col span={12}>
           <Form layout="vertical">
             {metadata.hasContent && (
-              <Form.Item label={metadata.contentLabel || '内容'}>
-                {selectedTagName === 'image' ? (
-                  <LocalImageInput 
-                    value={content} 
-                    onChange={val => setContent(val)} 
-                    placeholder={metadata.contentPlaceholder || '请输入内容...'}
-                  />
-                ) : (
+          <Form.Item label={metadata.contentLabel || '内容'}>
+            {selectedTagName === 'image' || selectedTagName === 'avatar' ? (
+              <LocalImageInput 
+                value={content} 
+                onChange={val => setContent(val)} 
+                placeholder={metadata.contentPlaceholder || '请输入内容...'}
+              />
+            ) : (
                   <Input.TextArea 
                     value={content} 
                     onChange={e => setContent(e.target.value)} 

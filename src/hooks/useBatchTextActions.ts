@@ -35,15 +35,15 @@ export const useBatchTextActions = ({
 
       const newItems = scene.items.map(item => {
         let newContent = item.content;
-        const innermostQuoteRegex = /\[quote=[^\]]*?\]((?:(?!\[quote=)[\s\S])*?)\[\/quote\]/g;
+        const innermostQuoteRegex = /\[#quote=[^#]*?#\]((?:(?!\[#quote=)[\s\S])*?)\[\/#quote#\]/g;
         let prevContent;
         do {
           prevContent = newContent;
           newContent = newContent.replace(innermostQuoteRegex, '');
         } while (newContent !== prevContent);
 
-        newContent = newContent.replace(/\[\\n\]\s*(?=\[\\n\]|\[style)/g, '');
-        newContent = newContent.replace(/^\[\\n\]+/, '').replace(/\[\\n\]+$/, '');
+        newContent = newContent.replace(/\[#\\n#\]\s*(?=\[#\\n#\]|\[#style)/g, '');
+        newContent = newContent.replace(/^\[#\\n#\]+/, '').replace(/\[#\\n#\]+$/, '');
 
         return { ...item, content: newContent };
       });
@@ -63,7 +63,7 @@ export const useBatchTextActions = ({
       if (!selectedSceneIds.includes(scene.id)) return scene;
 
       const newItems = scene.items.map(item => {
-        const newContent = item.content.replace(/\[\\n\]|\r?\n/g, '');
+        const newContent = item.content.replace(/\[#\\n#\]|\r?\n/g, '');
         if (newContent !== item.content) {
           affectedItemCount += 1;
         }
@@ -89,7 +89,7 @@ export const useBatchTextActions = ({
       if (!selectedSceneIds.includes(scene.id)) return scene;
 
       const newItems = scene.items.map(item => {
-        const newContent = item.content.replace(/\[\\n\]|\r?\n/, '');
+        const newContent = item.content.replace(/\[#\\n#\]|\r?\n/, '');
         if (newContent !== item.content) {
           affectedItemCount += 1;
         }

@@ -4,6 +4,7 @@ export type ReplyOrderMode = 'preserve' | 'global';
 export interface AuthorProfile {
   alias?: string;
   color?: string;
+  avatar?: string;
 }
 
 export type ColorArrangementMode = 'uniform' | 'randomized';

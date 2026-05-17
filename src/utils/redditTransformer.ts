@@ -52,32 +52,38 @@ const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>)
     const color = profile.color?.trim();
     return color || AUTHOR_TAG_COLOR;
 };
+const getAuthorAvatar = (author: string, profiles: Record<string, AuthorProfile>) => {
+    const profile = getAuthorProfile(author, profiles);
+    return profile.avatar;
+};
 const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
     const displayName = getAuthorDisplayName(author, profiles);
     const color = getAuthorColor(author, profiles);
-    return `[style color=${color} b type=${type}]u/${displayName}:[/style]`;
+    const avatar = getAuthorAvatar(author, profiles);
+    const avatarTag = avatar ? `[#avatar type=author#]${avatar}[/#avatar#] ` : '';
+    return `${avatarTag}[#style color=${color} b type=${type}#]u/${displayName}:[/#style#]`;
 };
 
 const wrapText = (text: string, type?: string) => {
     if (!text) return '';
-    
+
     // 如果已经整体包裹了，说明是合法的，直接返回
     if (text.startsWith('<#text#>') && text.endsWith('</#text#>')) return text;
-    if (type && text.startsWith(`[style type=${type}]`) && text.endsWith('[/style]')) return text;
+    if (type && text.startsWith(`[#style type=${type}#]`) && text.endsWith('[/#style#]')) return text;
 
     // 常见的 DSL 标签（不应被包裹进翻译标签的）
     // 注意：我们要把标签作为分隔符，同时保留它们
-    const tagRegex = /(\[image[^\]]*\][\s\S]*?\[\/image\]|\[row[^\]]*\]|\[\/row\]|\[quote[^\]]*\]|\[\/quote\]|\[style[^\]]*\]|\[\/style\]|\[\\n\])/gi;
+    const tagRegex = /(\[#image[^#]*#\][\s\S]*?\[\/#image#\]|\[#row[^#]*#\]|\[\/#row#\]|\[#quote[^#]*#\]|\[\/#quote#\]|\[#style[^#]*#\]|\[\/#style#\]|\[#\\n#\])/gi;
 
     // 使用正则分割，同时保留匹配项
     const parts = text.split(tagRegex);
 
     const wrappedParts = parts.map(part => {
         if (!part) return '';
-        
+
         // 检查是否是标签部分
         // 注意：split 出来的匹配项可以直接通过正则测试
-        if (part.match(/^\[(image|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
+        if (part.match(/^\[#(image|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
             return part;
         }
 
@@ -94,11 +100,11 @@ const wrapText = (text: string, type?: string) => {
     });
 
     const result = wrappedParts.join('');
-    return (type && result) ? `[style type=${type}]${result}[/style]` : result;
+    return (type && result) ? `[#style type=${type}#]${result}[/#style#]` : result;
 };
 
 const stripLeadingAuthorHeader = (content: string) =>
-    content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
+    content.replace(/^\[#style[^#]*#\]u\/[^:\]]+:\[\/#style#\]\s*/i, '');
 
 const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
     const header = buildAuthorHeader(author, profiles, type);
@@ -274,23 +280,23 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             firstImageUrl = matches[0].replace(/&amp;/g, '&');
         }
 
-        // 将所有图片链接转换为 [image] 标签
+        // 将所有图片链接转换为 [#image#] 标签
         cleanText = cleanText.replace(imgRegex, (match) => {
             const url = match.replace(/&amp;/g, '&');
-            return `\n[image]${url}[/image]\n`;
+            return `\n[#image#]${url}[/#image#]\n`;
         });
 
-        // 2. 处理 Reddit Giphy 标签: ![gif](giphy|IAcQ0KshiLKrS) -> [image]...[/image]
+        // 2. 处理 Reddit Giphy 标签: ![gif](giphy|IAcQ0KshiLKrS) -> [#image#]...[/#image#]
         // 只有当它还没被转换成标准链接时才处理（Reddit 有时会同时返回两者）
         const giphyRegex = /!\[gif\]\(giphy\|([^)]+)\)/gi;
         cleanText = cleanText.replace(giphyRegex, (match, giphyId) => {
             const url = `https://media.giphy.com/media/${giphyId}/giphy.gif`;
             if (!firstImageUrl) firstImageUrl = url;
             // 检查这个 URL 是否已经因为上面的正则被包裹过了
-            if (cleanText.includes(`[image]${url}[/image]`)) {
+            if (cleanText.includes(`[#image#]${url}[/#image#]`)) {
                 return ''; // 如果已经有了，就直接删掉原始标签
             }
-            return `\n[image]${url}[/image]\n`;
+            return `\n[#image#]${url}[/#image#]\n`;
         });
 
         return { imageUrl: firstImageUrl, cleanText: cleanText.trim() };
@@ -347,7 +353,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
 
                     const quotedIdAttr = quote.id ? ` id=${quote.id}` : '';
-                    nestedAncestorQuote = `[quote=${quoteAuthorToken}${quotedIdAttr} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
+                    nestedAncestorQuote = `[#quote=${quoteAuthorToken}${quotedIdAttr} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容#]${contentPart}[/#quote#]`;
                 }
 
                 const finalContent = nestedAncestorQuote
@@ -426,31 +432,31 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
         postImages = [bodyImg];
     }
 
-    // 组装最终正文：将多图包装为 [image] 或 [row] 标签追加到末尾
+    // 组装最终正文：将多图包装为 [#image#] 或 [#row#] 标签追加到末尾
     if (postImages.length > 1) {
         let multiImageTag = '';
         if (mergedOptions.imageLayoutMode === 'row') {
             // 如果是 row 模式，计算宽度
             const width = Math.floor(100 / Math.min(postImages.length, 3)) - 2;
-            const images = postImages.map(url => `[image w=${width}%]${url}[/image]`).join('\n  ');
-            multiImageTag = `\n[row gap=10 justify=center]\n  ${images}\n[/row]`;
+            const images = postImages.map(url => `[#image w=${width}%#]${url}[/#image#]`).join('\n  ');
+            multiImageTag = `\n[#row gap=10 justify=center#]\n  ${images}\n[/#row#]`;
         } else if (mergedOptions.imageLayoutMode === 'single') {
             // 如果是 single 模式，逐个排布
-            multiImageTag = `\n${postImages.map(url => `[image]${url}[/image]`).join('\n')}`;
+            multiImageTag = `\n${postImages.map(url => `[#image#]${url}[/#image#]`).join('\n')}`;
         } else {
-            // 默认轮播模式：多个 URL 写进同一个 [image]
-            multiImageTag = `\n[image]${postImages.join(',')}[/image]`;
+            // 默认轮播模式：多个 URL 写进同一个 [#image#]
+            multiImageTag = `\n[#image#]${postImages.join(',')}[/#image#]`;
         }
 
-        if (!postText.includes('[row]')) {
+        if (!postText.includes('[#row#]')) {
             // 关键修正：先包装已有的 text，再拼接图片标签
             postText = `${wrapText(postText, 'context')}${multiImageTag}`;
         }
     } else if (postImages.length === 1) {
-        // 如果是单图，使用 [image]
+        // 如果是单图，使用 [#image#]
         if (!postText.includes(postImages[0])) {
             // 关键修正：先包装已有的 text，再拼接图片标签
-            postText = `${wrapText(postText, 'context')}\n[image]${postImages[0]}[/image]`;
+            postText = `${wrapText(postText, 'context')}\n[#image#]${postImages[0]}[/#image#]`;
         }
     } else {
         // 纯文本情况

@@ -19,7 +19,7 @@ export const parseAttrs = (input: string): AttrMap => {
 
 const escapeAttr = (value: string): string => value.replace(/"/g, '&quot;');
 
-const DSL_LINE_BREAK_TOKEN = '[\\n]';
+const DSL_LINE_BREAK_TOKEN = '[#\\n#]';
 
 const encodeDslLineBreaks = (content: string): string =>
   content.replace(/\r\n/g, '\n').replace(/\n/g, DSL_LINE_BREAK_TOKEN);
@@ -154,13 +154,13 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.glassRefraction !== undefined) itemAttrs.push(`glassRefraction=${item.glassRefraction}`);
       if (item.backgroundImage) itemAttrs.push(`bgImage="${escapeAttr(item.backgroundImage)}"`);
       if (item.backgroundImageMode) itemAttrs.push(`bgMode="${escapeAttr(item.backgroundImageMode)}"`);
-      
+
       const content = encodeDslLineBreaks((item.content || '').trim());
-      return `  <item ${itemAttrs.join(' ')}>\n${content ? `${content}\n` : ''}  </item>`;
+      return `  <#item ${itemAttrs.join(' ')}#>\n${content ? `${content}\n` : ''}  </#item#>`;
     })
     .join('\n\n');
 
-  return `<scene ${sceneAttrs.join(' ')}>\n${itemBlocks}\n</scene>`;
+  return `<#scene ${sceneAttrs.join(' ')}#>\n${itemBlocks}\n</#scene#>`;
 };
 
 export const parseSceneDsl = (
@@ -169,15 +169,15 @@ export const parseSceneDsl = (
 ): ParseSceneDslResult => {
   const text = rawText.trim();
   const warnings: SceneDslWarning[] = [];
-  const sceneMatch = text.match(/^<scene\b([^>]*)>([\s\S]*?)<\/scene>\s*$/i);
+  const sceneMatch = text.match(/^<#scene\b([^#]*)#?>([\s\S]*?)<\/#scene#>\s*$/i);
   const shouldUseFallbackFields = !sceneMatch;
 
   const rootAttrsText = sceneMatch?.[1] ?? '';
   const body = sceneMatch?.[2] ?? text;
   if (!sceneMatch) {
     warnings.push({
-      message: '未检测到合法 <scene ...>...</scene> 根节点，已按容错模式继续解析。',
-      suggestion: '建议补全根节点，例如：<scene id="scene-001" duration=8 type="comments">...</scene>。',
+      message: '未检测到合法 <#scene ...#>...</#scene#> 根节点，已按容错模式继续解析。',
+      suggestion: '建议补全根节点，例如：<#scene id="scene-001" duration=8 type="comments"#>...</#scene#>。',
     });
   }
 
@@ -219,7 +219,7 @@ export const parseSceneDsl = (
 
   const title = sceneAttrs.title ?? (shouldUseFallbackFields ? fallbackScene?.title : '') ?? '';
   const backgroundColor = sceneAttrs.bg || sceneAttrs.backgroundColor || (shouldUseFallbackFields ? fallbackScene?.backgroundColor : '') || '';
-  
+
   const animateFrom = sceneAttrs.animateFrom || sceneAttrs.af;
   const animateTo = sceneAttrs.animateTo || sceneAttrs.at;
   const animateStart = parseOptionalSeconds(sceneAttrs.animateStart || sceneAttrs.as);
@@ -253,7 +253,7 @@ export const parseSceneDsl = (
     });
   }
 
-  const itemRegex = /<item\b([^>]*)>([\s\S]*?)<\/item>/gi;
+  const itemRegex = /<#item\b([^#]*)#?>([\s\S]*?)<\/#item#>/gi;
   const items: VideoScene['items'] = [];
   let itemMatch: RegExpExecArray | null;
   let index = 0;
@@ -264,7 +264,7 @@ export const parseSceneDsl = (
     const author = authorRaw || fallbackScene?.items?.[index]?.author || `User${index + 1}`;
     if (!authorRaw) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 缺失 author，已自动补全为 "${author}"。`,
+        message: `第 ${index + 1} 个 <#item#> 缺失 author，已自动补全为 "${author}"。`,
         suggestion: `建议为第 ${index + 1} 个 item 显式填写 author 属性。`,
       });
     }
@@ -275,7 +275,7 @@ export const parseSceneDsl = (
     const itemId = (itemAttrs.id || fallbackId || buildItemId(index)).trim();
     if (!itemAttrs.id || !itemAttrs.id.trim()) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 缺失 id，已自动补全为 "${itemId}"。`,
+        message: `第 ${index + 1} 个 <#item#> 缺失 id，已自动补全为 "${itemId}"。`,
         suggestion: `建议为第 ${index + 1} 个 item 设置稳定 id，便于后续编辑。`,
       });
     }
@@ -286,13 +286,13 @@ export const parseSceneDsl = (
     const exitAt = parsedExitAt ?? fallbackItem?.exitAt;
     if (itemAttrs.enterAt != null && parsedEnterAt == null) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 的 enterAt="${itemAttrs.enterAt}" 无效，已自动回退。`,
+        message: `第 ${index + 1} 个 <#item#> 的 enterAt="${itemAttrs.enterAt}" 无效，已自动回退。`,
         suggestion: 'enterAt 需为大于等于 0 的数字。',
       });
     }
     if (itemAttrs.exitAt != null && parsedExitAt == null) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 的 exitAt="${itemAttrs.exitAt}" 无效，已自动回退。`,
+        message: `第 ${index + 1} 个 <#item#> 的 exitAt="${itemAttrs.exitAt}" 无效，已自动回退。`,
         suggestion: 'exitAt 需为大于等于 0 的数字，且建议不早于 enterAt。',
       });
     }
@@ -302,7 +302,7 @@ export const parseSceneDsl = (
     const enterAnimation = parsedEnterAnimation ?? fallbackItem?.enterAnimation;
     const exitAnimation = parsedExitAnimation ?? fallbackItem?.exitAnimation;
     const itemBackgroundColor = itemAttrs.bg || itemAttrs.backgroundColor || (shouldUseFallbackFields ? fallbackItem?.backgroundColor : '') || '';
-    
+
     const animateFrom = itemAttrs.animateFrom || itemAttrs.af;
     const animateTo = itemAttrs.animateTo || itemAttrs.at;
     const animateStart = parseOptionalSeconds(itemAttrs.animateStart || itemAttrs.as);
@@ -335,13 +335,13 @@ export const parseSceneDsl = (
 
     if (itemAttrs.exitAnimation != null && parsedExitAnimation == null) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 的 enterAnimation="${itemAttrs.enterAnimation}" 无效，已自动回退。`,
+        message: `第 ${index + 1} 个 <#item#> 的 enterAnimation="${itemAttrs.enterAnimation}" 无效，已自动回退。`,
         suggestion: 'enterAnimation 可选值：none/fade/slide-up/slide-left/zoom-in 等。',
       });
     }
     if (itemAttrs.exitAnimation != null && parsedExitAnimation == null) {
       warnings.push({
-        message: `第 ${index + 1} 个 <item> 的 exitAnimation="${itemAttrs.exitAnimation}" 无效，已自动回退。`,
+        message: `第 ${index + 1} 个 <#item#> 的 exitAnimation="${itemAttrs.exitAnimation}" 无效，已自动回退。`,
         suggestion: 'exitAnimation 可选值：none/fade/slide-down/slide-right/zoom-out 等。',
       });
     }
@@ -394,8 +394,8 @@ export const parseSceneDsl = (
       ...(fallbackItem || {}),
     });
     warnings.push({
-      message: '未检测到 <item> 节点，已自动创建 1 个 item 并写入正文内容。',
-      suggestion: '建议使用 <item ...>...</item> 包裹每个内容格，以便单独控制作者与动画。',
+      message: '未检测到 <#item#> 节点，已自动创建 1 个 item 并写入正文内容。',
+      suggestion: '建议使用 <#item ...#>...</#item#> 包裹每个内容格，以便单独控制作者与动画。',
     });
   }
 

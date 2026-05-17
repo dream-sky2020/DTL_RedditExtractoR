@@ -230,7 +230,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
 
   let maxHeight: string | number = '500px';
 
-  const widthMatch = attrStr.match(/\b(w|width)=([^ \]]+)/);
+  const widthMatch = attrStr.match(/\b(w|width)=([^ #\]]+)/);
   if (widthMatch) {
     const val = widthMatch[2];
     mediaStyle.width = isNaN(Number(val)) ? val : `${val}px`;
@@ -240,7 +240,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
   }
 
   let isHeightSet = false;
-  const heightMatch = attrStr.match(/\b(h|height)=([^ \]]+)/);
+  const heightMatch = attrStr.match(/\b(h|height)=([^ #\]]+)/);
   if (heightMatch) {
     const val = heightMatch[2];
     mediaStyle.height = isNaN(Number(val)) ? val : `${val}px`;
@@ -248,7 +248,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     isHeightSet = true;
   }
 
-  const maxHeightMatch = attrStr.match(/\b(mh|max-height)=([^ \]]+)/);
+  const maxHeightMatch = attrStr.match(/\b(mh|max-height)=([^ #\]]+)/);
   if (maxHeightMatch) {
     const val = maxHeightMatch[2];
     maxHeight = isNaN(Number(val)) ? val : `${val}px`;
@@ -256,12 +256,12 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
 
   mediaStyle.maxHeight = maxHeight;
 
-  const mtMatch = attrStr.match(/\bmt=([^ \]]+)/);
-  const mbMatch = attrStr.match(/\bmb=([^ \]]+)/);
+  const mtMatch = attrStr.match(/\bmt=([^ #\]]+)/);
+  const mbMatch = attrStr.match(/\bmb=([^ #\]]+)/);
   const marginTop = mtMatch ? (isNaN(Number(mtMatch[1])) ? mtMatch[1] : `${mtMatch[1]}px`) : (inRow ? '0' : '12px');
   const marginBottom = mbMatch ? (isNaN(Number(mbMatch[1])) ? mbMatch[1] : `${mbMatch[1]}px`) : (inRow ? '0' : '12px');
 
-  const scaleMatch = attrStr.match(/\b(s|scale)=([^ \]]+)/);
+  const scaleMatch = attrStr.match(/\b(s|scale)=([^ #\]]+)/);
   if (scaleMatch) {
     const scale = parseFloat(scaleMatch[2]);
     if (!isNaN(scale)) {
@@ -269,7 +269,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     }
   }
 
-  const modeMatch = attrStr.match(/\bmode=([^ \]]+)/);
+  const modeMatch = attrStr.match(/\bmode=([^ #\]]+)/);
   if (modeMatch) {
     mediaStyle.objectFit = modeMatch[1] as any;
   }
@@ -278,7 +278,7 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
   if (posMatch) {
     mediaStyle.objectPosition = posMatch[1];
   } else {
-    const posSimpleMatch = attrStr.match(/\bpos=([^ \]]+)/);
+    const posSimpleMatch = attrStr.match(/\bpos=([^ #\]]+)/);
     if (posSimpleMatch) {
       mediaStyle.objectPosition = posSimpleMatch[1].replace(/_/g, ' ');
     }
@@ -632,6 +632,26 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
           >
             {renderAST(node.children, options)}
           </AnimateContent>
+        );
+
+      case 'avatar':
+        return (
+          <img
+            key={index}
+            src={getMediaUrl(node.url)}
+            data-type={node.avatarType}
+            style={{
+              width: '1.2em',
+              height: '1.2em',
+              borderRadius: '50%',
+              verticalAlign: 'middle',
+              display: 'inline-block',
+              margin: '0 4px',
+              objectFit: 'cover',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+            alt="avatar"
+          />
         );
 
       default:

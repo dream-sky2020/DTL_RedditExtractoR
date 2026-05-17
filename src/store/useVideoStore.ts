@@ -8,14 +8,14 @@ interface VideoState {
   videoConfig: VideoConfig;
   past: VideoConfig[];
   future: VideoConfig[];
-  
+
   // Actions
   setVideoConfig: (config: VideoConfig, skipHistory?: boolean) => void;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
-  
+
   buildVideoConfigFromResult: (
     nextResult: any,
     globalSettings: {
@@ -73,7 +73,7 @@ export const useVideoStore = create<VideoState>()(
 
       setVideoConfig: (videoConfig, skipHistory = false) => {
         const { videoConfig: currentConfig, past } = get();
-        
+
         // 如果数据没变，不处理
         if (JSON.stringify(currentConfig) === JSON.stringify(videoConfig)) {
           return;
@@ -98,7 +98,7 @@ export const useVideoStore = create<VideoState>()(
 
         const previous = past[0];
         const newPast = past.slice(1);
-        
+
         set({
           videoConfig: previous,
           past: newPast,
@@ -124,13 +124,13 @@ export const useVideoStore = create<VideoState>()(
       canRedo: () => get().future.length > 0,
 
       buildVideoConfigFromResult: (nextResult, globalSettings) => {
-        const { 
-          titleAlignment, titleFontSize, contentFontSize, 
+        const {
+          titleAlignment, titleFontSize, contentFontSize,
           quoteFontSize, titleFontColor, contentFontColor,
           quoteFontColor, titleFontBold, contentFontBold,
           quoteBackgroundColor, quoteBorderColor,
           maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor,
-          itemBackgroundColor 
+          itemBackgroundColor
         } = globalSettings;
 
         const postScene = {
@@ -142,7 +142,7 @@ export const useVideoStore = create<VideoState>()(
           items: [{
             id: 'post-content',
             author: nextResult.author,
-            content: `[style size=${titleFontSize} color=${titleFontColor}${titleFontBold ? ' b' : ''} align=${titleAlignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context]${nextResult.content || ''}[/style]`,
+            content: `[#style size=${titleFontSize} color=${titleFontColor}${titleFontBold ? ' b' : ''} align=${titleAlignment} type=title#]${nextResult.title}[/#style#]\n\n[#style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context#]${nextResult.content || ''}[/#style#]`,
           }]
         };
 
@@ -155,7 +155,7 @@ export const useVideoStore = create<VideoState>()(
           items: [{
             id: c.id,
             author: c.author,
-            content: `[style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context]${c.body}[/style]`,
+            content: `[#style size=${contentFontSize} color=${contentFontColor}${contentFontBold ? ' b' : ''} type=context#]${c.body}[/#style#]`,
             replyChain: c.replyChain
           }]
         }));

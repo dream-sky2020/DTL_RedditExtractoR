@@ -19,9 +19,9 @@ export interface PropertyMetadata {
 
 export interface TagMetadata {
   tagName: string;
-  syntax: 'angle' | 'square'; // <...> 为 angle, [...] 为 square
+  syntax: 'angle' | 'square'; // <#...#> 为 angle, [#...#] 为 square
   properties: PropertyMetadata[];
-  hasContent?: boolean; // 是否有内容，如 [image]url[/image]
+  hasContent?: boolean; // 是否有内容，如 [#image#]url[/#image#]
   contentLabel?: string;
   contentPlaceholder?: string;
 }
@@ -246,6 +246,16 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     ],
     hasContent: true,
     contentLabel: '图片列表 (url|duration,...)',
+  },
+  'avatar': {
+    tagName: 'avatar',
+    syntax: 'square',
+    properties: [
+      { name: 'type', label: '标记类型', type: 'string', description: '用于标记头像种类，如 author' },
+    ],
+    hasContent: true,
+    contentLabel: '头像URL',
+    contentPlaceholder: 'public/avatar/... 或 https://...',
   }
 };
 
