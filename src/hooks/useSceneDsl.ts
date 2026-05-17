@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { message } from 'antd';
+import { toast } from '@components/Toast';
 import { VideoScene } from '@/types';
 import { sceneToDsl, parseSceneDsl, SceneDslWarning } from '@/rendering/sceneDsl';
 
@@ -67,7 +67,7 @@ export const useSceneDsl = ({ scene, onReplaceScene }: UseSceneDslProps) => {
     }
 
     if (!silent) {
-      message.success(successMessage || result.message || '场景脚本已应用');
+      toast.success(successMessage || result.message || '场景脚本已应用');
     }
     setSceneEditorBackup(sourceText);
     return true;
@@ -107,12 +107,12 @@ export const useSceneDsl = ({ scene, onReplaceScene }: UseSceneDslProps) => {
     const snapshot = sceneToDsl(scene);
     setSceneEditorText(snapshot);
     setSceneEditorBackup(snapshot);
-    message.info('已从当前场景重载脚本');
+    toast.info('已从当前场景重载脚本');
   };
 
   const rollbackDsl = () => {
     setSceneEditorText(sceneEditorBackup);
-    message.info('已回退到打开编辑器时的快照');
+    toast.info('已回退到打开编辑器时的快照');
   };
 
   const handleIgnoreWarning = () => {
@@ -138,7 +138,7 @@ export const useSceneDsl = ({ scene, onReplaceScene }: UseSceneDslProps) => {
     setSceneEditorText(sceneEditorBackup);
     setIsUnsavedConfirmOpen(false);
     setIsSceneEditorVisible(false);
-    message.info('已放弃未保存的场景脚本修改');
+    toast.info('已放弃未保存的场景脚本修改');
   };
 
   const handleSaveAndExit = () => {

@@ -12,8 +12,8 @@ import {
   Tag,
   Row,
   Col,
-  message,
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   EditOutlined,
   CopyOutlined,
@@ -70,9 +70,9 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
     if (!result) return;
     try {
       await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-      message.success('JSON 已复制到剪贴板');
+      toast.success('JSON 已复制到剪贴板');
     } catch (err) {
-      message.error('复制失败');
+      toast.error('复制失败');
     }
   };
 

@@ -634,6 +634,26 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
           </AnimateContent>
         );
 
+      case 'avatar':
+        return (
+          <img
+            key={index}
+            src={getMediaUrl(node.url)}
+            data-type={node.avatarType}
+            style={{
+              width: '1.2em',
+              height: '1.2em',
+              borderRadius: '50%',
+              verticalAlign: 'middle',
+              display: 'inline-block',
+              margin: '0 4px',
+              objectFit: 'cover',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+            alt="avatar"
+          />
+        );
+
       default:
         return null;
     }

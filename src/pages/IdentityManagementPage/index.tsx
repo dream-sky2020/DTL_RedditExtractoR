@@ -11,11 +11,11 @@ import {
   Card,
   Divider,
   Tag,
-  message,
   Empty,
   Tooltip,
   Modal
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   UserOutlined,
   SaveOutlined,
@@ -170,18 +170,18 @@ export const IdentityManagementPage: React.FC = () => {
     const nextGlobal = { ...globalProfiles, [author]: profile };
     setGlobalProfiles(nextGlobal);
     localStorage.setItem(GLOBAL_PROFILES_KEY, JSON.stringify(nextGlobal));
-    message.success(`已将 u/${author} 保存到全局库`);
+    toast.success(`已将 u/${author} 保存到全局库`);
   };
 
   const loadFromGlobal = (author: string) => {
     const globalProfile = globalProfiles[author];
     if (!globalProfile) {
-      message.warning('全局库中未找到该用户');
+      toast.warning('全局库中未找到该用户');
       return;
     }
 
     handleUpdateProfile(author, globalProfile);
-    message.success(`已从全局库恢复 u/${author} 的配置`);
+    toast.success(`已从全局库恢复 u/${author} 的配置`);
   };
 
   const syncAllFromGlobal = () => {
@@ -195,21 +195,21 @@ export const IdentityManagementPage: React.FC = () => {
     });
     setAuthorProfiles(nextProfiles);
     localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
-    message.success(`已从全局库同步了 ${count} 个用户的配置`);
+    toast.success(`已从全局库同步了 ${count} 个用户的配置`);
   };
 
   const saveAllToGlobal = () => {
     const nextGlobal = { ...globalProfiles, ...authorProfiles };
     setGlobalProfiles(nextGlobal);
     localStorage.setItem(GLOBAL_PROFILES_KEY, JSON.stringify(nextGlobal));
-    message.success(`已将当前项目所有用户保存到全局库`);
+    toast.success(`已将当前项目所有用户保存到全局库`);
   };
 
   const handleRandomize = () => {
     const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement, true);
     setAuthorProfiles(nextProfiles);
     localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
-    message.success('已重新随机生成所有代号颜色');
+    toast.success('已重新随机生成所有代号颜色');
   };
 
   return (

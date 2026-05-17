@@ -52,6 +52,13 @@ export const normalizeVideoCanvasConfig = (canvas?: Partial<VideoCanvasConfig> |
 export const normalizeVideoConfig = (config: VideoConfig): VideoConfig => ({
   ...config,
   canvas: normalizeVideoCanvasConfig(config.canvas),
+  scenes: config.scenes.map(scene => ({
+    ...scene,
+    items: scene.items.map(item => ({
+      ...item,
+      backgroundColor: item.backgroundColor || config.itemBackgroundColor || 'transparent'
+    }))
+  }))
 });
 
 export const getVideoCanvasConfig = (

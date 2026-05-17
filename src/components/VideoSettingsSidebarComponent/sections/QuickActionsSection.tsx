@@ -1,9 +1,10 @@
 import React from 'react';
-import { Space, Button, Row, Col, Divider, Typography, Modal } from 'antd';
+import { Space, Button, Row, Col, Divider, Typography } from 'antd';
 import { CameraOutlined, HistoryOutlined } from '@ant-design/icons';
 import { CommentSortMode, ReplyOrderMode, VideoScene } from '@/types';
 import { useSnapshotStore } from '@/store';
 import { toast } from '@components/Toast';
+import { dialogs } from '@components/Dialogs';
 
 const { Text } = Typography;
 
@@ -79,12 +80,11 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
           block
           disabled={!canApplyCommentSort}
           onClick={() => {
-            Modal.confirm({
+            dialogs.confirm({
               title: '确定要重置并重新生成脚本吗？',
               content: '这将彻底放弃当前所有的手动修改（包括时长、文字、布局等），按原始 Reddit 数据重新生成。',
               okText: '确定重置',
               okType: 'danger',
-              cancelText: '取消',
               onOk: () => onResetAndRebuild(editorSortMode, editorReplyOrderMode),
             });
           }}

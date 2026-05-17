@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Modal, message } from 'antd';
+import { Modal } from 'antd';
+import { toast } from '@components/Toast';
 
 interface UseSidebarResizeOptions {
   defaultWidth?: number;
@@ -76,7 +77,7 @@ export const useSidebarResize = (options: UseSidebarResizeOptions = {}) => {
       cancelText: '取消',
       onOk: () => {
         setSidebarWidth(clampSidebarWidth(defaultWidth));
-        message.success('右侧面板宽度已还原为默认值');
+        toast.success('右侧面板宽度已还原为默认值');
       },
     });
   };

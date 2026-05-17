@@ -17,8 +17,8 @@ import {
   Switch,
   Tag,
   Typography,
-  message,
 } from 'antd';
+import { toast } from '@components/Toast';
 import { ReloadOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { BackgroundVideoConfig } from '@/types';
 import { useVideoStore } from '@/store';
@@ -160,7 +160,7 @@ export const BackgroundVideoPage: React.FC = () => {
       }
       setItems(Array.isArray(payload.files) ? payload.files : []);
     } catch (err: any) {
-      message.warning(err.message || '无法连接本地服务，请确认 Python 服务已启动');
+      toast.warning(err.message || '无法连接本地服务，请确认 Python 服务已启动');
       setItems([]);
     } finally {
       setLoading(false);

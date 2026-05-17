@@ -4,8 +4,8 @@ import {
   Button,
   Divider,
   Modal,
-  message,
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
@@ -104,18 +104,18 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         if (e.shiftKey) {
           if (useVideoStore.getState().canRedo()) {
             useVideoStore.getState().redo();
-            message.info('已重做 (Redo)');
+            toast.info('已重做 (Redo)');
           }
         } else {
           if (useVideoStore.getState().canUndo()) {
             useVideoStore.getState().undo();
-            message.info('已撤销 (Undo)');
+            toast.info('已撤销 (Undo)');
           }
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         if (useVideoStore.getState().canRedo()) {
           useVideoStore.getState().redo();
-          message.info('已重做 (Redo)');
+          toast.info('已重做 (Redo)');
         }
       }
     };
@@ -139,9 +139,9 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     const result = applyTranslations(videoConfig.scenes, value, chunks);
     if (result.ok && result.nextScenes) {
       setVideoConfig({ ...videoConfig, scenes: result.nextScenes });
-      message.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
+      toast.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
     } else if (result.error) {
-      message.error(result.error);
+      toast.error(result.error);
     }
   };
 
@@ -250,7 +250,7 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
       destScene.items.splice(destination.index, 0, movedItem);
       const finalScenes = newScenes.filter(s => s.items.length > 0 || s.id === destSceneId);
       setVideoConfig({ ...videoConfig, scenes: finalScenes });
-      if (sourceSceneId !== destSceneId) message.info('已将内容移动到新画面');
+      if (sourceSceneId !== destSceneId) toast.info('已将内容移动到新画面');
     }
   };
 

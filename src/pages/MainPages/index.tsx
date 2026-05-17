@@ -2,9 +2,9 @@ import React, { useMemo } from 'react';
 import {
   Layout,
   Tag,
-  message,
   App as AntdApp,
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   AppstoreOutlined,
 } from '@ant-design/icons';
@@ -269,7 +269,7 @@ export const MainLayout: React.FC<MainLayoutProps> = (props) => {
                   const normalizedConfig = normalizeVideoConfig(videoConfig);
                   setVideoConfig(normalizedConfig);
                   setActiveTool('preview');
-                  message.success('配置已保存并跳转到预览');
+                  toast.success('配置已保存并跳转到预览');
                 }}
                 onBack={() => setActiveTool('extract')}
                 toolDesc={toolMeta.desc}

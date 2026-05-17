@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { VideoConfig, TitleAlignmentType } from '@/types';
-import { createDefaultVideoCanvasConfig } from '@/rendering/videoCanvas';
+import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from '@/rendering/videoCanvas';
 import { VIDEO_CONFIG_STORAGE_KEY } from '@/constants/storage';
 
 interface VideoState {
@@ -71,8 +71,9 @@ export const useVideoStore = create<VideoState>()(
       past: [],
       future: [],
 
-      setVideoConfig: (videoConfig, skipHistory = false) => {
+      setVideoConfig: (newConfig, skipHistory = false) => {
         const { videoConfig: currentConfig, past } = get();
+        const videoConfig = normalizeVideoConfig(newConfig);
         
         // 如果数据没变，不处理
         if (JSON.stringify(currentConfig) === JSON.stringify(videoConfig)) {

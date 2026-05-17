@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Button, Space, Typography, Empty, message } from 'antd';
+import { Card, Button, Space, Typography, Empty } from 'antd';
+import { toast } from '@components/Toast';
 import { CopyOutlined, ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useVideoStore } from '@/store';
 
@@ -14,10 +15,10 @@ export const ScriptJsonPage: React.FC<{ onBack: () => void; toolDesc: string }> 
     if (!config) return;
     try {
       await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-      message.success('配置 JSON 已复制到剪贴板');
+      toast.success('配置 JSON 已复制到剪贴板');
     } catch (err) {
       console.error(err);
-      message.error('复制失败');
+      toast.error('复制失败');
     }
   };
 
@@ -30,7 +31,7 @@ export const ScriptJsonPage: React.FC<{ onBack: () => void; toolDesc: string }> 
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    message.success('配置文件已下载');
+    toast.success('配置文件已下载');
   };
 
   return (

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button, Space, Typography, Tooltip, message } from 'antd';
+import { Button, Space, Typography, Tooltip } from 'antd';
+import { toast } from '@components/Toast';
 import { UndoOutlined, RedoOutlined, HistoryOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useVideoStore } from '@/store';
 
@@ -49,7 +50,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({ isCollapsed, set
                 disabled={!canUndo()}
                 onClick={() => {
                   undo();
-                  message.info('已撤销');
+                  toast.info('已撤销');
                 }}
                 style={{ 
                   flex: 1,
@@ -67,7 +68,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({ isCollapsed, set
                 disabled={!canRedo()}
                 onClick={() => {
                   redo();
-                  message.info('已重做');
+                  toast.info('已重做');
                 }}
                 style={{ 
                   flex: 1,

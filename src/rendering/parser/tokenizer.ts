@@ -111,14 +111,17 @@ export const tokenize = (
     const nextAnimateMatch = subText.match(/\[animate[^\]]*\]/);
     const nextAnimate = nextAnimateMatch && nextAnimateMatch.index != null ? currentPos + nextAnimateMatch.index : -1;
 
+    const nextAvatarMatch = subText.match(/\[avatar[^\]]*\]/);
+    const nextAvatar = nextAvatarMatch && nextAvatarMatch.index != null ? currentPos + nextAvatarMatch.index : -1;
+
     const nextTextTagMatch = subText.match(/<#text#?(?:\s[^>]*)?>|<\/#text#?>/);
     const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
 
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'textTag' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
@@ -126,6 +129,7 @@ export const tokenize = (
     if (nextIgnoredTag !== -1) indices.push({ idx: nextIgnoredTag, type: 'ignoredTag' });
     if (nextRow !== -1) indices.push({ idx: nextRow, type: 'row' });
     if (nextAnimate !== -1) indices.push({ idx: nextAnimate, type: 'animate' });
+    if (nextAvatar !== -1) indices.push({ idx: nextAvatar, type: 'avatar' });
     if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
 
     indices.sort((a, b) => a.idx - b.idx);
@@ -425,6 +429,26 @@ export const tokenize = (
             children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
           });
           currentPos = endTagIdx + 10;
+        } else {
+          nodes.push({ type: 'text', content: match[0] });
+          currentPos = startTagEnd;
+        }
+      }
+    } else if (type === 'avatar') {
+      const match = text.substring(foundIdx).match(/^\[avatar([^\]]*)\]/);
+      if (match) {
+        const attrStr = match[1];
+        const startTagEnd = foundIdx + match[0].length;
+        const endTagIdx = text.indexOf('[/avatar]', startTagEnd);
+        if (endTagIdx !== -1) {
+          const url = text.substring(startTagEnd, endTagIdx).trim();
+          const typeMatch = attrStr.match(/type=([^ \]]+)/);
+          nodes.push({
+            type: 'avatar',
+            url,
+            avatarType: typeMatch ? typeMatch[1] : undefined
+          });
+          currentPos = endTagIdx + 9;
         } else {
           nodes.push({ type: 'text', content: match[0] });
           currentPos = startTagEnd;

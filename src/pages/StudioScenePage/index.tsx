@@ -8,11 +8,11 @@ import {
   Divider,
   InputNumber,
   Button,
-  message,
   Tag,
   Modal,
   Input,
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   ArrowLeftOutlined,
   SaveOutlined,
@@ -122,7 +122,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
         if (e.shiftKey) {
           if (useVideoStore.getState().canRedo()) {
             useVideoStore.getState().redo();
-            message.info('已重做 (Redo)');
+            toast.info('已重做 (Redo)');
             return;
           }
         } else {
@@ -130,14 +130,14 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
           // 但目前 handleUndo 没绑定快捷键，所以我们这里可以逻辑分层
           if (useVideoStore.getState().canUndo()) {
             useVideoStore.getState().undo();
-            message.info('已撤销 (Undo)');
+            toast.info('已撤销 (Undo)');
             return;
           }
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         if (useVideoStore.getState().canRedo()) {
           useVideoStore.getState().redo();
-          message.info('已重做 (Redo)');
+          toast.info('已重做 (Redo)');
           return;
         }
       }
@@ -150,15 +150,15 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
   const handleSave = () => {
     const parsed = parseSceneDsl(dslText, currentScene || undefined);
     if (!parsed.ok) {
-      message.error(`解析失败: ${parsed.error}`);
+      toast.error(`解析失败: ${parsed.error}`);
       return false;
     }
 
     if (parsed.warnings.length > 0) {
       // 如果有警告，也可以保存，但给个提示
-      message.warning(`保存成功，但存在 ${parsed.warnings.length} 个建议。`);
+      toast.warning(`保存成功，但存在 ${parsed.warnings.length} 个建议。`);
     } else {
-      message.success('场景已保存');
+      toast.success('场景已保存');
     }
 
     const nextScenes = [...scenes];
@@ -172,7 +172,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
     setDslText(lastSavedDsl);
     setUndoStack([]);
     setRedoStack([]);
-    message.info('已回退到最后一次保存的状态');
+    toast.info('已回退到最后一次保存的状态');
   };
 
   const handleResetDsl = () => {
@@ -181,7 +181,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
     setDslText(originDsl);
     setUndoStack([]);
     setRedoStack([]);
-    message.info('已重置为当前场景默认 DSL');
+    toast.info('已重置为当前场景默认 DSL');
   };
 
   const handleDslChange = (nextText: string) => {
@@ -211,7 +211,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
 
   const handleOpenGlobalReplace = (selectedText: string) => {
     if (hasUnsavedChanges) {
-      message.warning('请先保存或回退当前场景的修改，再执行全局替换。');
+      toast.warning('请先保存或回退当前场景的修改，再执行全局替换。');
       return;
     }
 
@@ -222,13 +222,13 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
 
   const handleApplyGlobalReplace = () => {
     if (!replaceFindText) {
-      message.warning('请先输入要查找的文本。');
+      toast.warning('请先输入要查找的文本。');
       return;
     }
 
     const result = applyGlobalReplace(scenes, replaceFindText, replaceTargetText);
     if (!result.ok || !result.nextScenes) {
-      message.error(result.error || '批量替换失败。');
+      toast.error(result.error || '批量替换失败。');
       return;
     }
 
@@ -237,23 +237,23 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
     setReplaceTargetText('');
 
     if (result.totalMatches === 0) {
-      message.info('未命中任何可替换文本。');
+      toast.info('未命中任何可替换文本。');
       return;
     }
 
     if (result.warningCount > 0) {
-      message.warning(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景（含 ${result.warningCount} 条解析建议）。`);
+      toast.warning(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景（含 ${result.warningCount} 条解析建议）。`);
       return;
     }
 
-    message.success(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景。`);
+    toast.success(`已替换 ${result.totalMatches} 处，影响 ${result.affectedSceneCount} 个场景。`);
   };
 
   const handlePreviewLayout = () => {
     try {
       const parseResult = parseSceneDsl(dslText, currentScene || undefined);
       if (!parseResult.ok) {
-        message.error(`解析失败: ${parseResult.error}`);
+        toast.error(`解析失败: ${parseResult.error}`);
         return;
       }
 
@@ -311,7 +311,7 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
       });
     } catch (err) {
       console.error('预览布局失败:', err);
-      message.error('预览布局失败，请检查 DSL 语法是否正确。');
+      toast.error('预览布局失败，请检查 DSL 语法是否正确。');
     }
   };
 

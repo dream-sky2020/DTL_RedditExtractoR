@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { message } from 'antd';
+import { toast } from '@components/Toast';
 import { VideoConfig } from '@/types';
 
 type TaskStatus = 'queued' | 'running' | 'success' | 'error' | 'cancelled';
@@ -93,11 +93,11 @@ export const useVideoRender = (videoConfig: VideoConfig) => {
 
     setLatestHandledTask(completedTask.id);
     if (completedTask.status === 'success') {
-      message.success(`任务 ${completedTask.id} 渲染成功`);
+      toast.success(`任务 ${completedTask.id} 渲染成功`);
     } else if (completedTask.status === 'error') {
-      message.error(completedTask.message || '渲染失败');
+      toast.error(completedTask.message || '渲染失败');
     } else if (completedTask.status === 'cancelled') {
-      message.info(`任务 ${completedTask.id} 已取消`);
+      toast.info(`任务 ${completedTask.id} 已取消`);
     }
   }, [latestHandledTask, renderTasks]);
 
@@ -146,10 +146,10 @@ export const useVideoRender = (videoConfig: VideoConfig) => {
       if (!response.ok) {
         throw new Error(payload.message || `HTTP 错误: ${response.status}`);
       }
-      message.info(payload.message || '已发送取消请求');
+      toast.info(payload.message || '已发送取消请求');
       await syncTasks();
     } catch (err: any) {
-      message.error(err.message || '取消任务失败');
+      toast.error(err.message || '取消任务失败');
     }
   };
 
@@ -162,10 +162,10 @@ export const useVideoRender = (videoConfig: VideoConfig) => {
       if (!response.ok) {
         throw new Error(payload.message || `HTTP 错误: ${response.status}`);
       }
-      message.success(payload.message || '任务已清除');
+      toast.success(payload.message || '任务已清除');
       await syncTasks();
     } catch (err: any) {
-      message.error(err.message || '清除任务失败');
+      toast.error(err.message || '清除任务失败');
     }
   };
 
@@ -180,10 +180,10 @@ export const useVideoRender = (videoConfig: VideoConfig) => {
       if (!response.ok) {
         throw new Error(payload.message || `HTTP 错误: ${response.status}`);
       }
-      message.success(payload.message || '已清理任务');
+      toast.success(payload.message || '已清理任务');
       await syncTasks();
     } catch (err: any) {
-      message.error(err.message || '批量清理失败');
+      toast.error(err.message || '批量清理失败');
     }
   };
 
@@ -195,7 +195,7 @@ export const useVideoRender = (videoConfig: VideoConfig) => {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    message.success('配置文件已下载');
+    toast.success('配置文件已下载');
   };
 
   return {

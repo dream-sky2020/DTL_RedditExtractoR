@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Space, Button, message } from 'antd';
+import { Card, Space, Button } from 'antd';
+import { toast } from '@components/Toast';
 import { ToolOutlined, BugOutlined } from '@ant-design/icons';
 import { VideoScene } from '../../../../types';
 
@@ -25,7 +26,7 @@ export const PresetPanel: React.FC<PresetPanelProps> = ({ presets, activeSceneId
             type={activeSceneId === presets[name].id ? 'primary' : 'default'}
             onClick={() => {
               onSelect(presets[name], name);
-              message.success(`已加载“${name}”示例`);
+              toast.success(`已加载“${name}”示例`);
             }}
             icon={<BugOutlined />}
           >

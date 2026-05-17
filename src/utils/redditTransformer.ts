@@ -55,7 +55,9 @@ const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>)
 const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
     const displayName = getAuthorDisplayName(author, profiles);
     const color = getAuthorColor(author, profiles);
-    return `[style color=${color} b type=${type}]u/${displayName}:[/style]`;
+    const profile = getAuthorProfile(author, profiles);
+    const avatarTag = profile.avatar ? `[avatar]${profile.avatar}[/avatar]` : '';
+    return `${avatarTag}[style color=${color} b type=${type}]u/${displayName}:[/style]`;
 };
 
 const wrapText = (text: string, type?: string) => {
@@ -67,7 +69,7 @@ const wrapText = (text: string, type?: string) => {
 
     // 常见的 DSL 标签（不应被包裹进翻译标签的）
     // 注意：我们要把标签作为分隔符，同时保留它们
-    const tagRegex = /(\[image[^\]]*\][\s\S]*?\[\/image\]|\[row[^\]]*\]|\[\/row\]|\[quote[^\]]*\]|\[\/quote\]|\[style[^\]]*\]|\[\/style\]|\[\\n\])/gi;
+    const tagRegex = /(\[image[^\]]*\][\s\S]*?\[\/image\]|\[avatar[^\]]*\][\s\S]*?\[\/avatar\]|\[row[^\]]*\]|\[\/row\]|\[quote[^\]]*\]|\[\/quote\]|\[style[^\]]*\]|\[\/style\]|\[\\n\])/gi;
 
     // 使用正则分割，同时保留匹配项
     const parts = text.split(tagRegex);
@@ -77,7 +79,7 @@ const wrapText = (text: string, type?: string) => {
         
         // 检查是否是标签部分
         // 注意：split 出来的匹配项可以直接通过正则测试
-        if (part.match(/^\[(image|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
+        if (part.match(/^\[(image|avatar|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
             return part;
         }
 

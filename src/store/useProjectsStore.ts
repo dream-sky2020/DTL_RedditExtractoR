@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { message } from 'antd';
+import { toast } from '@components/Toast';
 import { PROJECTS_STORAGE_KEY } from '@/constants/storage';
 import { VideoConfig, AuthorProfile, DEFAULT_GLOBAL_SETTINGS, ColorArrangementSettings } from '@/types';
 import { createDefaultVideoCanvasConfig } from '@/rendering/videoCanvas';
@@ -158,7 +158,7 @@ export const useProjectsStore = create<ProjectsState>()(
       createProject: async (name, cloneCurrent = false) => {
         const trimmed = name.trim();
         if (!trimmed) {
-          message.warning('项目名不能为空');
+          toast.warning('项目名不能为空');
           return;
         }
 
@@ -187,30 +187,30 @@ export const useProjectsStore = create<ProjectsState>()(
           },
         }));
         await applySnapshotToStores(snapshot);
-        message.success('项目已创建');
+        toast.success('项目已创建');
       },
 
       switchProject: async (projectId) => {
         const { snapshots, projects } = get();
         if (!projects.some((p) => p.id === projectId)) {
-          message.error('项目不存在');
+          toast.error('项目不存在');
           return;
         }
         await get().saveCurrentProjectSnapshot();
         const snapshot = snapshots[projectId];
         if (!snapshot) {
-          message.error('项目数据损坏，无法切换');
+          toast.error('项目数据损坏，无法切换');
           return;
         }
         await applySnapshotToStores(snapshot);
         set({ currentProjectId: projectId });
-        message.success('已切换项目');
+        toast.success('已切换项目');
       },
 
       renameProject: (projectId, nextName) => {
         const trimmed = nextName.trim();
         if (!trimmed) {
-          message.warning('项目名不能为空');
+          toast.warning('项目名不能为空');
           return;
         }
         set((state) => ({
@@ -228,7 +228,7 @@ export const useProjectsStore = create<ProjectsState>()(
           return;
         }
         if (projects.length === 1) {
-          message.warning('至少保留一个项目');
+          toast.warning('至少保留一个项目');
           return;
         }
 
@@ -250,7 +250,7 @@ export const useProjectsStore = create<ProjectsState>()(
             await applySnapshotToStores(nextSnapshot);
           }
         }
-        message.success('项目已删除');
+        toast.success('项目已删除');
       },
 
       saveCurrentProjectSnapshot: async () => {

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Button, Space, Typography, Empty, message } from 'antd';
+import { Card, Button, Space, Typography, Empty } from 'antd';
+import { toast } from '@components/Toast';
 import { CopyOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 
 import { useRedditStore } from '@/store';
@@ -15,10 +16,10 @@ export const RawJsonPage: React.FC<{ onBack: () => void; toolDesc: string }> = (
     if (!data) return;
     try {
       await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-      message.success('原始 JSON 已复制到剪贴板');
+      toast.success('原始 JSON 已复制到剪贴板');
     } catch (err) {
       console.error(err);
-      message.error('复制失败');
+      toast.error('复制失败');
     }
   };
 

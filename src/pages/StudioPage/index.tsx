@@ -11,9 +11,9 @@ import {
   Divider,
   Button,
   Modal,
-  message,
   Tag,
 } from 'antd';
+import { toast } from '@components/Toast';
 import {
   FileImageOutlined,
 } from '@ant-design/icons';
@@ -125,18 +125,18 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         if (e.shiftKey) {
           if (useVideoStore.getState().canRedo()) {
             useVideoStore.getState().redo();
-            message.info('已重做 (Redo)');
+            toast.info('已重做 (Redo)');
           }
         } else {
           if (useVideoStore.getState().canUndo()) {
             useVideoStore.getState().undo();
-            message.info('已撤销 (Undo)');
+            toast.info('已撤销 (Undo)');
           }
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         if (useVideoStore.getState().canRedo()) {
           useVideoStore.getState().redo();
-          message.info('已重做 (Redo)');
+          toast.info('已重做 (Redo)');
         }
       }
     };
@@ -160,9 +160,9 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     const result = applyTranslations(videoConfig.scenes, value, chunks);
     if (result.ok && result.nextScenes) {
       setVideoConfig({ ...videoConfig, scenes: result.nextScenes });
-      message.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
+      toast.success(`已完成全局翻译应用：替换了 ${result.totalReplacements} 处文本，涉及 ${result.affectedScenes} 个场景。`);
     } else if (result.error) {
-      message.error(result.error);
+      toast.error(result.error);
     }
   };
 

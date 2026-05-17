@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Row, Col, message } from 'antd';
+import { Card, Row, Col } from 'antd';
+import { toast } from '@components/Toast';
 import { PhysicsEngine, RigidBody, createRect, createRegularPolygon, createCircle, PhysicalDataCompressor, Vector2, FrameData } from '../../../utils/simulationEngine/physicsEngine/index';
 
 // 组件拆分
@@ -241,7 +242,7 @@ export const SimulationPage: React.FC<SimulationPageProps> = ({ onBack }) => {
     link.download = `simulation-compressed-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    message.success(`已保存 ${frames.length} 帧数据`);
+    toast.success(`已保存 ${frames.length} 帧数据`);
   };
 
   const jumpToFrame = (index: number) => {

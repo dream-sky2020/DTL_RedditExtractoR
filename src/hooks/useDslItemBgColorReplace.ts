@@ -1,23 +1,60 @@
 import { useCallback } from 'react';
-import { useVideoStore } from '@/store';
+import { useVideoStore, useSettingsStore } from '@/store';
+import { normalizeVideoConfig } from '@/rendering/videoCanvas';
 
 export const useDslItemBgColorReplace = () => {
   const { videoConfig, setVideoConfig } = useVideoStore();
+  const { 
+    itemBackgroundColor, 
+    itemBackgroundColorEnd, 
+    itemBackgroundGradientMode 
+  } = useSettingsStore();
 
-  const applyItemBgColorReplace = useCallback((color: string) => {
-    const nextScenes = videoConfig.scenes.map(scene => ({
-      ...scene,
-      items: scene.items.map(item => ({
-        ...item,
-        backgroundColor: color
-      }))
-    }));
-    
-    setVideoConfig({
-      ...videoConfig,
-      scenes: nextScenes
+  const interpolateColor = (color1: string, color2: string, factor: number) => {
+    if (color1 === 'transparent' || color2 === 'transparent') return factor < 0.5 ? color1 : color2;
+    const hex = (x: string) => {
+      const h = x.replace('#', '');
+      if (h.length === 3) return h.split('').map(c => c + c).join('');
+      return h;
+    };
+    const r1 = parseInt(hex(color1).substring(0, 2), 16);
+    const g1 = parseInt(hex(color1).substring(2, 4), 16);
+    const b1 = parseInt(hex(color1).substring(4, 6), 16);
+    const r2 = parseInt(hex(color2).substring(0, 2), 16);
+    const g2 = parseInt(hex(color2).substring(2, 4), 16);
+    const b2 = parseInt(hex(color2).substring(4, 6), 16);
+    const r = Math.round(r1 + factor * (r2 - r1));
+    const g = Math.round(g1 + factor * (g2 - g1));
+    const b = Math.round(b1 + factor * (b2 - b1));
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
+  const applyItemBgColorReplace = useCallback((overrides?: string | {
+    color?: string;
+    colorEnd?: string;
+    gradientMode?: boolean;
+  }) => {
+    const iColor = typeof overrides === 'string' ? overrides : (overrides?.color ?? itemBackgroundColor);
+    const iColorEnd = typeof overrides === 'string' ? itemBackgroundColorEnd : (overrides?.colorEnd ?? itemBackgroundColorEnd);
+    const iMode = typeof overrides === 'string' ? itemBackgroundGradientMode : (overrides?.gradientMode ?? itemBackgroundGradientMode);
+
+    const total = videoConfig.scenes.length;
+    const nextScenes = videoConfig.scenes.map((scene, index) => {
+      const factor = total > 1 ? index / (total - 1) : 0;
+      const currentBg = iMode ? interpolateColor(iColor, iColorEnd, factor) : iColor;
+      return {
+        ...scene,
+        items: scene.items.map(item => ({ ...item, backgroundColor: currentBg }))
+      };
     });
-  }, [videoConfig, setVideoConfig]);
+
+    setVideoConfig(normalizeVideoConfig({
+      ...videoConfig,
+      scenes: nextScenes,
+      itemBackgroundColor: iColor
+    }));
+  }, [videoConfig, setVideoConfig, itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode]);
 
   return { applyItemBgColorReplace };
 };

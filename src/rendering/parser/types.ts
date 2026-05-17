@@ -1,11 +1,17 @@
 import React from 'react';
 
-export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'row' | 'depthLimit' | 'animate';
+export type NodeType = 'text' | 'quote' | 'image' | 'gallery' | 'style' | 'row' | 'depthLimit' | 'animate' | 'avatar';
 
 export type EasingType = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic';
 
 export interface BaseNode {
   type: NodeType;
+}
+
+export interface AvatarNode extends BaseNode {
+  type: 'avatar';
+  url: string;
+  avatarType?: string;
 }
 
 export interface AnimateNode extends BaseNode {
@@ -87,4 +93,5 @@ export type ASTNode =
   | GalleryNode 
   | StyleNode 
   | RowNode
-  | AnimateNode;
+  | AnimateNode
+  | AvatarNode;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Space, Button, Input, message, Typography, Divider } from 'antd';
+import { Space, Button, Input, Typography, Divider } from 'antd';
+import { toast } from '@components/Toast';
 import { FileImageOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -30,11 +31,11 @@ const LocalImageInput: React.FC<{
       const response = await axios.get('http://localhost:5000/pick_file');
       if (response.data.success && response.data.path) {
         onChange(response.data.path);
-        message.success(`已选择本地图片: ${response.data.path}`);
+        toast.success(`已选择本地图片: ${response.data.path}`);
       }
     } catch (err) {
       console.error('选择文件失败:', err);
-      message.error('无法调用本地文件选择器，请确保 scripts/server.py 正在运行。');
+      toast.error('无法调用本地文件选择器，请确保 scripts/server.py 正在运行。');
     } finally {
       setLoading(false);
     }
