@@ -15,7 +15,7 @@ const NOUNS = [
 const randomInt = (maxExclusive: number) =>
   Math.floor(Math.random() * Math.max(1, maxExclusive));
 
-const nextUniqueAlias = (used: Set<string>) => {
+export const nextUniqueAlias = (used: Set<string>) => {
   let attempts = 0;
   while (attempts < 2000) {
     const adj = ADJECTIVES[randomInt(ADJECTIVES.length)];

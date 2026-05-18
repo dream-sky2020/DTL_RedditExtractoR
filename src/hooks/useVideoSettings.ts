@@ -13,6 +13,7 @@ import {
 import { normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../rendering/videoCanvas';
 import { transformRedditJson } from '../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../utils/aliasGenerator';
+import { useVideoStore } from '@/store';
 import { hslToHex } from '../utils/color/hslToHex';
 import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
 
@@ -114,16 +115,22 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     type: 'title' | 'context', 
     updates: Record<string, string | number | boolean>
   ) => {
-    const typePattern = new RegExp(`type=${type}\\b`);
-    return content.split(/(\[style [^\]]*\])/g).map(part => {
+    // 严格匹配 type=xxx，确保它是作为一个独立的属性存在
+    const typePattern = new RegExp(`\\btype=${type}(\\s|]|$)`);
+    
+    // 修改 split 正则，支持 [style] 和 [style ...]
+    return content.split(/(\[style[^\]]*\])/g).map(part => {
+      // 必须是 style 标签，且必须包含 type 属性且值为指定的 type
       if (part.startsWith('[style') && typePattern.test(part)) {
         let newTag = part;
         Object.entries(updates).forEach(([key, value]) => {
           if (key === 'b') {
             const hasB = /\bb\b/.test(newTag);
             if (value && !hasB) {
-              newTag = newTag.slice(0, -1) + ' b]';
+              // 在末尾添加 b 标记
+              newTag = newTag.replace(/]$/, ' b]');
             } else if (!value && hasB) {
+              // 移除 b 标记
               newTag = newTag.replace(/\bb\b/, '').replace(/\s+/g, ' ').replace(' ]', ']');
             }
           } else {
@@ -131,11 +138,13 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
             if (regex.test(newTag)) {
               newTag = newTag.replace(regex, `${key}=${value}`);
             } else {
-              newTag = newTag.slice(0, -1) + ` ${key}=${value}]`;
+              // 如果属性不存在，则追加
+              newTag = newTag.replace(/]$/, ` ${key}=${value}]`);
             }
           }
         });
-        return newTag;
+        // 清理可能产生的重复空格
+        return newTag.replace(/\s+/g, ' ').replace(' ]', ']');
       }
       return part;
     }).join('');
@@ -287,72 +296,6 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     return nextProfiles;
   };
 
-  const buildVideoConfigFromResult = (
-    nextResult: any,
-    alignment: TitleAlignmentType = 'center',
-    titleSize = 64,
-    contentSize = 32,
-    canvas = createDefaultVideoCanvasConfig()
-  ): VideoConfig => {
-    const postScene: VideoScene = {
-      id: 'scene-post-' + Date.now(),
-      type: 'post',
-      title: '贴子正文',
-      layout: 'top',
-      duration: 5,
-      items: [{
-        id: 'post-content',
-        author: nextResult.author,
-        content: `${updateStyleInContent(nextResult.title, 'title', {
-          size: titleSize,
-          color: opts.titleFontColor,
-          align: alignment,
-          b: opts.titleFontBold
-        })}\n\n${updateStyleInContent(nextResult.content || '', 'context', {
-          size: contentSize,
-          color: opts.contentFontColor,
-          b: opts.contentFontBold
-        })}`,
-      }]
-    };
-
-    const commentScenes: VideoScene[] = nextResult.comments.map((c: any) => ({
-      id: 'scene-' + c.id,
-      type: 'comments',
-      title: `评论 u/${c.author}`,
-      layout: 'center',
-      duration: 3,
-      items: [{
-        id: c.id,
-        author: c.author,
-        content: updateStyleInContent(c.body || '', 'context', {
-          size: contentSize,
-          color: opts.contentFontColor,
-          b: opts.contentFontBold
-        }),
-        replyChain: c.replyChain
-      }]
-    }));
-
-    const baseConfig = {
-      title: nextResult.title,
-      subreddit: nextResult.subreddit,
-      scenes: [postScene, ...commentScenes],
-      titleFontSize: titleSize,
-      contentFontSize: contentSize,
-      quoteFontSize: opts.quoteFontSize,
-      quoteBackgroundColor: opts.quoteBackgroundColor,
-      quoteBorderColor: opts.quoteBorderColor,
-      maxQuoteDepth: opts.maxQuoteDepth,
-      defaultQuoteMaxLimit: opts.defaultQuoteMaxLimit,
-      sceneBackgroundColor: opts.sceneBackgroundColor,
-      itemBackgroundColor: opts.itemBackgroundColor,
-      canvas,
-    };
-
-    return applyColorsToConfig(baseConfig);
-  };
-
   const rebuildFromRaw = (
     sortMode: CommentSortMode,
     replyOrder: ReplyOrderMode,
@@ -373,19 +316,32 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       authorProfiles: profiles,
       imageLayoutMode: videoConfig.imageLayoutMode,
     });
-    const nextConfig = {
-      ...buildVideoConfigFromResult(
-        nextResult,
-        titleAlignment,
-        titleFontSize,
-        contentFontSize,
-        videoConfig.canvas || createDefaultVideoCanvasConfig()
-      ),
-      imageLayoutMode: videoConfig.imageLayoutMode,
-    };
+
+    // 使用 useVideoStore 中的统一构建逻辑
+    const videoStore = (useVideoStore.getState() as any);
+    const nextConfig = videoStore.buildVideoConfigFromResult(nextResult, {
+      titleAlignment: opts.titleAlignment,
+      titleFontSize: opts.titleFontSize,
+      contentFontSize: opts.contentFontSize,
+      quoteFontSize: opts.quoteFontSize,
+      titleFontColor: opts.titleFontColor,
+      contentFontColor: opts.contentFontColor,
+      quoteFontColor: opts.quoteFontColor,
+      titleFontBold: opts.titleFontBold,
+      contentFontBold: opts.contentFontBold,
+      quoteBackgroundColor: opts.quoteBackgroundColor,
+      quoteBorderColor: opts.quoteBorderColor,
+      maxQuoteDepth: opts.maxQuoteDepth,
+      defaultQuoteMaxLimit: opts.defaultQuoteMaxLimit,
+      sceneBackgroundColor: opts.sceneBackgroundColor,
+      itemBackgroundColor: opts.itemBackgroundColor,
+    });
 
     setResult(nextResult);
-    const normalizedConfig = normalizeVideoConfig(nextConfig);
+    const normalizedConfig = normalizeVideoConfig({
+      ...nextConfig,
+      imageLayoutMode: videoConfig.imageLayoutMode,
+    });
     setVideoConfig(normalizedConfig);
     toast.success(successMessage);
   };

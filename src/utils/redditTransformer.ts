@@ -33,6 +33,8 @@ export interface TransformOptions {
     replyOrder?: ReplyOrderMode;
     authorProfiles?: Record<string, AuthorProfile>;
     imageLayoutMode?: 'gallery' | 'row' | 'single';
+    contentColor?: string;
+    contentBold?: boolean;
 }
 
 const AUTHOR_TAG_COLOR = '#1890ff';
@@ -52,17 +54,17 @@ const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>)
     const color = profile.color?.trim();
     return color || AUTHOR_TAG_COLOR;
 };
-const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
+const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'author') => {
     const displayName = getAuthorDisplayName(author, profiles);
     const color = getAuthorColor(author, profiles);
     const profile = getAuthorProfile(author, profiles);
-    const avatarTag = profile.avatar ? `[avatar]${profile.avatar}[/avatar]` : '';
+    const avatarTag = profile.avatar ? `[avatar bg=${color}]${profile.avatar}[/avatar]` : '';
     return `${avatarTag}[style color=${color} b type=${type}]u/${displayName}:[/style]`;
 };
 
-const wrapText = (text: string, type?: string) => {
+const wrapText = (text: string, type?: string, options?: { color?: string; bold?: boolean }) => {
     if (!text) return '';
-    
+
     // 如果已经整体包裹了，说明是合法的，直接返回
     if (text.startsWith('<#text#>') && text.endsWith('</#text#>')) return text;
     if (type && text.startsWith(`[style type=${type}]`) && text.endsWith('[/style]')) return text;
@@ -76,7 +78,7 @@ const wrapText = (text: string, type?: string) => {
 
     const wrappedParts = parts.map(part => {
         if (!part) return '';
-        
+
         // 检查是否是标签部分
         // 注意：split 出来的匹配项可以直接通过正则测试
         if (part.match(/^\[(image|avatar|row|\/row|quote|\/quote|style|\/style|\\n)/i)) {
@@ -96,13 +98,19 @@ const wrapText = (text: string, type?: string) => {
     });
 
     const result = wrappedParts.join('');
-    return (type && result) ? `[style type=${type}]${result}[/style]` : result;
+    if (type && result) {
+        let styleAttrs = `type=${type}`;
+        if (options?.color) styleAttrs += ` color=${options.color}`;
+        if (options?.bold) styleAttrs += ` b`;
+        return `[style ${styleAttrs}]${result}[/style]`;
+    }
+    return result;
 };
 
 const stripLeadingAuthorHeader = (content: string) =>
     content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
 
-const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'context') => {
+const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'author') => {
     const header = buildAuthorHeader(author, profiles, type);
     const normalized = (content || '').trim();
     if (!normalized) return header;
@@ -204,6 +212,8 @@ const DEFAULT_OPTIONS: Required<TransformOptions> = {
     replyOrder: 'preserve',
     authorProfiles: {},
     imageLayoutMode: 'gallery',
+    contentColor: '',
+    contentBold: false,
 };
 
 const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>): CleanPost => {
@@ -215,7 +225,7 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
             return {
                 ...comment,
                 author: displayAuthor,
-                body: prependAuthorHeader(commentAuthor, comment.body || '', options.authorProfiles),
+                body: prependAuthorHeader(commentAuthor, comment.body || '', options.authorProfiles, 'author'),
                 parentAuthor: comment.parentAuthor
                     ? getAuthorDisplayName(normalizeAuthor(comment.parentAuthor), options.authorProfiles)
                     : comment.parentAuthor,
@@ -236,7 +246,7 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
         author: getAuthorDisplayName(postAuthor, options.authorProfiles),
         title: wrapText(data.title, 'title'),
         // 关键修正：content 已经是处理过的，不需要再次 wrapText
-        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles, 'title'),
+        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles, 'author'),
         comments: options.replyOrder === 'global'
             ? sortFlatComments(normalizedComments, options.sortMode)
             : normalizedComments,
@@ -245,7 +255,12 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
 
 export function transformRedditJson(rawData: any, options: TransformOptions = {}): CleanPost {
     const mergedOptions: Required<TransformOptions> = {
-        ...DEFAULT_OPTIONS,
+        sortMode: 'best',
+        replyOrder: 'preserve',
+        authorProfiles: {},
+        imageLayoutMode: 'gallery',
+        contentColor: '',
+        contentBold: false,
         ...options,
     };
 
@@ -323,8 +338,8 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                 const commentAuthor = normalizeAuthor(c.author);
                 const displayAuthor = getAuthorDisplayName(commentAuthor, mergedOptions.authorProfiles);
                 // 关键修正：评论正文也需要先区分文本和图片再包裹
-                const currentRawContent = wrapText(cleanText, 'context');
-                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles, 'context');
+                const currentRawContent = wrapText(cleanText, 'context', { color: mergedOptions.contentColor, bold: mergedOptions.contentBold });
+                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles, 'author');
 
                 // 祖先引用构建规则：
                 // 1) 最外层是最近的父评论，最内层是最早的评论
@@ -343,7 +358,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                     const quoteAuthor = normalizeAuthor(quote.author);
                     const quoteAuthorName = getAuthorDisplayName(quoteAuthor, mergedOptions.authorProfiles);
                     const quoteAuthorToken = normalizeAuthorToken(quoteAuthorName);
-                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles, 'context')} `;
+                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles, 'author')} `;
                     const contentPart = nestedAncestorQuote
                         ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}`
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
@@ -460,7 +475,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     // 构建最终对象
     return {
         title: wrapText(postDetail.title, 'title'),
-        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles, 'context'),
+        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles, 'author'),
         image: postImg,
         images: postImages,
         author: getAuthorDisplayName(normalizeAuthor(postDetail.author), mergedOptions.authorProfiles),

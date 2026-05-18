@@ -131,6 +131,7 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'pos', label: '位置', type: 'string', placeholder: 'center, top, bottom...' },
       { name: 'mt', label: '上边距', type: 'number', alias: ['marginTop'] },
       { name: 'mb', label: '下边距', type: 'number', alias: ['marginBottom'] },
+      { name: 'bg', label: '背景颜色', type: 'color', alias: ['backgroundColor'], description: '图片的背景颜色' },
     ],
     hasContent: true,
     contentLabel: '图片URL',
@@ -243,6 +244,7 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     syntax: 'square',
     properties: [
       { name: 'duration', label: '默认停留时长(s)', type: 'number', min: 0.1, step: 0.1, defaultValue: 2.5 },
+      { name: 'bg', label: '背景颜色', type: 'color', alias: ['backgroundColor'], description: '图片的背景颜色' },
     ],
     hasContent: true,
     contentLabel: '图片列表 (url|duration,...)',
@@ -258,6 +260,7 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
           { label: '方形', value: 'square' }
         ], defaultValue: 'circle'
       },
+      { name: 'bg', label: '背景颜色', type: 'color', alias: ['backgroundColor'], description: '头像的背景颜色' },
     ],
     hasContent: true,
     contentLabel: '头像图片URL',

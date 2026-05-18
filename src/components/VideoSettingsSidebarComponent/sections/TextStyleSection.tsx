@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Form, InputNumber, Typography, ColorPicker, Button, Space } from 'antd';
-import { BoldOutlined } from '@ant-design/icons';
+import { BoldOutlined, SyncOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -17,6 +17,7 @@ interface TextStyleSectionProps {
   setTitleFontBold: (bold: boolean) => void;
   contentFontBold: boolean;
   setContentFontBold: (bold: boolean) => void;
+  onRefreshStyles: () => void;
 }
 
 export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
@@ -32,18 +33,60 @@ export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
   setTitleFontBold,
   contentFontBold,
   setContentFontBold,
+  onRefreshStyles,
 }) => {
+  const [localTitleSize, setLocalTitleSize] = useState(titleFontSize);
+  const [localContentSize, setLocalContentSize] = useState(contentFontSize);
+  const [localTitleColor, setLocalTitleColor] = useState(titleFontColor);
+  const [localContentColor, setLocalContentColor] = useState(contentFontColor);
+  const [localTitleBold, setLocalTitleBold] = useState(titleFontBold);
+  const [localContentBold, setLocalContentBold] = useState(contentFontBold);
+
+  useEffect(() => {
+    setLocalTitleSize(titleFontSize);
+  }, [titleFontSize]);
+
+  useEffect(() => {
+    setLocalContentSize(contentFontSize);
+  }, [contentFontSize]);
+
+  useEffect(() => {
+    setLocalTitleColor(titleFontColor);
+  }, [titleFontColor]);
+
+  useEffect(() => {
+    setLocalContentColor(contentFontColor);
+  }, [contentFontColor]);
+
+  useEffect(() => {
+    setLocalTitleBold(titleFontBold);
+  }, [titleFontBold]);
+
+  useEffect(() => {
+    setLocalContentBold(contentFontBold);
+  }, [contentFontBold]);
+
+  const handleApply = () => {
+    setTitleFontSize(localTitleSize);
+    setContentFontSize(localContentSize);
+    setTitleFontColor(localTitleColor);
+    setContentFontColor(localContentColor);
+    setTitleFontBold(localTitleBold);
+    setContentFontBold(localContentBold);
+    onRefreshStyles();
+  };
+
   return (
     <Form layout="vertical" variant="filled">
-      <Row gutter={16}>
+      <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Form.Item label={<Text style={{ color: 'var(--text-secondary)' }}>标题样式 (字号 / 颜色 / 加粗)</Text>}>
+          <Form.Item label={<Text style={{ color: 'var(--text-secondary)' }}>标题样式 (字号 / 颜色 / 加粗)</Text>} style={{ marginBottom: 0 }}>
             <Space.Compact style={{ width: '100%' }}>
               <InputNumber
                 min={12}
                 max={200}
-                value={titleFontSize}
-                onChange={(val) => setTitleFontSize(val || 64)}
+                value={localTitleSize}
+                onChange={(val) => setLocalTitleSize(val || 64)}
                 style={{ width: '35%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
               />
               <span style={{ 
@@ -57,30 +100,29 @@ export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
                 color: 'rgba(0,0,0,0.45)'
               }}>px</span>
               <ColorPicker
-                value={titleFontColor}
-                onChange={(color) => setTitleFontColor(color.toHexString())}
+                value={localTitleColor}
+                onChange={(color) => setLocalTitleColor(color.toHexString())}
                 showText
                 style={{ width: '45%', background: 'var(--input-bg)' }}
               />
               <Button
-                type={titleFontBold ? 'primary' : 'default'}
+                type={localTitleBold ? 'primary' : 'default'}
                 icon={<BoldOutlined />}
-                onClick={() => setTitleFontBold(!titleFontBold)}
+                onClick={() => setLocalTitleBold(!localTitleBold)}
                 style={{ width: '20%' }}
               />
             </Space.Compact>
           </Form.Item>
         </Col>
-      </Row>
-      <Row gutter={16}>
+
         <Col span={24}>
-          <Form.Item label={<Text style={{ color: 'var(--text-secondary)' }}>正文样式 (字号 / 颜色 / 加粗)</Text>}>
+          <Form.Item label={<Text style={{ color: 'var(--text-secondary)' }}>正文样式 (字号 / 颜色 / 加粗)</Text>} style={{ marginBottom: 0 }}>
             <Space.Compact style={{ width: '100%' }}>
               <InputNumber
                 min={12}
                 max={200}
-                value={contentFontSize}
-                onChange={(val) => setContentFontSize(val || 36)}
+                value={localContentSize}
+                onChange={(val) => setLocalContentSize(val || 36)}
                 style={{ width: '35%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
               />
               <span style={{ 
@@ -94,19 +136,30 @@ export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
                 color: 'rgba(0,0,0,0.45)'
               }}>px</span>
               <ColorPicker
-                value={contentFontColor}
-                onChange={(color) => setContentFontColor(color.toHexString())}
+                value={localContentColor}
+                onChange={(color) => setLocalContentColor(color.toHexString())}
                 showText
                 style={{ width: '45%', background: 'var(--input-bg)' }}
               />
               <Button
-                type={contentFontBold ? 'primary' : 'default'}
+                type={localContentBold ? 'primary' : 'default'}
                 icon={<BoldOutlined />}
-                onClick={() => setContentFontBold(!contentFontBold)}
+                onClick={() => setLocalContentBold(!localContentBold)}
                 style={{ width: '20%' }}
               />
             </Space.Compact>
           </Form.Item>
+        </Col>
+
+        <Col span={24}>
+          <Button 
+            type="primary" 
+            icon={<SyncOutlined />} 
+            onClick={handleApply}
+            block
+          >
+            更新全部文本样式
+          </Button>
         </Col>
       </Row>
     </Form>

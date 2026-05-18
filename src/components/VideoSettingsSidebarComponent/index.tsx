@@ -129,6 +129,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
               contentFontColor={contentFontColor} setContentFontColor={onContentFontColorChange}
               titleFontBold={titleFontBold} setTitleFontBold={onTitleFontBoldChange}
               contentFontBold={contentFontBold} setContentFontBold={onContentFontBoldChange}
+              onRefreshStyles={onRefreshStyles}
             />
           </CollapsibleSection>
 

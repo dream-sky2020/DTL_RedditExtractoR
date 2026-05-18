@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
 import { toast } from '@components/Toast';
-import { 
-  transformRedditJson, 
-  extractAuthorsFromRawData 
+import {
+  transformRedditJson,
+  extractAuthorsFromRawData
 } from '@/utils/redditTransformer';
-import { 
-  AuthorProfile, 
-  CommentSortMode, 
-  ReplyOrderMode, 
+import {
+  AuthorProfile,
+  CommentSortMode,
+  ReplyOrderMode,
   ColorArrangementSettings,
   VideoScene
 } from '@/types';
@@ -17,6 +17,8 @@ import { AVATAR_POOL } from '@/constants/avatars';
 import { useAvatarStore } from './useAvatarStore';
 import { hslToHex } from '@/utils/color/hslToHex';
 import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
+
+import { generateRandomAliasProfiles, nextUniqueAlias } from '@/utils/aliasGenerator';
 
 type FetchRedditDataMode = 'replace' | 'append';
 
@@ -48,22 +50,28 @@ interface RedditState {
   setAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
   setAllAuthors: (authors: string[]) => void;
   setHasStoredRawData: (has: boolean) => void;
-  
+
   fetchRedditData: (
     commentSortMode: CommentSortMode,
     replyOrderMode: ReplyOrderMode,
     colorArrangement: ColorArrangementSettings,
     mode?: FetchRedditDataMode
   ) => Promise<void>;
-  
+
   clearPersistedData: () => void;
-  
+
   buildProfilesForAuthors: (
     authors: string[],
     previousProfiles: Record<string, AuthorProfile>,
     settings: ColorArrangementSettings,
-    overwriteColors?: boolean
+    options?: {
+      refreshColors?: boolean;
+      refreshAvatars?: boolean;
+      refreshAliases?: boolean;
+    }
   ) => Record<string, AuthorProfile>;
+
+  clearAllAliases: () => void;
 
   getProjectState: () => {
     redditUrl: string;
@@ -114,24 +122,35 @@ export const useRedditStore = create<RedditState>()(
       setAllAuthors: (allAuthors) => set({ allAuthors }),
       setHasStoredRawData: (hasStoredRawData) => set({ hasStoredRawData }),
 
-      buildProfilesForAuthors: (authors, previousProfiles, settings, overwriteColors = false) => {
-        const nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
-        
-        // 强制刷新 AvatarStore 的 items，确保获取的是最新启用状态
+      buildProfilesForAuthors: (authors, previousProfiles, settings, options = {}) => {
+        const { refreshColors, refreshAvatars, refreshAliases } = options;
+        let nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
+
+        // 1. 处理代号刷新
+        if (refreshAliases) {
+          nextProfiles = generateRandomAliasProfiles(authors, nextProfiles);
+        }
+
+        // 2. 获取头像池
         const avatarStore = useAvatarStore.getState();
         let avatarPool = avatarStore.getEnabledAvatars();
-        
-        // 如果启用的头像池为空，回退到静态池
         if (avatarPool.length === 0) {
           avatarPool = AVATAR_POOL.map(a => `public/avatar/${a}`);
         }
 
+        // 3. 准备已使用的代号集合（用于补全缺失代号）
+        const usedAliases = new Set<string>();
+        Object.values(nextProfiles).forEach(p => {
+          if (p.alias) usedAliases.add(p.alias.toLowerCase());
+        });
+
         authors.forEach((author, index) => {
           const existing = nextProfiles[author] || {};
-          const needsColor = overwriteColors || !existing.color;
-          const needsAvatar = !existing.avatar;
+          const needsColor = refreshColors || !existing.color;
+          const needsAvatar = refreshAvatars || !existing.avatar;
+          const needsAlias = !existing.alias; // 即使不刷新，缺失的也要补全
 
-          if (needsColor || needsAvatar) {
+          if (needsColor || needsAvatar || needsAlias) {
             const profile = { ...existing };
             if (needsColor) {
               profile.color = buildColorWithSettings(index, settings);
@@ -140,11 +159,23 @@ export const useRedditStore = create<RedditState>()(
               const avatarIdx = Math.floor(pseudoRandom01(settings.seed + 1, index) * avatarPool.length);
               profile.avatar = avatarPool[avatarIdx];
             }
+            if (needsAlias) {
+              profile.alias = nextUniqueAlias(usedAliases);
+            }
             profile.updatedAt = Date.now();
             nextProfiles[author] = profile;
           }
         });
         return nextProfiles;
+      },
+
+      clearAllAliases: () => {
+        const { authorProfiles } = get();
+        const next = { ...authorProfiles };
+        Object.keys(next).forEach(author => {
+          next[author] = { ...next[author], alias: '', updatedAt: Date.now() };
+        });
+        set({ authorProfiles: next });
       },
 
       getProjectState: () => {
@@ -187,16 +218,20 @@ export const useRedditStore = create<RedditState>()(
           parsed.searchParams.set('raw_json', '1');
           const jsonUrl = parsed.toString();
           const proxyUrl = `http://localhost:5000/fetch_reddit?url=${encodeURIComponent(jsonUrl)}`;
-          
+
           const response = await axios.get(proxyUrl);
-          
+
           const nextAuthors = extractAuthorsFromRawData(response.data);
           const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
-          
+
+          const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();
+
           const nextResult = transformRedditJson(response.data, {
             sortMode: commentSortMode,
             replyOrder: replyOrderMode,
             authorProfiles: nextProfiles,
+            contentColor: globalSettings.contentFontColor,
+            contentBold: globalSettings.contentFontBold,
           });
 
           // 更新 Reddit 数据
@@ -211,8 +246,7 @@ export const useRedditStore = create<RedditState>()(
 
           // 【关键修正】同时更新 VideoStore 中的配置，确保其他页面能看到新数据
           const videoStore = (await import('./useVideoStore')).useVideoStore.getState();
-          const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();
-          
+
           const newConfig = videoStore.buildVideoConfigFromResult(nextResult, {
             titleAlignment: globalSettings.titleAlignment,
             titleFontSize: globalSettings.titleFontSize,
@@ -230,7 +264,7 @@ export const useRedditStore = create<RedditState>()(
             sceneBackgroundColor: globalSettings.sceneBackgroundColor,
             itemBackgroundColor: globalSettings.itemBackgroundColor,
           });
-          
+
           if (mode === 'append') {
             const suffix = `append-${Date.now()}`;
             const currentConfig = videoStore.videoConfig;

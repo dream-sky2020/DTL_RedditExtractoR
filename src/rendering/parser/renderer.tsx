@@ -284,6 +284,11 @@ const buildMediaStyles = (attrStr: string, inRow: boolean = false) => {
     }
   }
 
+  const bgMatch = attrStr.match(/\b(bg|backgroundColor)=([^ \]]+)/);
+  if (bgMatch) {
+    mediaStyle.backgroundColor = bgMatch[2];
+  }
+
   const wrapperStyle: React.CSSProperties = {
     marginTop,
     marginBottom,
@@ -660,6 +665,7 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
               objectFit: 'cover',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               transform: `translateY(${offset}px)`,
+              backgroundColor: node.bg || 'transparent',
             }}
             alt="avatar"
           />

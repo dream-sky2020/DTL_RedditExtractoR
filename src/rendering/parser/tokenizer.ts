@@ -449,7 +449,8 @@ export const tokenize = (
             avatarType: attrs.type,
             size: attrs.size ? parseInt(attrs.size) : undefined,
             shape: (attrs.shape === 'square' ? 'square' : 'circle') as 'circle' | 'square',
-            offset: attrs.offset ? parseInt(attrs.offset) : undefined
+            offset: attrs.offset ? parseInt(attrs.offset) : undefined,
+            bg: attrs.bg || attrs.backgroundcolor
           });
           currentPos = endTagIdx + 9;
         } else {

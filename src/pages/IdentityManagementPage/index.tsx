@@ -33,15 +33,20 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
   ArrowRightOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  BgColorsOutlined,
+  FontSizeOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { useRedditStore, useVideoStore, useSettingsStore, useIdentityStore, useAvatarStore } from '@/store';
 import { AuthorProfile, VideoScene } from '@/types';
+import { transformRedditJson } from '@/utils/redditTransformer';
 import { StudioFramePlayer } from '../../components/StudioFramePlayer';
 import { DEFAULT_PREVIEW_FPS, getTotalFrames } from '../../components/VideoPreviewPlayer';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 import { AVATAR_POOL } from '@/constants/avatars';
+import { dialogs } from '../../components/Dialogs';
 
 const { Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -69,24 +74,30 @@ const getAvatarUrl = (avatarPath: string | undefined) => {
 };
 
 export const IdentityManagementPage: React.FC = () => {
-  const { 
-    allAuthors, 
-    authorProfiles, 
+  const {
+    allAuthors,
+    authorProfiles,
     setAuthorProfiles,
-    buildProfilesForAuthors
+    buildProfilesForAuthors,
+    clearAllAliases,
+    rawResult,
+    setResult
   } = useRedditStore();
-  
-  const { videoConfig, setVideoConfig } = useVideoStore();
-  const { 
+
+  const { videoConfig, setVideoConfig, buildVideoConfigFromResult } = useVideoStore();
+  const {
     colorArrangement,
+    setColorArrangement,
     editorUiSettings,
+    ...globalSettings
   } = useSettingsStore();
 
   const {
     globalProfiles,
     setGlobalProfile,
     removeGlobalProfile,
-    batchSetGlobalProfiles
+    batchSetGlobalProfiles,
+    clearAllAliases: clearGlobalAliases
   } = useIdentityStore();
 
   const [activeTab, setActiveTab] = useState('project');
@@ -101,8 +112,8 @@ export const IdentityManagementPage: React.FC = () => {
   // 过滤作者列表
   const filteredAuthors = useMemo(() => {
     const list = activeTab === 'project' ? allAuthors : Object.keys(globalProfiles);
-    return list.filter(a => 
-      a.toLowerCase().includes(searchText.toLowerCase()) || 
+    return list.filter(a =>
+      a.toLowerCase().includes(searchText.toLowerCase()) ||
       ((activeTab === 'project' ? authorProfiles[a] : globalProfiles[a])?.alias || '').toLowerCase().includes(searchText.toLowerCase())
     );
   }, [activeTab, allAuthors, globalProfiles, authorProfiles, searchText]);
@@ -145,11 +156,44 @@ export const IdentityManagementPage: React.FC = () => {
     );
   };
 
+  const syncProjectData = (nextProfiles: Record<string, AuthorProfile>) => {
+    if (!rawResult) return;
+
+    const nextResult = transformRedditJson(rawResult, {
+      authorProfiles: nextProfiles,
+      // 保持当前的排序和回复模式
+      sortMode: (useRedditStore.getState() as any).sortMode || 'best',
+      replyOrder: (useRedditStore.getState() as any).replyOrder || 'preserve',
+      contentColor: globalSettings.contentFontColor,
+      contentBold: globalSettings.contentFontBold,
+    });
+
+    setResult(nextResult);
+    const nextConfig = buildVideoConfigFromResult(nextResult, {
+      titleAlignment: globalSettings.titleAlignment,
+      titleFontSize: globalSettings.titleFontSize,
+      contentFontSize: globalSettings.contentFontSize,
+      quoteFontSize: globalSettings.quoteFontSize,
+      titleFontColor: globalSettings.titleFontColor,
+      contentFontColor: globalSettings.contentFontColor,
+      quoteFontColor: globalSettings.quoteFontColor,
+      titleFontBold: globalSettings.titleFontBold,
+      contentFontBold: globalSettings.contentFontBold,
+      quoteBackgroundColor: globalSettings.quoteBackgroundColor,
+      quoteBorderColor: globalSettings.quoteBorderColor,
+      maxQuoteDepth: globalSettings.maxQuoteDepth,
+      defaultQuoteMaxLimit: globalSettings.defaultQuoteMaxLimit,
+      sceneBackgroundColor: globalSettings.sceneBackgroundColor,
+      itemBackgroundColor: globalSettings.itemBackgroundColor,
+    });
+    setVideoConfig(nextConfig);
+  };
+
   const handleUpdateProfile = (author: string, updates: Partial<AuthorProfile>) => {
     if (activeTab === 'project') {
       const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...updates, updatedAt: Date.now() } };
       setAuthorProfiles(next);
-      // 同时如果开启了自动同步，可以考虑同步到全局，但这里先保持手动
+      syncProjectData(next);
     } else {
       const next = { ...(globalProfiles[author] || {}), ...updates, updatedAt: Date.now() };
       setGlobalProfile(author, next);
@@ -171,6 +215,7 @@ export const IdentityManagementPage: React.FC = () => {
     }
     const next = { ...authorProfiles, [author]: { ...globalProfile, updatedAt: Date.now() } };
     setAuthorProfiles(next);
+    syncProjectData(next);
     toast.success(`已从全局库恢复 u/${author} 的配置`);
   };
 
@@ -184,6 +229,7 @@ export const IdentityManagementPage: React.FC = () => {
       }
     });
     setAuthorProfiles(nextProfiles);
+    syncProjectData(nextProfiles);
     toast.success(`已从全局库同步了 ${count} 个用户的配置`);
   };
 
@@ -193,15 +239,75 @@ export const IdentityManagementPage: React.FC = () => {
   };
 
   const handleRandomize = () => {
-    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement, true);
+    // 1. 先更新种子，确保生成不同的颜色和头像
+    const newSeed = Math.floor(Math.random() * 10000000);
+    setColorArrangement({ seed: newSeed });
+
+    // 2. 使用新种子生成配置
+    const nextProfiles = buildProfilesForAuthors(
+      allAuthors,
+      authorProfiles,
+      { ...colorArrangement, seed: newSeed },
+      { refreshColors: true, refreshAvatars: true, refreshAliases: true }
+    );
+
     setAuthorProfiles(nextProfiles);
-    toast.success('已重新随机生成所有代号颜色');
+    syncProjectData(nextProfiles);
+    toast.success('已重新随机生成所有代号、颜色和头像');
+  };
+
+  const handleRefreshAvatars = () => {
+    const newSeed = Math.floor(Math.random() * 10000000);
+    setColorArrangement({ seed: newSeed });
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, { ...colorArrangement, seed: newSeed }, { refreshAvatars: true });
+    setAuthorProfiles(nextProfiles);
+    syncProjectData(nextProfiles);
+    toast.success('已重新随机生成所有头像');
+  };
+
+  const handleRefreshColors = () => {
+    const newSeed = Math.floor(Math.random() * 10000000);
+    setColorArrangement({ seed: newSeed });
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, { ...colorArrangement, seed: newSeed }, { refreshColors: true });
+    setAuthorProfiles(nextProfiles);
+    syncProjectData(nextProfiles);
+    toast.success('已重新随机生成所有颜色');
+  };
+
+  const handleRefreshAliases = () => {
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement, { refreshAliases: true });
+    setAuthorProfiles(nextProfiles);
+    syncProjectData(nextProfiles);
+    toast.success('已重新随机生成所有代号');
+  };
+
+  const handleClearAliases = () => {
+    dialogs.confirm({
+      title: '确认清空',
+      content: '确定要清空所有（包括当前项目和全局库）用户的代号吗？',
+      okType: 'danger',
+      onOk: () => {
+        // 1. 清空当前项目的代号
+        clearAllAliases();
+        const next = { ...authorProfiles };
+        Object.keys(next).forEach(author => {
+          next[author] = { ...next[author], alias: '', updatedAt: Date.now() };
+        });
+        syncProjectData(next);
+
+        // 2. 清空全局库的代号
+        clearGlobalAliases();
+        
+        toast.success('已清空所有代号');
+      }
+    });
   };
 
   const handleDeleteGlobal = (author: string) => {
-    Modal.confirm({
+    dialogs.confirm({
       title: '确认删除',
       content: `确定要从全局身份库中删除 u/${author} 吗？`,
+      okType: 'danger',
       onOk: () => {
         removeGlobalProfile(author);
         if (selectedAuthor === author) setSelectedAuthor(null);
@@ -226,8 +332,8 @@ export const IdentityManagementPage: React.FC = () => {
   const avatarPicker = (
     <div style={{ width: 320, maxHeight: 400, overflowY: 'auto', padding: 8 }}>
       <Row gutter={[8, 8]}>
-        {(avatarItems.length > 0 
-          ? avatarItems.filter(i => i.enabled).map(i => i.path) 
+        {(avatarItems.length > 0
+          ? avatarItems.filter(i => i.enabled).map(i => i.path)
           : AVATAR_POOL.map(a => `public/avatar/${a}`)
         ).map(path => {
           const url = getAvatarUrl(path);
@@ -235,12 +341,12 @@ export const IdentityManagementPage: React.FC = () => {
           return (
             <Col span={6} key={path}>
               <Tooltip title={fileName}>
-                <div 
+                <div
                   onClick={() => selectedAuthor && handleUpdateProfile(selectedAuthor, { avatar: path })}
-                  style={{ 
-                    cursor: 'pointer', 
-                    padding: 4, 
-                    borderRadius: 8, 
+                  style={{
+                    cursor: 'pointer',
+                    padding: 4,
+                    borderRadius: 8,
                     border: currentProfile?.avatar === path ? '2px solid var(--ant-primary-color)' : '2px solid transparent',
                     background: currentProfile?.avatar === path ? 'rgba(24,144,255,0.1)' : 'transparent'
                   }}
@@ -264,8 +370,8 @@ export const IdentityManagementPage: React.FC = () => {
     <Layout style={{ height: 'calc(100vh - 120px)', background: 'transparent' }}>
       <Sider width={400} theme="dark" style={{ background: 'var(--panel-bg-darker)', borderRight: '1px solid var(--brand-border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 16px 0 16px' }}>
-          <Tabs 
-            activeKey={activeTab} 
+          <Tabs
+            activeKey={activeTab}
             onChange={setActiveTab}
             size="small"
             items={[
@@ -273,7 +379,7 @@ export const IdentityManagementPage: React.FC = () => {
               { key: 'global', label: <Space><GlobalOutlined />全局库</Space> },
             ]}
           />
-          
+
           <Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={12}>
             <Input
               prefix={<SearchOutlined />}
@@ -286,14 +392,26 @@ export const IdentityManagementPage: React.FC = () => {
             <div style={{ display: 'flex', gap: 4 }}>
               {activeTab === 'project' ? (
                 <>
-                  <Tooltip title="随机生成代号和头像"><Button size="small" icon={<ReloadOutlined />} onClick={handleRandomize} block /></Tooltip>
-                  <Tooltip title="从全局库同步"><Button size="small" icon={<CloudDownloadOutlined />} onClick={syncAllFromGlobal} block /></Tooltip>
-                  <Tooltip title="全部保存到全局库"><Button size="small" icon={<SaveOutlined />} onClick={saveAllToGlobal} block /></Tooltip>
+                  <Tooltip title="全随机生成"><Button size="small" icon={<ReloadOutlined />} onClick={handleRandomize} block /></Tooltip>
+                  <Tooltip title="刷新头像"><Button size="small" icon={<UserOutlined />} onClick={handleRefreshAvatars} block /></Tooltip>
+                  <Tooltip title="刷新颜色"><Button size="small" icon={<BgColorsOutlined />} onClick={handleRefreshColors} block /></Tooltip>
+                  <Tooltip title="刷新代号"><Button size="small" icon={<FontSizeOutlined />} onClick={handleRefreshAliases} block /></Tooltip>
+                  <Tooltip title="清空代号"><Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block /></Tooltip>
                 </>
               ) : (
-                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => Modal.confirm({ title: '清空全局库', content: '确定要清空所有全局身份记录吗？', onOk: useIdentityStore.getState().clearGlobalLibrary })} block>清空全局库</Button>
+                <div style={{ display: 'flex', gap: 4, width: '100%' }}>
+                  <Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block>清空代号</Button>
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => dialogs.confirm({ title: '清空全局库', content: '确定要清空所有全局身份记录吗？', okType: 'danger', onOk: useIdentityStore.getState().clearGlobalLibrary })} block>清空库</Button>
+                </div>
               )}
             </div>
+
+            {activeTab === 'project' && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <Tooltip title="从全局库同步"><Button size="small" icon={<CloudDownloadOutlined />} onClick={syncAllFromGlobal} block>同步</Button></Tooltip>
+                <Tooltip title="全部保存到全局库"><Button size="small" icon={<SaveOutlined />} onClick={saveAllToGlobal} block>保存</Button></Tooltip>
+              </div>
+            )}
           </Space>
         </div>
 
@@ -318,10 +436,10 @@ export const IdentityManagementPage: React.FC = () => {
                   return (
                     <Space size="small">
                       <Badge dot={inGlobal} offset={[-2, 22]} color="cyan">
-                        <Avatar 
-                          size="small" 
-                          src={getAvatarUrl(profile?.avatar)} 
-                          icon={<UserOutlined />} 
+                        <Avatar
+                          size="small"
+                          src={getAvatarUrl(profile?.avatar)}
+                          icon={<UserOutlined />}
                           style={{ backgroundColor: profile?.color || '#ccc' }}
                         />
                       </Badge>
@@ -354,14 +472,14 @@ export const IdentityManagementPage: React.FC = () => {
         {selectedAuthor ? (
           <Row gutter={24}>
             <Col span={10}>
-              <Card 
+              <Card
                 title={
                   <Space>
                     <Avatar src={getAvatarUrl(currentProfile?.avatar)} style={{ backgroundColor: currentProfile?.color }} />
                     <span>{activeTab === 'project' ? '项目用户' : '全局身份'}: u/{selectedAuthor}</span>
                   </Space>
-                } 
-                bordered={false} 
+                }
+                bordered={false}
                 className="dark-card"
                 extra={
                   currentProfile?.updatedAt && (
@@ -378,15 +496,15 @@ export const IdentityManagementPage: React.FC = () => {
                       <div style={{ marginTop: 8 }}>
                         <Popover content={avatarPicker} trigger="click" placement="bottomLeft">
                           <div style={{ cursor: 'pointer', position: 'relative', width: 64, height: 64 }}>
-                            <Avatar 
-                              shape="square" 
-                              size={64} 
-                              src={getAvatarUrl(currentProfile?.avatar)} 
+                            <Avatar
+                              shape="square"
+                              size={64}
+                              src={getAvatarUrl(currentProfile?.avatar)}
                               icon={<UserOutlined />}
                               style={{ backgroundColor: currentProfile?.color }}
                             />
-                            <div style={{ 
-                              position: 'absolute', bottom: 0, right: 0, background: 'rgba(0,0,0,0.5)', 
+                            <div style={{
+                              position: 'absolute', bottom: 0, right: 0, background: 'rgba(0,0,0,0.5)',
                               width: '100%', textAlign: 'center', fontSize: 10, color: '#fff', padding: '2px 0'
                             }}>修改</div>
                           </div>
@@ -489,17 +607,17 @@ export const IdentityManagementPage: React.FC = () => {
               </div>
 
               {relatedScenesWithIndex.length > 0 ? (
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                   gap: '16px 24px',
                   alignItems: 'start',
                 }}>
                   {relatedScenesWithIndex.map(({ scene, index }) => (
                     <div key={scene.id} className="gallery-item-wrap">
-                      <StudioFramePlayer 
-                        idx={index} 
-                        isSelected={selectedSceneIds.includes(scene.id)} 
+                      <StudioFramePlayer
+                        idx={index}
+                        isSelected={selectedSceneIds.includes(scene.id)}
                         selectionIndex={selectedSceneIds.indexOf(scene.id) + 1}
                         isCompact={false}
                         videoConfig={videoConfig}

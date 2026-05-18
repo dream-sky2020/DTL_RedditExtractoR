@@ -11,6 +11,7 @@ interface IdentityState {
   removeGlobalProfile: (author: string) => void;
   batchSetGlobalProfiles: (profiles: Record<string, AuthorProfile>) => void;
   clearGlobalLibrary: () => void;
+  clearAllAliases: () => void;
 }
 
 export const useIdentityStore = create<IdentityState>()(
@@ -46,6 +47,14 @@ export const useIdentityStore = create<IdentityState>()(
       }),
 
       clearGlobalLibrary: () => set({ globalProfiles: {} }),
+
+      clearAllAliases: () => set((state) => {
+        const next = { ...state.globalProfiles };
+        Object.keys(next).forEach(author => {
+          next[author] = { ...next[author], alias: '', updatedAt: Date.now() };
+        });
+        return { globalProfiles: next };
+      }),
     }),
     {
       name: GLOBAL_PROFILES_KEY,
