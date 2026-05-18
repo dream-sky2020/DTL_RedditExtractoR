@@ -429,8 +429,8 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     }
 
     // 组装最终正文：将多图包装为 [image] 或 [row] 标签追加到末尾
+    let multiImageTag = '';
     if (postImages.length > 1) {
-        let multiImageTag = '';
         if (mergedOptions.imageLayoutMode === 'row') {
             // 如果是 row 模式，计算宽度
             const width = Math.floor(100 / Math.min(postImages.length, 3)) - 2;
@@ -443,21 +443,19 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             // 默认轮播模式：多个 URL 写进同一个 [image]
             multiImageTag = `\n[image]${postImages.join(',')}[/image]`;
         }
-
-        if (!postText.includes('[row]')) {
-            // 关键修正：先包装已有的 text，再拼接图片标签
-            postText = `${wrapText(postText, 'context')}${multiImageTag}`;
-        }
     } else if (postImages.length === 1) {
-        // 如果是单图，使用 [image]
+        // 如果是单图，且 processContent 还没把这张图放进去，我们才需要追加
         if (!postText.includes(postImages[0])) {
-            // 关键修正：先包装已有的 text，再拼接图片标签
-            postText = `${wrapText(postText, 'context')}\n[image]${postImages[0]}[/image]`;
+            multiImageTag = `\n[image]${postImages[0]}[/image]`;
         }
-    } else {
-        // 纯文本情况
-        postText = wrapText(postText, 'context');
     }
+
+    // 无论如何，先对正文进行 wrapText 处理（wrapText 内部会处理已有的标签）
+    // 这样可以确保文本部分被 <#text#> 包裹
+    if (multiImageTag) {
+        postText += multiImageTag;
+    }
+    postText = wrapText(postText, 'context');
 
     // 构建最终对象
     return {

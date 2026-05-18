@@ -13,6 +13,8 @@ import {
   ColorArrangementSettings,
   VideoScene
 } from '@/types';
+import { AVATAR_POOL } from '@/constants/avatars';
+import { useAvatarStore } from './useAvatarStore';
 import { hslToHex } from '@/utils/color/hslToHex';
 import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
 
@@ -115,28 +117,14 @@ export const useRedditStore = create<RedditState>()(
       buildProfilesForAuthors: (authors, previousProfiles, settings, overwriteColors = false) => {
         const nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
         
-        const avatarPool = [
-          '01_dish.png', '02_dish_2.png', '03_dish_pile.png', '04_bowl.png', '05_apple_pie.png',
-          '06_apple_pie_dish.png', '07_bread.png', '08_bread_dish.png', '09_baguette.png', '10_baguette_dish.png',
-          '11_bun.png', '12_bun_dish.png', '13_bacon.png', '14_bacon_dish.png', '15_burger.png',
-          '16_burger_dish.png', '17_burger_napkin.png', '18_burrito.png', '19_burrito_dish.png', '20_bagel.png',
-          '21_bagel_dish.png', '22_cheesecake.png', '23_cheesecake_dish.png', '24_cheesepuff.png', '25_cheesepuff_bowl.png',
-          '26_chocolate.png', '27_chocolate_dish.png', '28_cookies.png', '29_cookies_dish.png', '30_chocolatecake.png',
-          '31_chocolatecake_dish.png', '32_curry.png', '33_curry_dish.png', '34_donut.png', '35_donut_dish.png',
-          '36_dumplings.png', '37_dumplings_dish.png', '38_friedegg.png', '39_friedegg_dish.png', '40_eggsalad.png',
-          '41_eggsalad_bowl.png', '42_eggtart.png', '43_eggtart_dish.png', '44_frenchfries.png', '45_frenchfries_dish.png',
-          '46_fruitcake.png', '47_fruitcake_dish.png', '48_garlicbread.png', '49_garlicbread_dish.png', '50_giantgummybear.png',
-          '51_giantgummybear_dish.png', '52_gingerbreadman.png', '53_gingerbreadman_dish.png', '54_hotdog.png', '55_hotdog_sauce.png',
-          '56_hotdog_dish.png', '57_icecream.png', '58_icecream_bowl.png', '59_jelly.png', '60_jelly_dish.png',
-          '61_jam.png', '62_jam_dish.png', '63_lemonpie.png', '64_lemonpie_dish.png', '65_loafbread.png',
-          '66_loafbread_dish.png', '67_macncheese.png', '68_macncheese_dish.png', '69_meatball.png', '70_meatball_dish.png',
-          '71_nacho.png', '72_nacho_dish.png', '73_omlet.png', '74_omlet_dish.png', '75_pudding.png',
-          '76_pudding_dish.png', '77_potatochips.png', '78_potatochips_bowl.png', '79_pancakes.png', '80_pancakes_dish.png',
-          '81_pizza.png', '82_pizza_dish.png', '83_popcorn.png', '84_popcorn_bowl.png', '85_roastedchicken.png',
-          '86_roastedchicken_dish.png', '87_ramen.png', '88_salmon.png', '89_salmon_dish.png', '90_strawberrycake.png',
-          '91_strawberrycake_dish.png', '92_sandwich.png', '93_sandwich_dish.png', '94_spaghetti.png', '95_steak.png',
-          '96_steak_dish.png', '97_sushi.png', '98_sushi_dish.png', '99_taco.png', '100_taco_dish.png'
-        ];
+        // 强制刷新 AvatarStore 的 items，确保获取的是最新启用状态
+        const avatarStore = useAvatarStore.getState();
+        let avatarPool = avatarStore.getEnabledAvatars();
+        
+        // 如果启用的头像池为空，回退到静态池
+        if (avatarPool.length === 0) {
+          avatarPool = AVATAR_POOL.map(a => `public/avatar/${a}`);
+        }
 
         authors.forEach((author, index) => {
           const existing = nextProfiles[author] || {};
@@ -150,8 +138,9 @@ export const useRedditStore = create<RedditState>()(
             }
             if (needsAvatar) {
               const avatarIdx = Math.floor(pseudoRandom01(settings.seed + 1, index) * avatarPool.length);
-              profile.avatar = `public/avatar/${avatarPool[avatarIdx]}`;
+              profile.avatar = avatarPool[avatarIdx];
             }
+            profile.updatedAt = Date.now();
             nextProfiles[author] = profile;
           }
         });
