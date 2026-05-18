@@ -442,11 +442,14 @@ export const tokenize = (
         const endTagIdx = text.indexOf('[/avatar]', startTagEnd);
         if (endTagIdx !== -1) {
           const url = text.substring(startTagEnd, endTagIdx).trim();
-          const typeMatch = attrStr.match(/type=([^ \]]+)/);
+          const attrs = parseInlineAttrs(attrStr);
           nodes.push({
             type: 'avatar',
             url,
-            avatarType: typeMatch ? typeMatch[1] : undefined
+            avatarType: attrs.type,
+            size: attrs.size ? parseInt(attrs.size) : undefined,
+            shape: (attrs.shape === 'square' ? 'square' : 'circle') as 'circle' | 'square',
+            offset: attrs.offset ? parseInt(attrs.offset) : undefined
           });
           currentPos = endTagIdx + 9;
         } else {

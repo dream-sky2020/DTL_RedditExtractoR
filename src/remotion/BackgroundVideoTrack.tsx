@@ -82,26 +82,37 @@ export const BackgroundVideoTrack: React.FC<BackgroundVideoTrackProps> = ({ back
     </>
   );
 
+  const finalOpacity = hasEnded ? 1 : opacity;
+
   return (
     <AbsoluteFill style={{ backgroundColor: '#000', zIndex: 0 }}>
-      {(video || audio) && backgroundVideo?.playbackMode === 'repeat-count' && (repeatCount ?? 0) > 1 && singleLoopFrames ? (
-        <Loop durationInFrames={singleLoopFrames} times={repeatCount as number}>
-          {media}
-        </Loop>
-      ) : media}
-      {hasEnded && (
+      {/* 1. 底层：结束后状态（在淡出时可见） */}
+      {(hasEnded || (opacity < 1)) && (
         fallbackImageSrc && backgroundVideo?.afterEndMode === 'image' ? (
           <img
             src={fallbackImageSrc}
             alt=""
-            style={{ width: '100%', height: '100%', objectFit: backgroundVideo.fit || 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: backgroundVideo.fit || 'cover', position: 'absolute', inset: 0 }}
           />
         ) : (
           <AbsoluteFill style={{ backgroundColor: backgroundVideo?.afterEndColor || '#000000' }} />
         )
       )}
+
+      {/* 2. 中层：背景视频（应用动态不透明度） */}
+      {!hasEnded && (
+        <AbsoluteFill style={{ opacity }}>
+          {backgroundVideo?.playbackMode === 'repeat-count' && (repeatCount ?? 0) > 1 && singleLoopFrames ? (
+            <Loop durationInFrames={singleLoopFrames} times={repeatCount as number}>
+              {media}
+            </Loop>
+          ) : media}
+        </AbsoluteFill>
+      )}
+
+      {/* 3. 顶层：色彩遮罩 */}
       {backgroundVideo?.overlayColor && (
-        <AbsoluteFill style={{ backgroundColor: backgroundVideo.overlayColor, zIndex: 2 }} />
+        <AbsoluteFill style={{ backgroundColor: backgroundVideo.overlayColor, zIndex: 2, pointerEvents: 'none' }} />
       )}
     </AbsoluteFill>
   );

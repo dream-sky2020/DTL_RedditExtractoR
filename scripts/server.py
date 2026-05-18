@@ -7,6 +7,10 @@ import shutil
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+try:
+    from scripts.filter_history import generic_filter_history, filter_reddit_history
+except ImportError:
+    from filter_history import generic_filter_history, filter_reddit_history
 
 app = Flask(__name__)
 CORS(app)  # 允许跨域请求
@@ -15,9 +19,13 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TASKS_DIR = os.path.join(PROJECT_ROOT, 'tasks')
 CACHE_DIR = os.path.join(PROJECT_ROOT, 'public', 'cache')
 AUDIO_DIR = os.path.join(PROJECT_ROOT, 'public', 'audio')
+BGM_DIR = os.path.join(PROJECT_ROOT, 'public', 'audio', 'bgm')
+AVATAR_DIR = os.path.join(PROJECT_ROOT, 'public', 'avatar')
 BACKGROUND_VIDEO_DIR = os.path.join(PROJECT_ROOT, 'public', 'background-videos')
 MANIFEST_FILENAME = 'audio-manifest.json'
+AVATAR_MANIFEST_FILENAME = 'avatar-manifest.json'
 ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp')
 ALLOWED_BACKGROUND_VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mov')
 
 # 确保目录存在
@@ -32,6 +40,9 @@ def normalize_path(path):
 
 def get_audio_manifest_path():
     return os.path.join(AUDIO_DIR, MANIFEST_FILENAME)
+
+def get_avatar_manifest_path():
+    return os.path.join(AVATAR_DIR, AVATAR_MANIFEST_FILENAME)
 
 def is_valid_audio_path(path):
     normalized = normalize_path(path)
@@ -253,6 +264,33 @@ def list_background_videos():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route('/list_bgm', methods=['GET'])
+def list_bgm():
+    try:
+        bgm_files = []
+        if not os.path.exists(BGM_DIR):
+            os.makedirs(BGM_DIR, exist_ok=True)
+            
+        for root, _, files in os.walk(BGM_DIR):
+            for file in files:
+                if file.lower().endswith(ALLOWED_AUDIO_EXTENSIONS):
+                    full_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(full_path, os.path.join(PROJECT_ROOT, 'public'))
+                    public_relative_path = normalize_path(relative_path)
+                    bgm_files.append({
+                        "name": file,
+                        "path": public_relative_path,
+                        "url": f"/{public_relative_path}",
+                    })
+
+        bgm_files.sort(key=lambda item: item["path"])
+        return jsonify({
+            "success": True,
+            "files": bgm_files,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route('/audio_manifest', methods=['POST'])
 def update_audio_manifest():
     try:
@@ -260,6 +298,75 @@ def update_audio_manifest():
         incoming_items = body.get('items', {})
         
         manifest_path = get_audio_manifest_path()
+        current_manifest = {"version": 1, "items": {}}
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                current_manifest = json.load(f)
+        
+        current_items = current_manifest.get('items', {})
+        for path, meta in incoming_items.items():
+            if meta is None:
+                current_items.pop(path, None)
+            else:
+                current_items[path] = meta
+                
+        current_manifest['items'] = current_items
+        current_manifest['updatedAt'] = datetime.now().isoformat()
+        
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(current_manifest, f, ensure_ascii=False, indent=2)
+            
+        return jsonify({"success": True, "manifest": current_manifest})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/list_avatars', methods=['GET'])
+def list_avatars():
+    try:
+        avatar_files = []
+        if os.path.exists(AVATAR_DIR):
+            for root, _, files in os.walk(AVATAR_DIR):
+                for file in files:
+                    if file.lower().endswith(ALLOWED_IMAGE_EXTENSIONS):
+                        full_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(full_path, PROJECT_ROOT)
+                        avatar_files.append(normalize_path(relative_path))
+        
+        avatar_files.sort()
+
+        manifest_path = get_avatar_manifest_path()
+        manifest = {"version": 1, "items": {}}
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = json.load(f)
+        
+        items = manifest.get('items', {})
+        merged_items = []
+        for path in avatar_files:
+            meta = items.get(path, {})
+            merged_items.append({
+                "path": path,
+                "enabled": meta.get('enabled', True),
+                "tags": meta.get('tags', []),
+                "exists": True
+            })
+            
+        return jsonify({
+            "success": True,
+            "files": avatar_files,
+            "items": merged_items,
+            "manifest": manifest
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/avatar_manifest', methods=['POST'])
+def update_avatar_manifest():
+    try:
+        body = request.json or {}
+        incoming_items = body.get('items', {})
+        
+        manifest_path = get_avatar_manifest_path()
         current_manifest = {"version": 1, "items": {}}
         if os.path.exists(manifest_path):
             with open(manifest_path, 'r', encoding='utf-8') as f:
@@ -322,6 +429,40 @@ def proxy_local_file():
         return send_from_directory(directory, filename, last_modified=datetime.now(), max_age=3600)
     except Exception as e:
         return str(e), 500
+
+@app.route('/filter_history', methods=['POST'])
+def filter_history():
+    try:
+        body = request.json
+        if not body:
+            return jsonify({"success": False, "message": "未提供数据"}), 400
+        
+        # 支持两种格式：
+        # 1. 直接发送数组 (兼容旧版，使用默认 Reddit 规则)
+        # 2. 发送 { "data": [...], "rules": {...} }
+        
+        if isinstance(body, list):
+            history_data = body
+            subreddit = request.args.get('subreddit', 'limbuscompany')
+            results = filter_reddit_history(history_data, subreddit)
+        else:
+            history_data = body.get('data', [])
+            rules = body.get('rules', {})
+            
+            # 如果没有提供 rules 但提供了 subreddit 参数，使用 Reddit 预设
+            subreddit = request.args.get('subreddit')
+            if subreddit and not rules:
+                results = filter_reddit_history(history_data, subreddit)
+            else:
+                results = generic_filter_history(history_data, rules)
+        
+        return jsonify({
+            "success": True,
+            "results": results,
+            "count": len(results)
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 if __name__ == '__main__':
     print("--------------------------------------")

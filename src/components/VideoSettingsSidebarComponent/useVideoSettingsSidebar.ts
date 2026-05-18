@@ -44,6 +44,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
   const [isTextStyleCollapsed, setIsTextStyleCollapsed] = useState(false);
   const [isBackgroundColorCollapsed, setIsBackgroundColorCollapsed] = useState(false);
   const [isQuoteSettingsCollapsed, setIsQuoteSettingsCollapsed] = useState(false);
+  const [isAvatarSettingsCollapsed, setIsAvatarSettingsCollapsed] = useState(false);
 
   const { editorUiSettings, setMultiSelectUiSettings } = useSettingsStore();
   const multiSelectSettings = editorUiSettings.multiSelect;
@@ -231,6 +232,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     isTextStyleCollapsed, setIsTextStyleCollapsed,
     isBackgroundColorCollapsed, setIsBackgroundColorCollapsed,
     isQuoteSettingsCollapsed, setIsQuoteSettingsCollapsed,
+    isAvatarSettingsCollapsed, setIsAvatarSettingsCollapsed,
 
     // Multi-select settings and setters
     multiSelectSettings,

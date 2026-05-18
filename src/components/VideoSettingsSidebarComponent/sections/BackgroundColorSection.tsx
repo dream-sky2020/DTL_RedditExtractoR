@@ -1,5 +1,6 @@
-import React from 'react';
-import { Row, Col, Form, Input, Typography, ColorPicker, Switch, Space } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Form, Input, Typography, ColorPicker, Switch, Space, Button } from 'antd';
+import { SyncOutlined } from '@ant-design/icons';
 import { useDslSceneBgColorReplace } from '@/hooks/useDslSceneBgColorReplace';
 import { useDslItemBgColorReplace } from '@/hooks/useDslItemBgColorReplace';
 
@@ -18,6 +19,7 @@ interface BackgroundColorSectionProps {
   setItemBackgroundColorEnd: (color: string) => void;
   itemBackgroundGradientMode: boolean;
   setItemBackgroundGradientMode: (mode: boolean) => void;
+  onRefreshColors: () => void;
 }
 
 export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
@@ -33,9 +35,44 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
   setItemBackgroundColorEnd,
   itemBackgroundGradientMode,
   setItemBackgroundGradientMode,
+  onRefreshColors,
 }) => {
   const { applySceneBgColorReplace } = useDslSceneBgColorReplace();
   const { applyItemBgColorReplace } = useDslItemBgColorReplace();
+
+  const [localSceneBg, setLocalSceneBg] = useState(sceneBackgroundColor);
+  const [localSceneBgEnd, setLocalSceneBgEnd] = useState(sceneBackgroundColorEnd);
+  const [localItemBg, setLocalItemBg] = useState(itemBackgroundColor);
+  const [localItemBgEnd, setLocalItemBgEnd] = useState(itemBackgroundColorEnd);
+
+  useEffect(() => {
+    setLocalSceneBg(sceneBackgroundColor);
+  }, [sceneBackgroundColor]);
+
+  useEffect(() => {
+    setLocalSceneBgEnd(sceneBackgroundColorEnd);
+  }, [sceneBackgroundColorEnd]);
+
+  useEffect(() => {
+    setLocalItemBg(itemBackgroundColor);
+  }, [itemBackgroundColor]);
+
+  useEffect(() => {
+    setLocalItemBgEnd(itemBackgroundColorEnd);
+  }, [itemBackgroundColorEnd]);
+
+  const handleApply = () => {
+    setSceneBackgroundColor(localSceneBg);
+    setSceneBackgroundColorEnd(localSceneBgEnd);
+    setItemBackgroundColor(localItemBg);
+    setItemBackgroundColorEnd(localItemBgEnd);
+    
+    // 同时也触发 DSL 替换（如果需要立即生效于 DSL 文本）
+    applySceneBgColorReplace(localSceneBg);
+    applyItemBgColorReplace(localItemBg);
+    
+    onRefreshColors();
+  };
 
   return (
     <Form layout="vertical" variant="filled">
@@ -56,21 +93,13 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <ColorPicker 
-                  value={sceneBackgroundColor} 
-                  onChange={(color) => {
-                    const hex = color.toHexString();
-                    setSceneBackgroundColor(hex);
-                    applySceneBgColorReplace(hex);
-                  }} 
+                  value={localSceneBg} 
+                  onChange={(color) => setLocalSceneBg(color.toHexString())} 
                   showText 
                 />
                 <Input
-                  value={sceneBackgroundColor}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSceneBackgroundColor(val);
-                    applySceneBgColorReplace(val);
-                  }}
+                  value={localSceneBg}
+                  onChange={(e) => setLocalSceneBg(e.target.value)}
                   placeholder="#ffffff"
                   style={{ flex: 1, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
                 />
@@ -80,10 +109,10 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
                   <div style={{ width: 24, textAlign: 'center' }}>
                     <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>至</Text>
                   </div>
-                  <ColorPicker value={sceneBackgroundColorEnd} onChange={(color) => setSceneBackgroundColorEnd(color.toHexString())} showText />
+                  <ColorPicker value={localSceneBgEnd} onChange={(color) => setLocalSceneBgEnd(color.toHexString())} showText />
                   <Input
-                    value={sceneBackgroundColorEnd}
-                    onChange={(e) => setSceneBackgroundColorEnd(e.target.value)}
+                    value={localSceneBgEnd}
+                    onChange={(e) => setLocalSceneBgEnd(e.target.value)}
                     placeholder="#ffffff"
                     style={{ flex: 1, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
                   />
@@ -109,21 +138,13 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <ColorPicker 
-                  value={itemBackgroundColor} 
-                  onChange={(color) => {
-                    const hex = color.toHexString();
-                    setItemBackgroundColor(hex);
-                    applyItemBgColorReplace(hex);
-                  }} 
+                  value={localItemBg} 
+                  onChange={(color) => setLocalItemBg(color.toHexString())} 
                   showText 
                 />
                 <Input
-                  value={itemBackgroundColor}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setItemBackgroundColor(val);
-                    applyItemBgColorReplace(val);
-                  }}
+                  value={localItemBg}
+                  onChange={(e) => setLocalItemBg(e.target.value)}
                   placeholder="transparent"
                   style={{ flex: 1, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
                 />
@@ -133,10 +154,10 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
                   <div style={{ width: 24, textAlign: 'center' }}>
                     <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>至</Text>
                   </div>
-                  <ColorPicker value={itemBackgroundColorEnd} onChange={(color) => setItemBackgroundColorEnd(color.toHexString())} showText />
+                  <ColorPicker value={localItemBgEnd} onChange={(color) => setLocalItemBgEnd(color.toHexString())} showText />
                   <Input
-                    value={itemBackgroundColorEnd}
-                    onChange={(e) => setItemBackgroundColorEnd(e.target.value)}
+                    value={localItemBgEnd}
+                    onChange={(e) => setLocalItemBgEnd(e.target.value)}
                     placeholder="transparent"
                     style={{ flex: 1, color: 'var(--text-primary)', background: 'var(--input-bg)' }}
                   />
@@ -144,6 +165,17 @@ export const BackgroundColorSection: React.FC<BackgroundColorSectionProps> = ({
               )}
             </div>
           </Form.Item>
+        </Col>
+
+        <Col span={24}>
+          <Button 
+            type="primary" 
+            icon={<SyncOutlined />} 
+            onClick={handleApply}
+            block
+          >
+            更新全部背景颜色
+          </Button>
         </Col>
       </Row>
     </Form>

@@ -5,6 +5,7 @@ export interface AuthorProfile {
   alias?: string;
   color?: string;
   avatar?: string;
+  updatedAt?: number;
 }
 
 export type ColorArrangementMode = 'uniform' | 'randomized';
@@ -30,6 +31,9 @@ export interface GlobalSettings {
   titleFontColor: string;
   contentFontColor: string;
   quoteFontColor: string;
+  avatarSize: number;
+  avatarShape: 'circle' | 'square';
+  avatarOffset: number;
   titleFontBold: boolean;
   contentFontBold: boolean;
   maxQuoteDepth: number;
@@ -57,6 +61,9 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   titleFontColor: '#ffffff',
   contentFontColor: '#ffffff',
   quoteFontColor: '#ffffff',
+  avatarSize: 24,
+  avatarShape: 'circle',
+  avatarOffset: 0,
   titleFontBold: true,
   contentFontBold: false,
   maxQuoteDepth: 4,
@@ -72,7 +79,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   sceneDisplayMode: 'normal',
 };
 
-export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity';
+export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'bgm_settings' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity' | 'history_manager' | 'avatar_manager';
 
 export interface ReplyInfo {
   author: string;
@@ -134,6 +141,15 @@ export interface BackgroundVideoConfig {
   afterEndColor?: string;
   afterEndImageSrc?: string;
   timelineMode?: BackgroundVideoTimelineMode;
+  fadeOutDuration?: number;
+}
+
+export interface BgmConfig {
+  enabled?: boolean;
+  src?: string;
+  volume?: number;
+  loop?: boolean;
+  fadeOutDuration?: number;
 }
 
 export interface VideoContentItem {
@@ -210,8 +226,12 @@ export interface VideoConfig {
   defaultQuoteMaxLimit?: number; // 默认最大字数限制
   sceneBackgroundColor?: string; // 默认场景背景颜色
   itemBackgroundColor?: string; // 默认项背景颜色
+  avatarSize?: number; // 默认头像大小
+  avatarShape?: 'circle' | 'square'; // 默认头像形状
+  avatarOffset?: number; // 默认头像偏移
   canvas?: VideoCanvasConfig; // 画布尺寸配置（横版/竖版）
   backgroundVideo?: BackgroundVideoConfig; // 最终导出专用背景视频
+  bgm?: BgmConfig; // 全局背景音乐
   renderMode?: RenderMode; // preview 不渲染背景视频，final 才启用最终轨道
 }
 

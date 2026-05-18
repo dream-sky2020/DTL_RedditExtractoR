@@ -55,6 +55,9 @@ interface VideoSettingsOptions {
   setItemBackgroundGradientMode: (mode: boolean) => void;
   setQuoteBackgroundColor: (color: string) => void;
   setQuoteBorderColor: (color: string) => void;
+  setAvatarSize: (size: number) => void;
+  setAvatarShape: (shape: 'circle' | 'square') => void;
+  setAvatarOffset: (offset: number) => void;
   // 当前值（用于计算）
   titleAlignment: TitleAlignmentType;
   titleFontSize: number;
@@ -63,6 +66,9 @@ interface VideoSettingsOptions {
   titleFontColor: string;
   contentFontColor: string;
   quoteFontColor: string;
+  avatarSize: number;
+  avatarShape: 'circle' | 'square';
+  avatarOffset: number;
   titleFontBold: boolean;
   contentFontBold: boolean;
   maxQuoteDepth: number;
@@ -91,8 +97,10 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
     setQuoteBackgroundColor, setQuoteBorderColor,
+    setAvatarSize, setAvatarShape, setAvatarOffset,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
     titleFontColor, contentFontColor, quoteFontColor,
+    avatarSize, avatarShape, avatarOffset,
     titleFontBold, contentFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
@@ -127,6 +135,33 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
             }
           }
         });
+        return newTag;
+      }
+      return part;
+    }).join('');
+  };
+
+  const updateAvatarInContent = (
+    content: string,
+    updates: Record<string, string | number | boolean>
+  ) => {
+    return content.split(/(\[avatar [^\]]*\]|\[avatar\])/g).map(part => {
+      if (part && part.startsWith('[avatar')) {
+        let newTag = part;
+        if (newTag === '[avatar]') {
+          newTag = '[avatar ]';
+        }
+        Object.entries(updates).forEach(([key, value]) => {
+          const regex = new RegExp(`${key}=([^ \\]]+)`);
+          if (regex.test(newTag)) {
+            newTag = newTag.replace(regex, `${key}=${value}`);
+          } else {
+            newTag = newTag.slice(0, -1) + ` ${key}=${value}]`;
+          }
+        });
+        // 清理可能产生的多余空格
+        newTag = newTag.replace(/\[avatar\s+/, '[avatar ').replace(/\s+\]/, ']');
+        if (newTag === '[avatar ]') return '[avatar]';
         return newTag;
       }
       return part;
@@ -268,7 +303,16 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: 'post-content',
         author: nextResult.author,
-        content: `[style size=${titleSize} color=${opts.titleFontColor}${opts.titleFontBold ? ' b' : ''} align=${alignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=title]${nextResult.content || ''}[/style]`,
+        content: `${updateStyleInContent(nextResult.title, 'title', {
+          size: titleSize,
+          color: opts.titleFontColor,
+          align: alignment,
+          b: opts.titleFontBold
+        })}\n\n${updateStyleInContent(nextResult.content || '', 'context', {
+          size: contentSize,
+          color: opts.contentFontColor,
+          b: opts.contentFontBold
+        })}`,
       }]
     };
 
@@ -281,7 +325,11 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       items: [{
         id: c.id,
         author: c.author,
-        content: `[style size=${contentSize} color=${opts.contentFontColor}${opts.contentFontBold ? ' b' : ''} type=context]${c.body}[/style]`,
+        content: updateStyleInContent(c.body || '', 'context', {
+          size: contentSize,
+          color: opts.contentFontColor,
+          b: opts.contentFontBold
+        }),
         replyChain: c.replyChain
       }]
     }));
@@ -528,6 +576,74 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setVideoConfig(newConfig);
   };
 
+  const handleAvatarSizeChange = (size: number) => {
+    setAvatarSize(size);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateAvatarInContent(item.content, { size })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, avatarSize: size });
+    setVideoConfig(newConfig);
+  };
+
+  const handleAvatarShapeChange = (shape: 'circle' | 'square') => {
+    setAvatarShape(shape);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateAvatarInContent(item.content, { shape })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, avatarShape: shape });
+    setVideoConfig(newConfig);
+  };
+
+  const handleAvatarOffsetChange = (offset: number) => {
+    setAvatarOffset(offset);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateAvatarInContent(item.content, { offset })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, avatarOffset: offset });
+    setVideoConfig(newConfig);
+  };
+
+  const handleRefreshAvatars = () => {
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateAvatarInContent(item.content, { 
+          size: avatarSize, 
+          shape: avatarShape,
+          offset: avatarOffset 
+        })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ 
+      ...videoConfig, 
+      scenes: newScenes, 
+      avatarSize, 
+      avatarShape,
+      avatarOffset 
+    });
+    setVideoConfig(newConfig);
+    toast.success('已刷新所有头像设置');
+  };
+
+  const handleRefreshColors = () => {
+    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig));
+    setVideoConfig(newConfig);
+    toast.success('已刷新所有背景颜色');
+  };
+
   const setAllSceneLayouts = (layout: 'top' | 'center') => {
     const newScenes = videoConfig.scenes.map((s) => ({ ...s, layout }));
     const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes });
@@ -671,6 +787,11 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleDefaultQuoteMaxLimitChange,
     handleQuoteBackgroundColorChange,
     handleQuoteBorderColorChange,
+    handleAvatarSizeChange,
+    handleAvatarShapeChange,
+    handleAvatarOffsetChange,
+    handleRefreshAvatars,
+    handleRefreshColors,
     setAllSceneLayouts, addScene, setAllSceneDurations,
     handleRefreshStyles, handleRearrangeScenes, handleResetAndRebuild, handleRefreshAliases
   };

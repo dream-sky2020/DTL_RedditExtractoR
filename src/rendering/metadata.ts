@@ -246,6 +246,22 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
     ],
     hasContent: true,
     contentLabel: '图片列表 (url|duration,...)',
+  },
+  'avatar': {
+    tagName: 'avatar',
+    syntax: 'square',
+    properties: [
+      { name: 'size', label: '大小', type: 'number', min: 1, defaultValue: 24, description: '头像的宽度和高度（像素）' },
+      {
+        name: 'shape', label: '形状', type: 'select', options: [
+          { label: '圆形', value: 'circle' },
+          { label: '方形', value: 'square' }
+        ], defaultValue: 'circle'
+      },
+    ],
+    hasContent: true,
+    contentLabel: '头像图片URL',
+    contentPlaceholder: 'https://... 或本地路径',
   }
 };
 

@@ -40,6 +40,9 @@ export interface VideoSettingsSidebarProps {
   titleFontColor: string;
   contentFontColor: string;
   quoteFontColor: string;
+  avatarSize: number;
+  avatarShape: 'circle' | 'square';
+  avatarOffset: number;
   titleFontBold: boolean;
   contentFontBold: boolean;
   maxQuoteDepth: number;
@@ -79,6 +82,11 @@ export interface VideoSettingsSidebarProps {
   onItemBackgroundGradientModeChange: (mode: boolean) => void;
   onQuoteBackgroundColorChange: (color: string) => void;
   onQuoteBorderColorChange: (color: string) => void;
+  onAvatarSizeChange: (size: number) => void;
+  onAvatarShapeChange: (shape: 'circle' | 'square') => void;
+  onAvatarOffsetChange: (offset: number) => void;
+  onRefreshAvatars: () => void;
+  onRefreshColors: () => void;
   onAddScene: () => void;
 
   // Shared Data

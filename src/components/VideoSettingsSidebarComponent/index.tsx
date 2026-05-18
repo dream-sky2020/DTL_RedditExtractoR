@@ -7,6 +7,7 @@ import { GlobalConfigSection } from './sections/GlobalConfigSection';
 import { TextStyleSection } from './sections/TextStyleSection';
 import { BackgroundColorSection } from './sections/BackgroundColorSection';
 import { QuoteSettingsSection } from './sections/QuoteSettingsSection';
+import { AvatarSettingsSection } from './sections/AvatarSettingsSection';
 import { HistorySection } from './sections/HistorySection';
 import { MultiSelectSection } from './sections/MultiSelectSection';
 import { BatchSelectionSection } from './sections/BatchSelectionSection';
@@ -41,18 +42,20 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     toolTitle = '操作面板', toolDesc, draftConfig, setDraftConfig,
     commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment,
     titleFontSize, contentFontSize, quoteFontSize, titleFontColor, contentFontColor, quoteFontColor,
+    avatarSize, avatarShape, avatarOffset,
     titleFontBold, contentFontBold, maxQuoteDepth, defaultQuoteMaxLimit,
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor, onApplyCommentSort,
-    onRefreshStyles, onRearrangeScenes, onResetAndRebuild,
+    onRefreshStyles, onRefreshAvatars, onRefreshColors, onRearrangeScenes, onResetAndRebuild,
     onImageLayoutModeChange, onSceneLayoutChange, onTitleAlignmentChange,
     onTitleFontSizeChange, onContentFontSizeChange, onQuoteFontSizeChange,
     onTitleFontColorChange, onContentFontColorChange, onQuoteFontColorChange,
     onTitleFontBoldChange, onContentFontBoldChange, onMaxQuoteDepthChange,
     onDefaultQuoteMaxLimitChange, onSceneBackgroundColorChange, onSceneBackgroundColorEndChange,
     onSceneBackgroundGradientModeChange, onItemBackgroundColorChange, onItemBackgroundColorEndChange,
-    onItemBackgroundGradientModeChange, onQuoteBackgroundColorChange, onQuoteBorderColorChange,
+    onItemBackgroundGradientModeChange,     onQuoteBackgroundColorChange, onQuoteBorderColorChange,
+    onAvatarSizeChange, onAvatarShapeChange, onAvatarOffsetChange,
     onAddScene,
     canApplyCommentSort, mode, isMultiSelectMode, setIsMultiSelectMode, selectedSceneIds, setSelectedSceneIds,
     onRemoveSelectedScenes, onOpenTranslationModal, galleryPageSize, setGalleryPageSize,
@@ -139,6 +142,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
               itemBackgroundColor={itemBackgroundColor} setItemBackgroundColor={onItemBackgroundColorChange}
               itemBackgroundColorEnd={itemBackgroundColorEnd} setItemBackgroundColorEnd={onItemBackgroundColorEndChange}
               itemBackgroundGradientMode={itemBackgroundGradientMode} setItemBackgroundGradientMode={onItemBackgroundGradientModeChange}
+              onRefreshColors={onRefreshColors}
             />
           </CollapsibleSection>
 
@@ -152,6 +156,17 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
               defaultQuoteMaxLimit={defaultQuoteMaxLimit} setDefaultQuoteMaxLimit={onDefaultQuoteMaxLimitChange}
               quoteBackgroundColor={quoteBackgroundColor} setQuoteBackgroundColor={onQuoteBackgroundColorChange}
               quoteBorderColor={quoteBorderColor} setQuoteBorderColor={onQuoteBorderColorChange}
+            />
+          </CollapsibleSection>
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
+          <CollapsibleSection title="头像设置" isCollapsed={state.isAvatarSettingsCollapsed} onToggle={() => state.setIsAvatarSettingsCollapsed(!state.isAvatarSettingsCollapsed)}>
+            <AvatarSettingsSection
+              avatarSize={avatarSize} setAvatarSize={onAvatarSizeChange}
+              avatarShape={avatarShape} setAvatarShape={onAvatarShapeChange}
+              avatarOffset={avatarOffset} setAvatarOffset={onAvatarOffsetChange}
+              onRefreshAvatars={onRefreshAvatars}
             />
           </CollapsibleSection>
 

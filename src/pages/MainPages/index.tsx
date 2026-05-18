@@ -30,7 +30,10 @@ import { RenderTasksPage } from '../RenderTasksPage/index';
 import { ProjectsPage } from '../ProjectsPage/index';
 import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
+import { BgmSettingsPage } from '../BgmSettingsPage/index';
 import { IdentityManagementPage } from '../IdentityManagementPage/index';
+import { HistoryManagerPage } from '../HistoryManagerPage/index';
+import { AvatarManagerPage } from '../AvatarManagerPage/index';
 
 import { 
   ToolKey, 
@@ -150,6 +153,12 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
           desc: '选择最终导出专用的背景视频，并设置播放结束策略。',
           button: '',
         };
+      case 'bgm_settings':
+        return {
+          title: '全局背景音乐',
+          desc: '设置视频的全局背景音乐，仅在最终导出阶段合成。',
+          button: '',
+        };
       case 'static_preview':
         return {
           title: '画面预览 (PPT Mode)',
@@ -214,6 +223,18 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
         return {
           title: 'Qwen3-TTS 试听',
           desc: '调用本地 Qwen3-TTS 封装接口合成语音并播放。',
+          button: '',
+        };
+      case 'history_manager':
+        return {
+          title: '浏览历史管理',
+          desc: '加载并过滤浏览器历史记录，寻找精品帖子。',
+          button: '',
+        };
+      case 'avatar_manager':
+        return {
+          title: '头像库管理',
+          desc: '扫描并管理所有可用的头像资源，设置随机池。',
           button: '',
         };
     }
@@ -312,6 +333,10 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
               <BackgroundVideoPage />
             )}
 
+            {activeTool === 'bgm_settings' && (
+              <BgmSettingsPage />
+            )}
+
             {activeTool === 'static_preview' && (
               <SlidePreviewPage 
                 videoConfig={videoConfig}
@@ -378,6 +403,14 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'qwen_tts_try' && (
               <QwenTtsTryPage />
+            )}
+
+            {activeTool === 'history_manager' && (
+              <HistoryManagerPage />
+            )}
+
+            {activeTool === 'avatar_manager' && (
+              <AvatarManagerPage />
             )}
           </Content>
         </Layout>

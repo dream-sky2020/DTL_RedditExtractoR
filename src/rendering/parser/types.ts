@@ -12,6 +12,9 @@ export interface AvatarNode extends BaseNode {
   type: 'avatar';
   url: string;
   avatarType?: string;
+  size?: number;
+  shape?: 'circle' | 'square';
+  offset?: number;
 }
 
 export interface AnimateNode extends BaseNode {

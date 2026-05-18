@@ -72,6 +72,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     itemBackgroundColorEnd, setItemBackgroundColorEnd,
     itemBackgroundGradientMode, setItemBackgroundGradientMode,
     quoteBackgroundColor, setQuoteBackgroundColor, quoteBorderColor, setQuoteBorderColor,
+    avatarSize, setAvatarSize, avatarShape, setAvatarShape, avatarOffset, setAvatarOffset,
     colorArrangement, setColorArrangement,
     sceneDisplayMode,
     editorUiSettings,
@@ -105,8 +106,10 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
     setQuoteBackgroundColor, setQuoteBorderColor,
+    setAvatarSize, setAvatarShape, setAvatarOffset,
     titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
     titleFontColor, contentFontColor, quoteFontColor,
+    avatarSize, avatarShape, avatarOffset,
     titleFontBold, contentFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
@@ -468,6 +471,9 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         itemBackgroundGradientMode={itemBackgroundGradientMode}
         quoteBackgroundColor={quoteBackgroundColor}
         quoteBorderColor={quoteBorderColor}
+        avatarSize={avatarSize}
+        avatarShape={avatarShape}
+        avatarOffset={avatarOffset}
         onApplyCommentSort={videoSettingsHandlers.handleApplyCommentSort}
         onRefreshStyles={videoSettingsHandlers.handleRefreshStyles}
         onRearrangeScenes={videoSettingsHandlers.handleRearrangeScenes}
@@ -493,6 +499,11 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
         onItemBackgroundGradientModeChange={setItemBackgroundGradientMode}
         onQuoteBackgroundColorChange={videoSettingsHandlers.handleQuoteBackgroundColorChange}
         onQuoteBorderColorChange={videoSettingsHandlers.handleQuoteBorderColorChange}
+        onAvatarSizeChange={videoSettingsHandlers.handleAvatarSizeChange}
+        onAvatarShapeChange={videoSettingsHandlers.handleAvatarShapeChange}
+        onAvatarOffsetChange={videoSettingsHandlers.handleAvatarOffsetChange}
+        onRefreshAvatars={videoSettingsHandlers.handleRefreshAvatars}
+        onRefreshColors={videoSettingsHandlers.handleRefreshColors}
         onAddScene={videoSettingsHandlers.addScene}
         canApplyCommentSort={!!rawResult}
         galleryPage={galleryPage}

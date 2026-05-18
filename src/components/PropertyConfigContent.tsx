@@ -495,7 +495,7 @@ export const PropertyConfigContent: React.FC<PropertyConfigContentProps> = ({
           <Form layout="vertical">
             {metadata.hasContent && (
               <Form.Item label={metadata.contentLabel || '内容'}>
-                {selectedTagName === 'image' ? (
+                {selectedTagName === 'image' || selectedTagName === 'avatar' ? (
                   <LocalImageInput 
                     value={content} 
                     onChange={val => setContent(val)} 

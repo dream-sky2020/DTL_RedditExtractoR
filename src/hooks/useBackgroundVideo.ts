@@ -1,4 +1,4 @@
-import { staticFile } from 'remotion';
+import { staticFile, interpolate } from 'remotion';
 import { BackgroundVideoConfig } from '../types';
 
 export const BACKGROUND_VIDEO_PUBLIC_DIR = 'background-videos/';
@@ -75,7 +75,20 @@ export const useBackgroundVideo = ({ backgroundVideo, fps, frame }: UseBackgroun
     ? Math.max(1, Math.round(Math.max(0, backgroundVideo.durationInSeconds - (backgroundVideo.startOffset || 0)) / playbackRate * fps))
     : null;
     
-  const opacity = clamp01(backgroundVideo.opacity, 1);
+  const baseOpacity = clamp01(backgroundVideo.opacity, 1);
+  const fadeOutDuration = Math.max(0, backgroundVideo.fadeOutDuration ?? 0);
+  
+  let opacity = baseOpacity;
+  if (fadeOutDuration > 0 && playFrames !== null) {
+    const fadeOutFrames = fadeOutDuration * fps;
+    opacity = interpolate(
+      frame,
+      [playFrames - fadeOutFrames, playFrames],
+      [baseOpacity, 0],
+      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+    );
+  }
+
   const shouldRenderBlurredBackground = backgroundVideo.fit === 'contain' && backgroundVideo.blurredBackgroundEnabled;
   const blurAmount = Math.max(0, backgroundVideo.blurredBackgroundBlur ?? 24);
   const audioVolume = clampAudioVolume(backgroundVideo.audioVolume, 0.35);

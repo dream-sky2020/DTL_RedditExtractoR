@@ -12,3 +12,5 @@ public/cache/
 __pycache__/
 scripts/__pycache__/
 public/docs/临时*
+public/audio/bgm/
+public/background-videos/

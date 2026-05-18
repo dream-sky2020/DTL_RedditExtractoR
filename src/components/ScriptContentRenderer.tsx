@@ -15,6 +15,8 @@ interface ScriptContentRendererProps {
   defaultQuoteFontColor?: string;
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
+  avatarSize?: number;
+  avatarShape?: 'circle' | 'square';
 }
 
 export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = React.memo(({
@@ -31,6 +33,8 @@ export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = React
   defaultQuoteFontColor,
   defaultBackgroundColor,
   defaultBorderColor,
+  avatarSize,
+  avatarShape,
 }) => {
   // 核心优化：将播放进度通过 Context 下发，而不是作为 parseQuotes 的参数
   // 这样 parseQuotes 只需要在内容变化时执行一次，而不是每帧执行
@@ -40,8 +44,8 @@ export const ScriptContentRenderer: React.FC<ScriptContentRendererProps> = React
   }), [playbackFrame, fps]);
 
   const parsedContent = useMemo(() => {
-    return parseQuotes(content, -1, 0, maxQuoteDepth, [author], hideAudio, showMediaControls, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor);
-  }, [content, author, hideAudio, showMediaControls, maxQuoteDepth, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor]);
+    return parseQuotes(content, -1, 0, maxQuoteDepth, [author], hideAudio, showMediaControls, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor, avatarSize, avatarShape);
+  }, [content, author, hideAudio, showMediaControls, maxQuoteDepth, defaultQuoteMaxLimit, defaultQuoteFontSize, defaultQuoteFontColor, defaultBackgroundColor, defaultBorderColor, avatarSize, avatarShape]);
 
   return (
     <PlaybackContext.Provider value={playbackValue}>

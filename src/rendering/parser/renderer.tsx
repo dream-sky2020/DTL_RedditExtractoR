@@ -468,6 +468,9 @@ export interface RenderOptions {
   defaultQuoteFontColor?: string;
   defaultBackgroundColor?: string;
   defaultBorderColor?: string;
+  avatarSize?: number;
+  avatarShape?: 'circle' | 'square';
+  avatarOffset?: number;
   inRow?: boolean;
   rowMediaAttrStr?: string;
 }
@@ -480,6 +483,9 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
     defaultQuoteFontColor,
     defaultBackgroundColor,
     defaultBorderColor,
+    avatarSize: globalAvatarSize,
+    avatarShape: globalAvatarShape,
+    avatarOffset: globalAvatarOffset = 0,
     inRow = false,
     rowMediaAttrStr
   } = options;
@@ -634,25 +640,31 @@ export const renderAST = (nodes: ASTNode[], options: RenderOptions = {}): React.
           </AnimateContent>
         );
 
-      case 'avatar':
+      case 'avatar': {
+        const size = node.size || globalAvatarSize || 24;
+        const shape = node.shape || globalAvatarShape || 'circle';
+        const offset = node.offset !== undefined ? node.offset : globalAvatarOffset;
+        const borderRadius = shape === 'square' ? '4px' : '50%';
         return (
           <img
             key={index}
             src={getMediaUrl(node.url)}
             data-type={node.avatarType}
             style={{
-              width: '1.2em',
-              height: '1.2em',
-              borderRadius: '50%',
+              width: `${size}px`,
+              height: `${size}px`,
+              borderRadius,
               verticalAlign: 'middle',
               display: 'inline-block',
               margin: '0 4px',
               objectFit: 'cover',
               border: '1px solid rgba(255, 255, 255, 0.2)',
+              transform: `translateY(${offset}px)`,
             }}
             alt="avatar"
           />
         );
+      }
 
       default:
         return null;

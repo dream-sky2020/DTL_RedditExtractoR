@@ -15,6 +15,8 @@ import {
   PlayCircleOutlined,
   SoundOutlined,
   AudioOutlined,
+  HistoryOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons';
 import { ToolKey } from '../types';
 
@@ -67,6 +69,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: 'Reddit 链接提取',
           },
           {
+            key: 'history_manager',
+            icon: <HistoryOutlined />,
+            label: '浏览历史管理',
+          },
+          {
             key: 'projects',
             icon: <FolderOutlined />,
             label: '项目管理',
@@ -82,6 +89,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '身份与代号管理',
           },
           {
+            key: 'avatar_manager',
+            icon: <FileImageOutlined />,
+            label: '头像库管理',
+          },
+          {
             key: 'preview',
             icon: <VideoCameraOutlined />,
             label: '视频预览',
@@ -95,6 +107,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             key: 'background_video',
             icon: <PlayCircleOutlined />,
             label: '背景视频轨道',
+          },
+          {
+            key: 'bgm_settings',
+            icon: <CustomerServiceOutlined />,
+            label: '全局背景音乐',
           },
           {
             key: 'studio',

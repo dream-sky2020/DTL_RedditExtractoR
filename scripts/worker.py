@@ -143,18 +143,11 @@ def run_worker():
             video_config = task.get('config', {})
             process_config_urls(video_config)
             render_config = dict(video_config)
-            background_video = render_config.get('backgroundVideo') or {}
-            background_video_audio_enabled = bool(
-                background_video.get('enabled')
-                and background_video.get('src')
-                and background_video.get('audioEnabled')
-            )
+            
+            # 强制禁用 Remotion 端的音频以节省内存，音频合成由 audio_mixer.py 处理
             render_config['renderMode'] = 'final'
             render_config['disableSceneAudio'] = True
-            if background_video_audio_enabled:
-                render_config.pop('disableAudio', None)
-            else:
-                render_config['disableAudio'] = True
+            render_config['disableAudio'] = True
             
             # 写入临时的 video-config.json 供 render.js 使用
             temp_config_path = os.path.join(PROJECT_ROOT, f"video-config-{task_id}.json")

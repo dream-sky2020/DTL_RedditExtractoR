@@ -110,6 +110,8 @@ interface SceneItemProps {
   quoteFontColor?: string;
   maxQuoteDepth?: number;
   defaultQuoteMaxLimit?: number;
+  avatarSize?: number;
+  avatarShape?: 'circle' | 'square';
   defaultItemBackgroundColor?: string;
   quoteBackgroundColor?: string;
   quoteBorderColor?: string;
@@ -128,6 +130,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
   defaultItemBackgroundColor,
   quoteBackgroundColor,
   quoteBorderColor,
+  avatarSize,
+  avatarShape,
   isRemotion: _isRemotion = false,
 }) => {
   const enterSec = Math.min(Math.max(item.enterAt ?? 0, 0), sceneDuration);
@@ -303,6 +307,8 @@ const SceneItem: React.FC<SceneItemProps> = ({
           defaultQuoteMaxLimit={defaultQuoteMaxLimit}
           defaultBackgroundColor={resolvedQuoteBackgroundColor}
           defaultBorderColor={resolvedQuoteBorderColor}
+          avatarSize={avatarSize}
+          avatarShape={avatarShape}
         />
       </div>
     </div>
@@ -407,6 +413,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                   defaultItemBackgroundColor={config.itemBackgroundColor}
                   quoteBackgroundColor={config.quoteBackgroundColor}
                   quoteBorderColor={config.quoteBorderColor}
+                  avatarSize={config.avatarSize}
+                  avatarShape={config.avatarShape}
                   isRemotion={isRemotion}
                 />
               ))}
@@ -424,6 +432,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                 defaultItemBackgroundColor={config.itemBackgroundColor}
                 quoteBackgroundColor={config.quoteBackgroundColor}
                 quoteBorderColor={config.quoteBorderColor}
+                avatarSize={config.avatarSize}
+                avatarShape={config.avatarShape}
                 isRemotion={isRemotion}
               />
             </div>
@@ -450,6 +460,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                   defaultItemBackgroundColor={config.itemBackgroundColor}
                   quoteBackgroundColor={config.quoteBackgroundColor}
                   quoteBorderColor={config.quoteBorderColor}
+                  avatarSize={config.avatarSize}
+                  avatarShape={config.avatarShape}
                   isRemotion={isRemotion}
                 />
               ))}
@@ -480,6 +492,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                 defaultItemBackgroundColor={config.itemBackgroundColor}
                 quoteBackgroundColor={config.quoteBackgroundColor}
                 quoteBorderColor={config.quoteBorderColor}
+                avatarSize={config.avatarSize}
+                avatarShape={config.avatarShape}
                 isRemotion={isRemotion}
               />
             ))}

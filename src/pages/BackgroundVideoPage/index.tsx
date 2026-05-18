@@ -19,7 +19,7 @@ import {
   Typography,
 } from 'antd';
 import { toast } from '@components/Toast';
-import { ReloadOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { ReloadOutlined, VideoCameraOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { BackgroundVideoConfig } from '@/types';
 import { useVideoStore } from '@/store';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '@/rendering/videoCanvas';
@@ -77,6 +77,7 @@ const DEFAULT_BACKGROUND_VIDEO: BackgroundVideoConfig = {
   afterEndColor: '#000000',
   afterEndImageSrc: '',
   timelineMode: 'cut-at-dsl-end',
+  fadeOutDuration: 2,
 };
 
 interface BackgroundVideoItem {
@@ -148,6 +149,18 @@ export const BackgroundVideoPage: React.FC = () => {
         ...updates,
       },
     });
+  };
+
+  const pickLocalFile = async (onSelect: (path: string) => void) => {
+    try {
+      const response = await fetch(`${RENDER_API_BASE}/pick_file`);
+      const data = await response.json();
+      if (data.success && data.path) {
+        onSelect(data.path);
+      }
+    } catch (err) {
+      toast.error('无法调用本地文件选择器');
+    }
   };
 
   const fetchBackgroundVideos = async () => {
@@ -530,7 +543,7 @@ export const BackgroundVideoPage: React.FC = () => {
             </Row>
 
             <Row gutter={16}>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={6}>
                 <Form.Item label="视频结束后显示">
                   <Radio.Group
                     value={backgroundVideo.afterEndMode}
@@ -541,7 +554,19 @@ export const BackgroundVideoPage: React.FC = () => {
                   </Radio.Group>
                 </Form.Item>
               </Col>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={6}>
+                <Form.Item label="视频末尾淡出时长 (秒)">
+                  <InputNumber
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    style={{ width: '100%' }}
+                    value={backgroundVideo.fadeOutDuration}
+                    onChange={(value) => updateBackgroundVideo({ fadeOutDuration: value ?? 0 })}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={6}>
                 <Form.Item label="结束后纯色背景">
                   <VisualColorInput
                     value={backgroundVideo.afterEndColor}
@@ -551,14 +576,22 @@ export const BackgroundVideoPage: React.FC = () => {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={6}>
                 <Form.Item label="结束后图片路径">
-                  <Input
-                    value={backgroundVideo.afterEndImageSrc}
-                    placeholder="background-videos/end-card.png"
-                    disabled={backgroundVideo.afterEndMode !== 'image'}
-                    onChange={(event) => updateBackgroundVideo({ afterEndImageSrc: event.target.value })}
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Input
+                      value={backgroundVideo.afterEndImageSrc}
+                      placeholder="background-videos/end-card.png"
+                      disabled={backgroundVideo.afterEndMode !== 'image'}
+                      onChange={(event) => updateBackgroundVideo({ afterEndImageSrc: event.target.value })}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      icon={<FolderOpenOutlined />}
+                      disabled={backgroundVideo.afterEndMode !== 'image'}
+                      onClick={() => pickLocalFile((path) => updateBackgroundVideo({ afterEndImageSrc: path }))}
+                    />
+                  </div>
                 </Form.Item>
               </Col>
             </Row>

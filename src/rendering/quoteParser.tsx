@@ -27,6 +27,8 @@ export const parseQuotes = (
   defaultQuoteFontColor?: string,
   defaultBackgroundColor?: string,
   defaultBorderColor?: string,
+  avatarSize?: number,
+  avatarShape?: 'circle' | 'square',
 ): React.ReactNode => {
   if (!text) return null;
 
@@ -50,6 +52,8 @@ export const parseQuotes = (
     defaultQuoteFontSize,
     defaultQuoteFontColor,
     defaultBackgroundColor,
-    defaultBorderColor
+    defaultBorderColor,
+    avatarSize,
+    avatarShape
   });
 };

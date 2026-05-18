@@ -174,18 +174,30 @@ def mix_audio(config_path, video_path, output_path):
 
     tracks = parse_scene_audio_tracks(config)
     total_duration = get_total_duration(config)
+    bgm_config = config.get('bgm', {})
+    bgm_enabled = bgm_config.get('enabled', False) and bgm_config.get('src')
+    bgm_path = resolve_audio_path(bgm_config.get('src')) if bgm_enabled else None
+
+    background_config = config.get('backgroundVideo', {})
+    background_audio_enabled = background_config.get('enabled') and background_config.get('audioEnabled') and background_config.get('src')
+    background_video_path = resolve_audio_path(background_config.get('src')) if background_audio_enabled else None
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    preserve_video_audio = should_preserve_background_audio(config) and has_audio_stream(video_path)
+    # 如果我们手动提取背景音轨，就不再从 silent 视频中保留音轨（通常 silent 视频本身也没音轨）
+    preserve_video_audio = should_preserve_background_audio(config) and has_audio_stream(video_path) and not background_video_path
 
-    if not tracks and not preserve_video_audio:
+    if not tracks and not preserve_video_audio and not bgm_path and not background_video_path:
         print("ℹ️ 未发现音频轨道，直接输出静音视频。")
         shutil.copyfile(video_path, output_path)
         return
 
     if preserve_video_audio:
         print("🎧 已检测到输入视频音轨，将保留并混入最终音频。")
+    if background_video_path:
+        print(f"🎬 发现背景视频音轨: {background_config.get('src')}")
+    if bgm_path:
+        print(f"🎵 发现背景音乐: {bgm_config.get('src')}")
     print(f"🎚️ 发现 {len(tracks)} 条音频轨道，开始使用 FFmpeg 混音...")
 
     cmd = [
@@ -199,6 +211,23 @@ def mix_audio(config_path, video_path, output_path):
 
     for track in tracks:
         cmd.extend(['-i', track['path']])
+
+    if bgm_path:
+        cmd.extend(['-stream_loop', '-1', '-i', bgm_path])
+
+    if background_video_path:
+        # 背景视频可能需要跳过 startOffset
+        start_offset = parse_float(background_config.get('startOffset'), 0)
+        if start_offset > 0:
+            cmd.extend(['-ss', f'{start_offset:.3f}'])
+        
+        # 如果是重复播放模式，需要 loop
+        if background_config.get('playbackMode') == 'repeat-count':
+            repeat_count = max(1, int(parse_float(background_config.get('repeatCount'), 1)))
+            if repeat_count > 1:
+                cmd.extend(['-stream_loop', str(repeat_count - 1)])
+        
+        cmd.extend(['-i', background_video_path])
 
     filter_parts = [f'[1:a]atrim=0:{total_duration:.3f},asetpts=PTS-STARTPTS[silence]']
     mix_inputs = ['[silence]']
@@ -229,6 +258,69 @@ def mix_audio(config_path, video_path, output_path):
             f'[{label}]'
         )
         mix_inputs.append(f'[{label}]')
+
+    if bgm_path:
+        bgm_input_index = len(tracks) + 2
+        bgm_volume = max(0, min(1, parse_float(bgm_config.get('volume'), 0.75)))
+        bgm_fade_out = max(0, parse_float(bgm_config.get('fadeOutDuration'), 0))
+        
+        bgm_filters = [
+            f'atrim=0:{total_duration:.3f}',
+            'asetpts=PTS-STARTPTS',
+            'aformat=channel_layouts=stereo:sample_rates=48000',
+            f'volume={bgm_volume:.4f}'
+        ]
+        
+        if bgm_fade_out > 0:
+            fade_start = max(0, total_duration - bgm_fade_out)
+            bgm_filters.append(f'afade=t=out:st={fade_start:.3f}:d={bgm_fade_out:.3f}')
+            
+        filter_parts.append(
+            f'[{bgm_input_index}:a]'
+            f'{",".join(bgm_filters)}'
+            f'[bgm_audio]'
+        )
+        mix_inputs.append('[bgm_audio]')
+
+    if background_video_path:
+        # 背景视频音轨的输入索引：tracks (len) + silence (1) + bgm (1 if exists) + background (1)
+        bg_input_index = len(tracks) + 2 + (1 if bgm_path else 0)
+        bg_volume = max(0, parse_float(background_config.get('audioVolume'), 0.35))
+        bg_playback_rate = max(0.1, parse_float(background_config.get('playbackRate'), 1.0))
+        bg_fade_out = max(0, parse_float(background_config.get('fadeOutDuration'), 0))
+
+        bg_audio_filters = [
+            f'atrim=0:{total_duration * bg_playback_rate:.3f}', # 裁剪时长需要考虑倍率
+            'asetpts=PTS-STARTPTS',
+            'aformat=channel_layouts=stereo:sample_rates=48000'
+        ]
+
+        # 处理倍率播放 (atempo)
+        if bg_playback_rate != 1.0:
+            rate = bg_playback_rate
+            while rate > 2.0:
+                bg_audio_filters.append('atempo=2.0')
+                rate /= 2.0
+            while rate < 0.5:
+                bg_audio_filters.append('atempo=0.5')
+                rate /= 0.5
+            if rate != 1.0:
+                bg_audio_filters.append(f'atempo={rate:.4f}')
+
+        bg_audio_filters.append(f'volume={bg_volume:.4f}')
+
+        # 处理淡出
+        if bg_fade_out > 0:
+            fade_start = max(0, total_duration - bg_fade_out)
+            bg_audio_filters.append(f'afade=t=out:st={fade_start:.3f}:d={bg_fade_out:.3f}')
+
+        filter_parts.append(
+            f'[{bg_input_index}:a]'
+            f'{",".join(bg_audio_filters)},'
+            f'atrim=0:{total_duration:.3f},asetpts=PTS-STARTPTS' # 最终再次确保时长对齐
+            f'[bg_video_audio]'
+        )
+        mix_inputs.append('[bg_video_audio]')
 
     filter_parts.append(
         f'{"".join(mix_inputs)}'

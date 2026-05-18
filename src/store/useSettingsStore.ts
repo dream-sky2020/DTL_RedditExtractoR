@@ -91,6 +91,9 @@ interface SettingsState extends GlobalSettings {
   setItemBackgroundColor: (color: string) => void;
   setQuoteBackgroundColor: (color: string) => void;
   setQuoteBorderColor: (color: string) => void;
+  setAvatarSize: (size: number) => void;
+  setAvatarShape: (shape: 'circle' | 'square') => void;
+  setAvatarOffset: (offset: number) => void;
   setSceneBackgroundColorEnd: (color: string) => void;
   setSceneBackgroundGradientMode: (mode: boolean) => void;
   setItemBackgroundColorEnd: (color: string) => void;
@@ -205,6 +208,9 @@ export const useSettingsStore = create<SettingsState>()(
       setItemBackgroundColor: (itemBackgroundColor) => set({ itemBackgroundColor }),
       setQuoteBackgroundColor: (quoteBackgroundColor) => set({ quoteBackgroundColor }),
       setQuoteBorderColor: (quoteBorderColor) => set({ quoteBorderColor }),
+      setAvatarSize: (avatarSize) => set({ avatarSize }),
+      setAvatarShape: (avatarShape) => set({ avatarShape }),
+      setAvatarOffset: (avatarOffset) => set({ avatarOffset }),
       setSceneBackgroundColorEnd: (sceneBackgroundColorEnd) => set({ sceneBackgroundColorEnd }),
       setSceneBackgroundGradientMode: (sceneBackgroundGradientMode) => set({ sceneBackgroundGradientMode }),
       setItemBackgroundColorEnd: (itemBackgroundColorEnd) => set({ itemBackgroundColorEnd }),
@@ -237,6 +243,9 @@ export const useSettingsStore = create<SettingsState>()(
           itemBackgroundGradientMode: state.itemBackgroundGradientMode,
           quoteBackgroundColor: state.quoteBackgroundColor,
           quoteBorderColor: state.quoteBorderColor,
+          avatarSize: state.avatarSize,
+          avatarShape: state.avatarShape,
+          avatarOffset: state.avatarOffset,
           sceneDisplayMode: state.sceneDisplayMode,
           colorArrangement: state.colorArrangement,
         };

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Space, Card, Tooltip, Divider, Badge } from 'antd';
+import { Button, Space, Card, Tooltip, Divider, Badge, Input } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -21,6 +21,9 @@ import {
   CodeOutlined,
   ControlOutlined,
   SettingOutlined,
+  CloseOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
 } from '@ant-design/icons';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { EditorView, Decoration, DecorationSet } from '@codemirror/view';
@@ -90,6 +93,40 @@ const tagHighlightField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f)
 });
 
+// 定义搜索高亮的 Effect
+const setSearchHighlight = StateEffect.define<{ results: { from: number; to: number }[]; currentIdx: number } | null>();
+
+// 定义管理搜索高亮样式的 Field
+const searchHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (let e of tr.effects) {
+      if (e.is(setSearchHighlight)) {
+        if (!e.value) return Decoration.none;
+        const builder = new RangeSetBuilder<Decoration>();
+        const { results, currentIdx } = e.value;
+        
+        results.forEach((match, index) => {
+          const isCurrent = index === currentIdx;
+          builder.add(match.from, match.to, Decoration.mark({
+            attributes: { 
+              style: isCurrent 
+                ? 'background-color: #ff9800; color: #fff; font-weight: bold; box-shadow: 0 0 0 2px #ff9800;' 
+                : 'background-color: #fff176; color: #000;' 
+            }
+          }));
+        });
+        return builder.finish();
+      }
+    }
+    return decorations;
+  },
+  provide: f => EditorView.decorations.from(f)
+});
+
 export const DslEditor: React.FC<DslEditorProps> = ({
   value,
   onChange,
@@ -100,6 +137,80 @@ export const DslEditor: React.FC<DslEditorProps> = ({
 }) => {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [detectedTag, setDetectedTag] = useState<DetectedTag | null>(null);
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<{ from: number; to: number }[]>([]);
+  const [currentResultIdx, setCurrentResultIdx] = useState(-1);
+
+  // 搜索逻辑
+  useEffect(() => {
+    if (!searchTerm || !showSearch) {
+      setSearchResults([]);
+      setCurrentResultIdx(-1);
+      editorRef.current?.view?.dispatch({
+        effects: setSearchHighlight.of(null)
+      });
+      return;
+    }
+
+    const doc = editorRef.current?.view?.state.doc.toString() || value;
+    const results: { from: number; to: number }[] = [];
+    let pos = 0;
+    const lowerSearch = searchTerm.toLowerCase();
+    const lowerDoc = doc.toLowerCase();
+
+    while ((pos = lowerDoc.indexOf(lowerSearch, pos)) !== -1) {
+      results.push({ from: pos, to: pos + searchTerm.length });
+      pos += searchTerm.length;
+    }
+
+    setSearchResults(results);
+    setCurrentResultIdx(results.length > 0 ? 0 : -1);
+  }, [searchTerm, showSearch, value]);
+
+  // 当搜索结果或当前索引变化时，更新高亮并滚动到当前结果
+  useEffect(() => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+
+    view.dispatch({
+      effects: setSearchHighlight.of(searchResults.length > 0 ? { results: searchResults, currentIdx: currentResultIdx } : null)
+    });
+
+    if (currentResultIdx !== -1 && searchResults[currentResultIdx]) {
+      const match = searchResults[currentResultIdx];
+      view.dispatch({
+        selection: { anchor: match.from, head: match.to },
+        scrollIntoView: true
+      });
+    }
+  }, [searchResults, currentResultIdx]);
+
+  const handleNextSearchResult = () => {
+    if (searchResults.length === 0) return;
+    setCurrentResultIdx((prev) => (prev + 1) % searchResults.length);
+  };
+
+  const handlePrevSearchResult = () => {
+    if (searchResults.length === 0) return;
+    setCurrentResultIdx((prev) => (prev - 1 + searchResults.length) % searchResults.length);
+  };
+
+  // 监听快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch]);
 
   const findHeaderEnd = (text: string, openPos: number, syntax: 'angle' | 'square') => {
     const closeChar = syntax === 'angle' ? '>' : ']';
@@ -380,6 +491,7 @@ export const DslEditor: React.FC<DslEditorProps> = ({
   const extensions = useMemo(() => [
     dsl(),
     tagHighlightField,
+    searchHighlightField,
     EditorView.lineWrapping,
     EditorView.theme({
       "&": { height: `${rows * 1.5}em`, fontSize: "14px" },
@@ -394,102 +506,135 @@ export const DslEditor: React.FC<DslEditorProps> = ({
       size="small"
       className="dsl-editor-card"
       title={
-        <Space split={<Divider type="vertical" />} wrap>
-          <Space size={2}>
-            <Tooltip title="加粗 [style b]">
-              <Button size="small" icon={<BoldOutlined />} onClick={() => insertText('[style b]', '[/style]')} />
-            </Tooltip>
-            <Tooltip title="斜体 [style i]">
-              <Button size="small" icon={<ItalicOutlined />} onClick={() => insertText('[style i]', '[/style]')} />
-            </Tooltip>
-            <Tooltip title="下划线 [style u]">
-              <Button size="small" icon={<UnderlineOutlined />} onClick={() => insertText('[style u]', '[/style]')} />
-            </Tooltip>
-          </Space>
-          
-          <Space size={2}>
-            <Tooltip title="字号 [style size=32]">
-              <Button size="small" icon={<FontSizeOutlined />} onClick={() => insertText('[style size=32]', '[/style]')} />
-            </Tooltip>
-            <Tooltip title="颜色 [style color=#ff4d4f]">
-              <Button size="small" icon={<FontColorsOutlined />} onClick={() => insertText('[style color=#ff4d4f]', '[/style]')} />
-            </Tooltip>
-          </Space>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Space split={<Divider type="vertical" />} wrap>
+            <Space size={2}>
+              <Tooltip title="加粗 [style b]">
+                <Button size="small" icon={<BoldOutlined />} onClick={() => insertText('[style b]', '[/style]')} />
+              </Tooltip>
+              <Tooltip title="斜体 [style i]">
+                <Button size="small" icon={<ItalicOutlined />} onClick={() => insertText('[style i]', '[/style]')} />
+              </Tooltip>
+              <Tooltip title="下划线 [style u]">
+                <Button size="small" icon={<UnderlineOutlined />} onClick={() => insertText('[style u]', '[/style]')} />
+              </Tooltip>
+            </Space>
+            
+            <Space size={2}>
+              <Tooltip title="字号 [style size=32]">
+                <Button size="small" icon={<FontSizeOutlined />} onClick={() => insertText('[style size=32]', '[/style]')} />
+              </Tooltip>
+              <Tooltip title="颜色 [style color=#ff4d4f]">
+                <Button size="small" icon={<FontColorsOutlined />} onClick={() => insertText('[style color=#ff4d4f]', '[/style]')} />
+              </Tooltip>
+            </Space>
 
-          <Space size={2}>
-            <Tooltip title="左对齐 [style align=left]">
-              <Button size="small" icon={<AlignLeftOutlined />} onClick={() => insertText('[style align=left]', '[/style]')} />
-            </Tooltip>
-            <Tooltip title="居中 [style align=center]">
-              <Button size="small" icon={<AlignCenterOutlined />} onClick={() => insertText('[style align=center]', '[/style]')} />
-            </Tooltip>
-            <Tooltip title="右对齐 [style align=right]">
-              <Button size="small" icon={<AlignRightOutlined />} onClick={() => insertText('[style align=right]', '[/style]')} />
-            </Tooltip>
-          </Space>
+            <Space size={2}>
+              <Tooltip title="左对齐 [style align=left]">
+                <Button size="small" icon={<AlignLeftOutlined />} onClick={() => insertText('[style align=left]', '[/style]')} />
+              </Tooltip>
+              <Tooltip title="居中 [style align=center]">
+                <Button size="small" icon={<AlignCenterOutlined />} onClick={() => insertText('[style align=center]', '[/style]')} />
+              </Tooltip>
+              <Tooltip title="右对齐 [style align=right]">
+                <Button size="small" icon={<AlignRightOutlined />} onClick={() => insertText('[style align=right]', '[/style]')} />
+              </Tooltip>
+            </Space>
 
-          <Space size={2}>
-            <Tooltip title="快速插入图片 [image]url[/image]">
-              <Button size="small" icon={<FileImageOutlined />} onClick={() => insertText('[image]', '[/image]')} />
-            </Tooltip>
-            <Tooltip title="属性助手 (智能识别标签/可视化配置)">
-              <Button 
-                size="small" 
-                icon={<ControlOutlined />} 
-                onClick={() => handleOpenPropertyHelper()}
-                style={{ 
-                  color: detectedTag ? '#52c41a' : '#1890ff', 
-                  borderColor: detectedTag ? '#b7eb8f' : '#91d5ff',
-                  backgroundColor: detectedTag ? '#f6ffed' : 'transparent'
-                }}
+            <Space size={2}>
+              <Tooltip title="快速插入图片 [image]url[/image]">
+                <Button size="small" icon={<FileImageOutlined />} onClick={() => insertText('[image]', '[/image]')} />
+              </Tooltip>
+              <Tooltip title="属性助手 (智能识别标签/可视化配置)">
+                <Button 
+                  size="small" 
+                  icon={<ControlOutlined />} 
+                  onClick={() => handleOpenPropertyHelper()}
+                  style={{ 
+                    color: detectedTag ? '#52c41a' : '#1890ff', 
+                    borderColor: detectedTag ? '#b7eb8f' : '#91d5ff',
+                    backgroundColor: detectedTag ? '#f6ffed' : 'transparent'
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title="图集 [gallery]url1|2.5,url2|2.5[/gallery]">
+                <Button size="small" icon={<AppstoreOutlined />} onClick={() => insertText('[gallery]', '[/gallery]')} />
+              </Tooltip>
+              <Tooltip title="音频 [audio src=...]">
+                <Button size="small" icon={<SoundOutlined />} onClick={() => insertText('[audio src="', '"]')} />
+              </Tooltip>
+            </Space>
+
+            <Space size={2}>
+              <Tooltip title="引用 [quote author=...]">
+                <Button size="small" icon={<MessageOutlined />} onClick={() => insertText('[quote author="Alice"]', '[/quote]')} />
+              </Tooltip>
+              <Tooltip title="行布局 [row gap=8]">
+                <Button size="small" icon={<LayoutOutlined />} onClick={() => insertText('[row gap=8]', '[/row]')} />
+              </Tooltip>
+              <Tooltip title="场景配置 <scene ...>">
+                <Button size="small" icon={<SettingOutlined />} onClick={() => handleOpenPropertyHelper('scene')} />
+              </Tooltip>
+              <Tooltip title="项目配置 <item ...>">
+                <Button size="small" icon={<ControlOutlined />} onClick={() => handleOpenPropertyHelper('item')} />
+              </Tooltip>
+            </Space>
+
+            <Space size={2}>
+              <Tooltip title="强制换行 [\n]">
+                <Button size="small" icon={<EnterOutlined />} onClick={() => insertText('[\\n]')} />
+              </Tooltip>
+              <Tooltip title="插入停顿 [pause 0.5]">
+                <Button size="small" icon={<PauseCircleOutlined />} onClick={() => insertText('[pause 0.5]')} />
+              </Tooltip>
+              <Tooltip title="重置样式 [/style]">
+                <Button size="small" icon={<FormatPainterOutlined />} onClick={() => insertText('[/style]')} />
+              </Tooltip>
+              <Tooltip title="查找编辑器文本 (Ctrl+F)">
+                <Button 
+                  size="small" 
+                  icon={<SearchOutlined />} 
+                  onClick={() => setShowSearch(!showSearch)} 
+                  type={showSearch ? 'primary' : 'default'}
+                />
+              </Tooltip>
+              <Tooltip title="全局替换（先选中文本更方便）">
+                <Button size="small" icon={<SearchOutlined />} onClick={handleOpenGlobalReplace} />
+              </Tooltip>
+              <Tooltip title="布局预览 (Debug)">
+                <Button 
+                  size="small" 
+                  icon={<CodeOutlined />} 
+                  onClick={onPreviewLayout}
+                  style={{ color: '#722ed1', borderColor: '#d3adf7' }}
+                />
+              </Tooltip>
+            </Space>
+          </Space>
+          {showSearch && (
+            <div style={{ padding: '4px 0', borderTop: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Input
+                size="small"
+                placeholder="在编辑器中查找..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: 240 }}
+                autoFocus
+                suffix={
+                  <span style={{ color: '#bfbfbf', fontSize: 12 }}>
+                    {searchResults.length > 0 ? `${currentResultIdx + 1}/${searchResults.length}` : '0/0'}
+                  </span>
+                }
+                onPressEnter={handleNextSearchResult}
               />
-            </Tooltip>
-            <Tooltip title="图集 [gallery]url1|2.5,url2|2.5[/gallery]">
-              <Button size="small" icon={<AppstoreOutlined />} onClick={() => insertText('[gallery]', '[/gallery]')} />
-            </Tooltip>
-            <Tooltip title="音频 [audio src=...]">
-              <Button size="small" icon={<SoundOutlined />} onClick={() => insertText('[audio src="', '"]')} />
-            </Tooltip>
-          </Space>
-
-          <Space size={2}>
-            <Tooltip title="引用 [quote author=...]">
-              <Button size="small" icon={<MessageOutlined />} onClick={() => insertText('[quote author="Alice"]', '[/quote]')} />
-            </Tooltip>
-            <Tooltip title="行布局 [row gap=8]">
-              <Button size="small" icon={<LayoutOutlined />} onClick={() => insertText('[row gap=8]', '[/row]')} />
-            </Tooltip>
-            <Tooltip title="场景配置 <scene ...>">
-              <Button size="small" icon={<SettingOutlined />} onClick={() => handleOpenPropertyHelper('scene')} />
-            </Tooltip>
-            <Tooltip title="项目配置 <item ...>">
-              <Button size="small" icon={<ControlOutlined />} onClick={() => handleOpenPropertyHelper('item')} />
-            </Tooltip>
-          </Space>
-
-          <Space size={2}>
-            <Tooltip title="强制换行 [\n]">
-              <Button size="small" icon={<EnterOutlined />} onClick={() => insertText('[\\n]')} />
-            </Tooltip>
-            <Tooltip title="插入停顿 [pause 0.5]">
-              <Button size="small" icon={<PauseCircleOutlined />} onClick={() => insertText('[pause 0.5]')} />
-            </Tooltip>
-            <Tooltip title="重置样式 [/style]">
-              <Button size="small" icon={<FormatPainterOutlined />} onClick={() => insertText('[/style]')} />
-            </Tooltip>
-            <Tooltip title="全局替换（先选中文本更方便）">
-              <Button size="small" icon={<SearchOutlined />} onClick={handleOpenGlobalReplace} />
-            </Tooltip>
-            <Tooltip title="布局预览 (Debug)">
-              <Button 
-                size="small" 
-                icon={<CodeOutlined />} 
-                onClick={onPreviewLayout}
-                style={{ color: '#722ed1', borderColor: '#d3adf7' }}
-              />
-            </Tooltip>
-          </Space>
-        </Space>
+              <Space size={4}>
+                <Button size="small" icon={<ArrowUpOutlined />} onClick={handlePrevSearchResult} disabled={searchResults.length === 0} />
+                <Button size="small" icon={<ArrowDownOutlined />} onClick={handleNextSearchResult} disabled={searchResults.length === 0} />
+                <Button size="small" icon={<CloseOutlined />} onClick={() => setShowSearch(false)} type="text" />
+              </Space>
+            </div>
+          )}
+        </div>
       }
       styles={{ body: { padding: 0 } }}
     >
