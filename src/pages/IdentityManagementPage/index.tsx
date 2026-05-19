@@ -193,7 +193,11 @@ export const IdentityManagementPage: React.FC = () => {
       maxQuoteDepth: globalSettings.maxQuoteDepth,
       defaultQuoteMaxLimit: globalSettings.defaultQuoteMaxLimit,
       sceneBackgroundColor: globalSettings.sceneBackgroundColor,
+      sceneBackgroundColorEnd: globalSettings.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: globalSettings.sceneBackgroundGradientMode,
       itemBackgroundColor: globalSettings.itemBackgroundColor,
+      itemBackgroundColorEnd: globalSettings.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: globalSettings.itemBackgroundGradientMode,
     });
     setVideoConfig(nextConfig);
   };
