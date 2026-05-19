@@ -36,6 +36,8 @@ export interface GlobalSettings {
   avatarOffset: number;
   titleFontBold: boolean;
   contentFontBold: boolean;
+  authorFontSize: number;
+  authorFontBold: boolean;
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
@@ -66,6 +68,8 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   avatarOffset: 0,
   titleFontBold: true,
   contentFontBold: false,
+  authorFontSize: 24,
+  authorFontBold: true,
   maxQuoteDepth: 4,
   defaultQuoteMaxLimit: 150,
   sceneBackgroundColor: '#ffffff',
@@ -220,6 +224,8 @@ export interface VideoConfig {
   quoteFontColor?: string; // 引用块字体颜色
   titleFontBold?: boolean; // 标题是否加粗
   contentFontBold?: boolean; // 正文是否加粗
+  authorFontSize?: number; // 作者字体大小
+  authorFontBold?: boolean; // 作者是否加粗
   quoteBackgroundColor?: string; // 引用块默认背景颜色
   quoteBorderColor?: string; // 引用块默认边框颜色
   maxQuoteDepth?: number; // 最大嵌套深度

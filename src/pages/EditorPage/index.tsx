@@ -40,9 +40,11 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     imageLayoutMode, setImageLayoutMode, sceneLayout, setSceneLayout,
     titleAlignment, setTitleAlignment, titleFontSize, setTitleFontSize,
     contentFontSize, setContentFontSize, quoteFontSize, setQuoteFontSize,
-    titleFontColor, setTitleFontColor, contentFontColor, setContentFontColor,
+    titleFontColor, setTitleFontColor,     contentFontColor, setContentFontColor,
     quoteFontColor, setQuoteFontColor, titleFontBold, setTitleFontBold,
     contentFontBold, setContentFontBold,
+    authorFontBold, setAuthorFontBold,
+    authorFontSize, setAuthorFontSize,
     maxQuoteDepth, setMaxQuoteDepth, defaultQuoteMaxLimit, setDefaultQuoteMaxLimit,
     sceneBackgroundColor, setSceneBackgroundColor, 
     sceneBackgroundColorEnd, setSceneBackgroundColorEnd,
@@ -80,16 +82,17 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
     setContentFontSize, setQuoteFontSize, 
     setTitleFontColor, setContentFontColor, setQuoteFontColor,
-    setTitleFontBold, setContentFontBold,
+    setTitleFontBold, setContentFontBold, setAuthorFontBold,
+    setAuthorFontSize,
     setMaxQuoteDepth, setDefaultQuoteMaxLimit,
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
     setQuoteBackgroundColor, setQuoteBorderColor,
     setAvatarSize, setAvatarShape, setAvatarOffset,
-    titleAlignment, titleFontSize, contentFontSize, quoteFontSize,
+    titleAlignment, titleFontSize, contentFontSize, authorFontSize, quoteFontSize,
     titleFontColor, contentFontColor, quoteFontColor,
     avatarSize, avatarShape, avatarOffset,
-    titleFontBold, contentFontBold,
+    titleFontBold, contentFontBold, authorFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
@@ -316,12 +319,14 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         titleAlignment={titleAlignment}
         titleFontSize={titleFontSize}
         contentFontSize={contentFontSize}
+        authorFontSize={authorFontSize}
         quoteFontSize={quoteFontSize}
         titleFontColor={titleFontColor}
         contentFontColor={contentFontColor}
         quoteFontColor={quoteFontColor}
         titleFontBold={titleFontBold}
         contentFontBold={contentFontBold}
+        authorFontBold={authorFontBold}
         maxQuoteDepth={maxQuoteDepth}
         defaultQuoteMaxLimit={defaultQuoteMaxLimit}
         sceneBackgroundColor={sceneBackgroundColor}
@@ -344,12 +349,14 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
         onTitleAlignmentChange={videoSettingsHandlers.handleTitleAlignmentChange}
         onTitleFontSizeChange={videoSettingsHandlers.handleTitleFontSizeChange}
         onContentFontSizeChange={videoSettingsHandlers.handleContentFontSizeChange}
+        onAuthorFontSizeChange={videoSettingsHandlers.handleAuthorFontSizeChange}
         onQuoteFontSizeChange={videoSettingsHandlers.handleQuoteFontSizeChange}
         onTitleFontColorChange={videoSettingsHandlers.handleTitleFontColorChange}
         onContentFontColorChange={videoSettingsHandlers.handleContentFontColorChange}
         onQuoteFontColorChange={videoSettingsHandlers.handleQuoteFontColorChange}
         onTitleFontBoldChange={videoSettingsHandlers.handleTitleFontBoldChange}
         onContentFontBoldChange={videoSettingsHandlers.handleContentFontBoldChange}
+        onAuthorFontBoldChange={videoSettingsHandlers.handleAuthorFontBoldChange}
         onMaxQuoteDepthChange={videoSettingsHandlers.handleMaxQuoteDepthChange}
         onDefaultQuoteMaxLimitChange={videoSettingsHandlers.handleDefaultQuoteMaxLimitChange}
         onSceneBackgroundColorChange={setSceneBackgroundColor}

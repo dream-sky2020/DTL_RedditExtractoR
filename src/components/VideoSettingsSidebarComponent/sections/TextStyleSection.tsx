@@ -15,66 +15,86 @@ interface TextStyleSectionProps {
   setContentFontColor: (color: string) => void;
   titleFontBold: boolean;
   setTitleFontBold: (bold: boolean) => void;
-  contentFontBold: boolean;
-  setContentFontBold: (bold: boolean) => void;
-  onRefreshStyles: () => void;
+    contentFontBold: boolean;
+    setContentFontBold: (bold: boolean) => void;
+    authorFontSize: number;
+    setAuthorFontSize: (size: number) => void;
+    authorFontBold: boolean;
+    setAuthorFontBold: (bold: boolean) => void;
+    onRefreshStyles: () => void;
 }
 
 export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
-  titleFontSize,
-  setTitleFontSize,
-  contentFontSize,
-  setContentFontSize,
-  titleFontColor,
-  setTitleFontColor,
-  contentFontColor,
-  setContentFontColor,
-  titleFontBold,
-  setTitleFontBold,
-  contentFontBold,
-  setContentFontBold,
-  onRefreshStyles,
+    titleFontSize,
+    setTitleFontSize,
+    contentFontSize,
+    setContentFontSize,
+    titleFontColor,
+    setTitleFontColor,
+    contentFontColor,
+    setContentFontColor,
+    titleFontBold,
+    setTitleFontBold,
+    contentFontBold,
+    setContentFontBold,
+    authorFontSize,
+    setAuthorFontSize,
+    authorFontBold,
+    setAuthorFontBold,
+    onRefreshStyles,
 }) => {
-  const [localTitleSize, setLocalTitleSize] = useState(titleFontSize);
-  const [localContentSize, setLocalContentSize] = useState(contentFontSize);
-  const [localTitleColor, setLocalTitleColor] = useState(titleFontColor);
-  const [localContentColor, setLocalContentColor] = useState(contentFontColor);
-  const [localTitleBold, setLocalTitleBold] = useState(titleFontBold);
-  const [localContentBold, setLocalContentBold] = useState(contentFontBold);
+    const [localTitleSize, setLocalTitleSize] = useState(titleFontSize);
+    const [localContentSize, setLocalContentSize] = useState(contentFontSize);
+    const [localAuthorSize, setLocalAuthorSize] = useState(authorFontSize);
+    const [localTitleColor, setLocalTitleColor] = useState(titleFontColor);
+    const [localContentColor, setLocalContentColor] = useState(contentFontColor);
+    const [localTitleBold, setLocalTitleBold] = useState(titleFontBold);
+    const [localContentBold, setLocalContentBold] = useState(contentFontBold);
+    const [localAuthorBold, setLocalAuthorBold] = useState(authorFontBold);
 
-  useEffect(() => {
-    setLocalTitleSize(titleFontSize);
-  }, [titleFontSize]);
+    useEffect(() => {
+        setLocalTitleSize(titleFontSize);
+    }, [titleFontSize]);
 
-  useEffect(() => {
-    setLocalContentSize(contentFontSize);
-  }, [contentFontSize]);
+    useEffect(() => {
+        setLocalContentSize(contentFontSize);
+    }, [contentFontSize]);
 
-  useEffect(() => {
-    setLocalTitleColor(titleFontColor);
-  }, [titleFontColor]);
+    useEffect(() => {
+        setLocalAuthorSize(authorFontSize);
+    }, [authorFontSize]);
 
-  useEffect(() => {
-    setLocalContentColor(contentFontColor);
-  }, [contentFontColor]);
+    useEffect(() => {
+        setLocalTitleColor(titleFontColor);
+    }, [titleFontColor]);
 
-  useEffect(() => {
-    setLocalTitleBold(titleFontBold);
-  }, [titleFontBold]);
+    useEffect(() => {
+        setLocalContentColor(contentFontColor);
+    }, [contentFontColor]);
 
-  useEffect(() => {
-    setLocalContentBold(contentFontBold);
-  }, [contentFontBold]);
+    useEffect(() => {
+        setLocalTitleBold(titleFontBold);
+    }, [titleFontBold]);
 
-  const handleApply = () => {
-    setTitleFontSize(localTitleSize);
-    setContentFontSize(localContentSize);
-    setTitleFontColor(localTitleColor);
-    setContentFontColor(localContentColor);
-    setTitleFontBold(localTitleBold);
-    setContentFontBold(localContentBold);
-    onRefreshStyles();
-  };
+    useEffect(() => {
+        setLocalContentBold(contentFontBold);
+    }, [contentFontBold]);
+
+    useEffect(() => {
+        setLocalAuthorBold(authorFontBold);
+    }, [authorFontBold]);
+
+    const handleApply = () => {
+        setTitleFontSize(localTitleSize);
+        setContentFontSize(localContentSize);
+        setAuthorFontSize(localAuthorSize);
+        setTitleFontColor(localTitleColor);
+        setContentFontColor(localContentColor);
+        setTitleFontBold(localTitleBold);
+        setContentFontBold(localContentBold);
+        setAuthorFontBold(localAuthorBold);
+        onRefreshStyles();
+    };
 
   return (
     <Form layout="vertical" variant="filled">
@@ -146,6 +166,36 @@ export const TextStyleSection: React.FC<TextStyleSectionProps> = ({
                 icon={<BoldOutlined />}
                 onClick={() => setLocalContentBold(!localContentBold)}
                 style={{ width: '20%' }}
+              />
+            </Space.Compact>
+          </Form.Item>
+        </Col>
+
+        <Col span={24}>
+          <Form.Item label={<Text style={{ color: 'var(--text-secondary)' }}>作者样式 (字号 / 加粗)</Text>} style={{ marginBottom: 0 }}>
+            <Space.Compact style={{ width: '100%' }}>
+              <InputNumber
+                min={12}
+                max={200}
+                value={localAuthorSize}
+                onChange={(val) => setLocalAuthorSize(val || 24)}
+                style={{ width: '35%', color: 'var(--text-primary)', background: 'var(--input-bg)' }}
+              />
+              <span style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                padding: '0 8px', 
+                background: 'var(--input-bg)', 
+                border: '1px solid #d9d9d9',
+                borderLeft: 0,
+                fontSize: '12px',
+                color: 'rgba(0,0,0,0.45)'
+              }}>px</span>
+              <Button
+                type={localAuthorBold ? 'primary' : 'default'}
+                icon={<BoldOutlined />}
+                onClick={() => setLocalAuthorBold(!localAuthorBold)}
+                style={{ width: '65%' }}
               />
             </Space.Compact>
           </Form.Item>

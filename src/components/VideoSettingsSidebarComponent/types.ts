@@ -45,6 +45,8 @@ export interface VideoSettingsSidebarProps {
   avatarOffset: number;
   titleFontBold: boolean;
   contentFontBold: boolean;
+  authorFontBold: boolean;
+  authorFontSize: number;
   maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
@@ -66,12 +68,14 @@ export interface VideoSettingsSidebarProps {
   onTitleAlignmentChange: (alignment: TitleAlignmentType) => void;
   onTitleFontSizeChange: (size: number) => void;
   onContentFontSizeChange: (size: number) => void;
+  onAuthorFontSizeChange: (size: number) => void;
   onQuoteFontSizeChange: (size: number) => void;
   onTitleFontColorChange: (color: string) => void;
   onContentFontColorChange: (color: string) => void;
   onQuoteFontColorChange: (color: string) => void;
   onTitleFontBoldChange: (bold: boolean) => void;
   onContentFontBoldChange: (bold: boolean) => void;
+  onAuthorFontBoldChange: (bold: boolean) => void;
   onMaxQuoteDepthChange: (depth: number) => void;
   onDefaultQuoteMaxLimitChange: (limit: number) => void;
   onSceneBackgroundColorChange: (color: string) => void;

@@ -3,7 +3,10 @@ import { Button, Space, Typography } from 'antd';
 import {
   DownOutlined,
   UpOutlined,
-  SelectOutlined
+  SelectOutlined,
+  CheckSquareOutlined,
+  BorderInnerOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import { VideoConfig } from '@/types';
 
@@ -17,6 +20,8 @@ interface MultiSelectSectionProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   draftConfig: VideoConfig;
+  handleSelectAll: () => void;
+  handleSelectCurrentPage: () => void;
 }
 
 export const MultiSelectSection: React.FC<MultiSelectSectionProps> = ({
@@ -26,6 +31,8 @@ export const MultiSelectSection: React.FC<MultiSelectSectionProps> = ({
   setSelectedSceneIds,
   isCollapsed,
   setIsCollapsed,
+  handleSelectAll,
+  handleSelectCurrentPage,
 }) => {
   return (
     <>
@@ -77,6 +84,36 @@ export const MultiSelectSection: React.FC<MultiSelectSectionProps> = ({
               {isMultiSelectMode ? '退出多选' : '开启多选'}
             </Button>
           </div>
+
+          {isMultiSelectMode && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--brand-border)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <Button
+                  size="small"
+                  icon={<CheckSquareOutlined />}
+                  onClick={handleSelectAll}
+                >
+                  全选
+                </Button>
+                <Button
+                  size="small"
+                  icon={<BorderInnerOutlined />}
+                  onClick={handleSelectCurrentPage}
+                >
+                  全选本页
+                </Button>
+                <Button
+                  size="small"
+                  icon={<CloseCircleOutlined />}
+                  disabled={selectedSceneIds.length === 0}
+                  onClick={() => setSelectedSceneIds([])}
+                  style={{ gridColumn: 'span 2' }}
+                >
+                  清空选择
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>

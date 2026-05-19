@@ -107,6 +107,40 @@ export const useBatchTextActions = ({
     toast.warning('选中的画面格中没有找到换行标记');
   };
 
+  const handleAddLineBreakAfterAuthor = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    let affectedItemCount = 0;
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const newItems = scene.items.map(item => {
+        // 匹配 [style ... type=author]...[/style]
+        const authorRegex = /(\[style[^\]]*?type=author[^\]]*?\])([\s\S]*?)(\[\/style\])/g;
+        const newContent = item.content.replace(authorRegex, (match, p1, p2, p3) => {
+          // 如果已经包含 [\n]，则不处理
+          if (p2.includes('[\\n]')) return match;
+          // 在内容后添加 [\n] 和一个空格，放在 [/style] 之前
+          return `${p1}${p2}[\\n] ${p3}`;
+        });
+        
+        if (newContent !== item.content) {
+          affectedItemCount += 1;
+        }
+        return { ...item, content: newContent };
+      });
+
+      return { ...scene, items: newItems };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    if (affectedItemCount > 0) {
+      toast.success(`已在 ${affectedItemCount} 个 item 中的作者名后添加换行标记`);
+      return;
+    }
+    toast.warning('选中的画面格中没有找到作者标记');
+  };
+
   const handleBatchInsertTextToItem = () => {
     if (selectedSceneIds.length === 0) return;
 
@@ -208,6 +242,7 @@ export const useBatchTextActions = ({
     handleClearQuotes,
     handleRemoveLineBreakTags,
     handleRemoveFirstLineBreakTag,
+    handleAddLineBreakAfterAuthor,
     handleBatchInsertTextToItem,
     handleBatchItemKeyframesChange,
     canInsertText,

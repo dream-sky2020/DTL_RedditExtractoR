@@ -164,8 +164,15 @@ export const IdentityManagementPage: React.FC = () => {
       // 保持当前的排序和回复模式
       sortMode: (useRedditStore.getState() as any).sortMode || 'best',
       replyOrder: (useRedditStore.getState() as any).replyOrder || 'preserve',
-      contentColor: globalSettings.contentFontColor,
-      contentBold: globalSettings.contentFontBold,
+      contentFontColor: globalSettings.contentFontColor,
+      contentFontBold: globalSettings.contentFontBold,
+      authorFontSize: globalSettings.authorFontSize,
+      authorFontBold: globalSettings.authorFontBold,
+      contentFontSize: globalSettings.contentFontSize,
+      titleFontSize: globalSettings.titleFontSize,
+      titleFontColor: globalSettings.titleFontColor,
+      titleFontBold: globalSettings.titleFontBold,
+      titleAlignment: globalSettings.titleAlignment,
     });
 
     setResult(nextResult);
@@ -173,12 +180,14 @@ export const IdentityManagementPage: React.FC = () => {
       titleAlignment: globalSettings.titleAlignment,
       titleFontSize: globalSettings.titleFontSize,
       contentFontSize: globalSettings.contentFontSize,
+      authorFontSize: globalSettings.authorFontSize,
       quoteFontSize: globalSettings.quoteFontSize,
       titleFontColor: globalSettings.titleFontColor,
       contentFontColor: globalSettings.contentFontColor,
       quoteFontColor: globalSettings.quoteFontColor,
       titleFontBold: globalSettings.titleFontBold,
       contentFontBold: globalSettings.contentFontBold,
+      authorFontBold: globalSettings.authorFontBold,
       quoteBackgroundColor: globalSettings.quoteBackgroundColor,
       quoteBorderColor: globalSettings.quoteBorderColor,
       maxQuoteDepth: globalSettings.maxQuoteDepth,

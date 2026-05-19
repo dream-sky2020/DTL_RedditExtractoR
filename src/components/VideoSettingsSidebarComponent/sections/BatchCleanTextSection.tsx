@@ -6,12 +6,14 @@ interface BatchCleanTextSectionProps {
   selectedSceneIds: string[];
   handleRemoveLineBreakTags: () => void;
   handleRemoveFirstLineBreakTag: () => void;
+  handleAddLineBreakAfterAuthor: () => void;
 }
 
 export const BatchCleanTextSection: React.FC<BatchCleanTextSectionProps> = ({
   selectedSceneIds,
   handleRemoveLineBreakTags,
   handleRemoveFirstLineBreakTag,
+  handleAddLineBreakAfterAuthor,
 }) => {
   const hasSelected = selectedSceneIds.length > 0;
 
@@ -42,6 +44,19 @@ export const BatchCleanTextSection: React.FC<BatchCleanTextSectionProps> = ({
         }}
       >
         去除第一个 [\n]
+      </Button>
+      <Button
+        block
+        icon={<ClearOutlined />}
+        disabled={!hasSelected}
+        onClick={handleAddLineBreakAfterAuthor}
+        style={{
+          backgroundColor: hasSelected ? '#fa8c16' : '#fff',
+          color: hasSelected ? '#fff' : '#000',
+          borderColor: hasSelected ? '#fa8c16' : '#d9d9d9',
+        }}
+      >
+        作者后加 [\n]
       </Button>
     </Space>
   );

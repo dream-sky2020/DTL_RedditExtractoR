@@ -85,6 +85,8 @@ interface SettingsState extends GlobalSettings {
   setQuoteFontColor: (color: string) => void;
   setTitleFontBold: (bold: boolean) => void;
   setContentFontBold: (bold: boolean) => void;
+  setAuthorFontSize: (size: number) => void;
+  setAuthorFontBold: (bold: boolean) => void;
   setMaxQuoteDepth: (depth: number) => void;
   setDefaultQuoteMaxLimit: (limit: number) => void;
   setSceneBackgroundColor: (color: string) => void;
@@ -202,6 +204,8 @@ export const useSettingsStore = create<SettingsState>()(
       setQuoteFontColor: (quoteFontColor) => set({ quoteFontColor }),
       setTitleFontBold: (titleFontBold) => set({ titleFontBold }),
       setContentFontBold: (contentFontBold) => set({ contentFontBold }),
+      setAuthorFontSize: (authorFontSize) => set({ authorFontSize }),
+      setAuthorFontBold: (authorFontBold) => set({ authorFontBold }),
       setMaxQuoteDepth: (maxQuoteDepth) => set({ maxQuoteDepth }),
       setDefaultQuoteMaxLimit: (defaultQuoteMaxLimit) => set({ defaultQuoteMaxLimit }),
       setSceneBackgroundColor: (sceneBackgroundColor) => set({ sceneBackgroundColor }),
@@ -233,6 +237,8 @@ export const useSettingsStore = create<SettingsState>()(
           quoteFontColor: state.quoteFontColor,
           titleFontBold: state.titleFontBold,
           contentFontBold: state.contentFontBold,
+          authorFontSize: state.authorFontSize,
+          authorFontBold: state.authorFontBold,
           maxQuoteDepth: state.maxQuoteDepth,
           defaultQuoteMaxLimit: state.defaultQuoteMaxLimit,
           sceneBackgroundColor: state.sceneBackgroundColor,

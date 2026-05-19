@@ -114,14 +114,17 @@ export const tokenize = (
     const nextAvatarMatch = subText.match(/\[avatar[^\]]*\]/);
     const nextAvatar = nextAvatarMatch && nextAvatarMatch.index != null ? currentPos + nextAvatarMatch.index : -1;
 
+    const nextLineBreakMatch = subText.match(/\[\\n\]/);
+    const nextLineBreak = nextLineBreakMatch && nextLineBreakMatch.index != null ? currentPos + nextLineBreakMatch.index : -1;
+
     const nextTextTagMatch = subText.match(/<#text#?(?:\s[^>]*)?>|<\/#text#?>/);
     const nextTextTag = nextTextTagMatch && nextTextTagMatch.index != null ? currentPos + nextTextTagMatch.index : -1;
 
     // Determine nearest tag
     let foundIdx = -1;
-    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' | 'none' = 'none';
+    let type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' | 'lineBreak' | 'none' = 'none';
 
-    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' }[] = [];
+    const indices: { idx: number; type: 'quote' | 'image' | 'style' | 'gallery' | 'ignoredTag' | 'row' | 'animate' | 'avatar' | 'textTag' | 'lineBreak' }[] = [];
     if (nextQuote !== -1) indices.push({ idx: nextQuote, type: 'quote' });
     if (nextImage !== -1) indices.push({ idx: nextImage, type: 'image' });
     if (nextStyle !== -1) indices.push({ idx: nextStyle, type: 'style' });
@@ -131,6 +134,7 @@ export const tokenize = (
     if (nextAnimate !== -1) indices.push({ idx: nextAnimate, type: 'animate' });
     if (nextAvatar !== -1) indices.push({ idx: nextAvatar, type: 'avatar' });
     if (nextTextTag !== -1) indices.push({ idx: nextTextTag, type: 'textTag' });
+    if (nextLineBreak !== -1) indices.push({ idx: nextLineBreak, type: 'lineBreak' });
 
     indices.sort((a, b) => a.idx - b.idx);
 
@@ -458,6 +462,9 @@ export const tokenize = (
           currentPos = startTagEnd;
         }
       }
+    } else if (type === 'lineBreak') {
+      nodes.push({ type: 'text', content: '\n' });
+      currentPos = foundIdx + 4;
     } else if (type === 'textTag') {
       const match = text.substring(foundIdx).match(/^<#text#?(?:\s[^>]*)?>|^<\/#text#?>/);
       if (match) {

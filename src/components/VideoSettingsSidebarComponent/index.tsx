@@ -3,6 +3,7 @@ import { Space, Typography, Divider } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { SidebarWidthSection } from './sections/SidebarWidthSection';
 import { StudioPreviewSection } from './sections/StudioPreviewSection';
+import { CanvasConfigSection } from './sections/CanvasConfigSection';
 import { GlobalConfigSection } from './sections/GlobalConfigSection';
 import { TextStyleSection } from './sections/TextStyleSection';
 import { BackgroundColorSection } from './sections/BackgroundColorSection';
@@ -10,7 +11,6 @@ import { QuoteSettingsSection } from './sections/QuoteSettingsSection';
 import { AvatarSettingsSection } from './sections/AvatarSettingsSection';
 import { HistorySection } from './sections/HistorySection';
 import { MultiSelectSection } from './sections/MultiSelectSection';
-import { BatchSelectionSection } from './sections/BatchSelectionSection';
 import { BatchDuplicateSection } from './sections/BatchDuplicateSection';
 import { BatchSplitSection } from './sections/BatchSplitSection';
 import { BatchClearQuotesSection } from './sections/BatchClearQuotesSection';
@@ -41,17 +41,17 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
     isSidebarResizing, startSidebarResize, updateSidebarWidthByInput, resetSidebarWidthToDefault,
     toolTitle = '操作面板', toolDesc, draftConfig, setDraftConfig,
     commentSortMode, replyOrderMode, imageLayoutMode, sceneLayout, titleAlignment,
-    titleFontSize, contentFontSize, quoteFontSize, titleFontColor, contentFontColor, quoteFontColor,
+    titleFontSize, contentFontSize, authorFontSize, quoteFontSize, titleFontColor, contentFontColor, quoteFontColor,
     avatarSize, avatarShape, avatarOffset,
-    titleFontBold, contentFontBold, maxQuoteDepth, defaultQuoteMaxLimit,
+    titleFontBold, contentFontBold, authorFontBold, maxQuoteDepth, defaultQuoteMaxLimit,
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
     quoteBackgroundColor, quoteBorderColor, onApplyCommentSort,
     onRefreshStyles, onRefreshAvatars, onRefreshColors, onRearrangeScenes, onResetAndRebuild,
     onImageLayoutModeChange, onSceneLayoutChange, onTitleAlignmentChange,
-    onTitleFontSizeChange, onContentFontSizeChange, onQuoteFontSizeChange,
+    onTitleFontSizeChange, onContentFontSizeChange, onAuthorFontSizeChange, onQuoteFontSizeChange,
     onTitleFontColorChange, onContentFontColorChange, onQuoteFontColorChange,
-    onTitleFontBoldChange, onContentFontBoldChange, onMaxQuoteDepthChange,
+    onTitleFontBoldChange, onContentFontBoldChange, onAuthorFontBoldChange, onMaxQuoteDepthChange,
     onDefaultQuoteMaxLimitChange, onSceneBackgroundColorChange, onSceneBackgroundColorEndChange,
     onSceneBackgroundGradientModeChange, onItemBackgroundColorChange, onItemBackgroundColorEndChange,
     onItemBackgroundGradientModeChange,     onQuoteBackgroundColorChange, onQuoteBorderColorChange,
@@ -121,14 +121,26 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
 
           <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
 
+          <CollapsibleSection title="画布配置" isCollapsed={state.isCanvasConfigCollapsed} onToggle={() => state.setIsCanvasConfigCollapsed(!state.isCanvasConfigCollapsed)}>
+            <CanvasConfigSection
+              idPrefix={mode}
+              draftConfig={draftConfig}
+              setDraftConfig={setDraftConfig}
+            />
+          </CollapsibleSection>
+
+          <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
+
           <CollapsibleSection title="文本样式" isCollapsed={state.isTextStyleCollapsed} onToggle={() => state.setIsTextStyleCollapsed(!state.isTextStyleCollapsed)}>
             <TextStyleSection
               titleFontSize={titleFontSize} setTitleFontSize={onTitleFontSizeChange}
               contentFontSize={contentFontSize} setContentFontSize={onContentFontSizeChange}
+              authorFontSize={authorFontSize} setAuthorFontSize={onAuthorFontSizeChange}
               titleFontColor={titleFontColor} setTitleFontColor={onTitleFontColorChange}
               contentFontColor={contentFontColor} setContentFontColor={onContentFontColorChange}
               titleFontBold={titleFontBold} setTitleFontBold={onTitleFontBoldChange}
               contentFontBold={contentFontBold} setContentFontBold={onContentFontBoldChange}
+              authorFontBold={authorFontBold} setAuthorFontBold={onAuthorFontBoldChange}
               onRefreshStyles={onRefreshStyles}
             />
           </CollapsibleSection>
@@ -184,12 +196,10 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                 selectedSceneIds={selectedSceneIds} setSelectedSceneIds={setSelectedSceneIds}
                 isCollapsed={state.isMultiSelectCollapsed} setIsCollapsed={state.setIsMultiSelectCollapsed}
                 draftConfig={draftConfig}
+                handleSelectAll={state.handleSelectAll}
+                handleSelectCurrentPage={state.handleSelectCurrentPage}
               />
               <Divider style={{ margin: '16px 0', borderColor: 'var(--brand-border)' }} />
-
-              <CollapsibleSection title="批量选择" isCollapsed={state.isBatchSelectionCollapsed} onToggle={() => state.setIsBatchSelectionCollapsed(!state.isBatchSelectionCollapsed)}>
-                <BatchSelectionSection selectedSceneIds={selectedSceneIds} handleSelectAll={state.handleSelectAll} handleSelectCurrentPage={state.handleSelectCurrentPage} onClearSelection={() => setSelectedSceneIds([])} />
-              </CollapsibleSection>
 
               <CollapsibleSection title="新建画面格" isCollapsed={state.isBatchDuplicateCollapsed} onToggle={() => state.setIsBatchDuplicateCollapsed(!state.isBatchDuplicateCollapsed)}>
                 <BatchDuplicateSection selectedSceneIds={selectedSceneIds} handleDuplicateSelectedScene={state.handleDuplicateSelectedScene} onAddScene={onAddScene} />
@@ -203,8 +213,13 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
                 <BatchClearQuotesSection selectedSceneIds={selectedSceneIds} handleClearQuotes={state.handleClearQuotes} />
               </CollapsibleSection>
 
-              <CollapsibleSection title="去除换行" isCollapsed={state.isBatchCleanTextCollapsed} onToggle={() => state.setIsBatchCleanTextCollapsed(!state.isBatchCleanTextCollapsed)}>
-                <BatchCleanTextSection selectedSceneIds={selectedSceneIds} handleRemoveLineBreakTags={state.handleRemoveLineBreakTags} handleRemoveFirstLineBreakTag={state.handleRemoveFirstLineBreakTag} />
+              <CollapsibleSection title="换行操作" isCollapsed={state.isBatchCleanTextCollapsed} onToggle={() => state.setIsBatchCleanTextCollapsed(!state.isBatchCleanTextCollapsed)}>
+                <BatchCleanTextSection 
+                  selectedSceneIds={selectedSceneIds} 
+                  handleRemoveLineBreakTags={state.handleRemoveLineBreakTags} 
+                  handleRemoveFirstLineBreakTag={state.handleRemoveFirstLineBreakTag} 
+                  handleAddLineBreakAfterAuthor={state.handleAddLineBreakAfterAuthor}
+                />
               </CollapsibleSection>
 
               <CollapsibleSection title="批量删除" isCollapsed={state.isBatchDeleteCollapsed} onToggle={() => state.setIsBatchDeleteCollapsed(!state.isBatchDeleteCollapsed)}>

@@ -74,11 +74,13 @@ export const useDslTranslate = () => {
       // 执行替换
       translationMap.forEach((translated, original) => {
         const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(<#text#?(?:\\s[^>]*)?>)${escapedOriginal}(<\\/#text#?>)`, 'g');
+        // 允许文本前后有空白字符，因为提取时可能进行了 trim
+        const regex = new RegExp(`(<#text#?(?:\\s[^>]*)?>)\\s*${escapedOriginal}\\s*(<\\/#text#?>)`, 'g');
         
         const count = (dsl.match(regex) || []).length;
         if (count > 0) {
-          dsl = dsl.replace(regex, `$1${translated}$2`);
+          // 使用函数式替换，避免 translated 中包含 $ 符号导致的问题
+          dsl = dsl.replace(regex, (_, p1, p2) => `${p1}${translated}${p2}`);
           totalReplacements += count;
           changed = true;
         }

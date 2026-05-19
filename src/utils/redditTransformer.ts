@@ -1,4 +1,6 @@
-import { CommentSortMode, ReplyOrderMode, AuthorProfile } from '../types';
+import { CommentSortMode, ReplyOrderMode, AuthorProfile, VideoCanvasConfig } from '../types';
+import { interpolateColor } from './color/interpolateColor';
+import { createDefaultVideoCanvasConfig } from '../rendering/videoCanvas';
 
 // 定义通用的输出格式
 export interface CleanComment {
@@ -25,6 +27,7 @@ export interface CleanPost {
         upvotes: number;
         commentCount: number;
     };
+    canvas?: VideoCanvasConfig;
     comments: CleanComment[];
 }
 
@@ -33,8 +36,30 @@ export interface TransformOptions {
     replyOrder?: ReplyOrderMode;
     authorProfiles?: Record<string, AuthorProfile>;
     imageLayoutMode?: 'gallery' | 'row' | 'single';
-    contentColor?: string;
-    contentBold?: boolean;
+    contentFontColor?: string;
+    contentFontBold?: boolean;
+    authorFontSize?: number;
+    authorFontBold?: boolean;
+    contentFontSize?: number;
+    titleFontSize?: number;
+    titleFontColor?: string;
+    titleFontBold?: boolean;
+    titleAlignment?: string;
+    avatarSize?: number;
+    avatarShape?: 'circle' | 'square';
+    avatarOffset?: number;
+    maxQuoteDepth?: number;
+    quoteFontSize?: number;
+    quoteFontColor?: string;
+    quoteBackgroundColor?: string;
+    quoteBorderColor?: string;
+    sceneBackgroundColor?: string;
+    sceneBackgroundColorEnd?: string;
+    sceneBackgroundGradientMode?: boolean;
+    itemBackgroundColor?: string;
+    itemBackgroundColorEnd?: string;
+    itemBackgroundGradientMode?: boolean;
+    canvas?: VideoCanvasConfig;
 }
 
 const AUTHOR_TAG_COLOR = '#1890ff';
@@ -54,20 +79,33 @@ const getAuthorColor = (author: string, profiles: Record<string, AuthorProfile>)
     const color = profile.color?.trim();
     return color || AUTHOR_TAG_COLOR;
 };
-const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'author') => {
+const buildAuthorHeader = (author: string, profiles: Record<string, AuthorProfile>, type: string = 'author', options?: { size?: number; color?: string; bold?: boolean; avatarSize?: number; avatarShape?: 'circle' | 'square'; avatarOffset?: number }) => {
     const displayName = getAuthorDisplayName(author, profiles);
-    const color = getAuthorColor(author, profiles);
     const profile = getAuthorProfile(author, profiles);
-    const avatarTag = profile.avatar ? `[avatar bg=${color}]${profile.avatar}[/avatar]` : '';
-    return `${avatarTag}[style color=${color} b type=${type}]u/${displayName}:[/style]`;
+    
+    let avatarAttrs = `bg=${getAuthorColor(author, profiles)}`;
+    if (options?.avatarSize) avatarAttrs += ` size=${options.avatarSize}`;
+    if (options?.avatarShape) avatarAttrs += ` shape=${options.avatarShape}`;
+    if (options?.avatarOffset !== undefined) avatarAttrs += ` offset=${options.avatarOffset}`;
+    
+    const avatarTag = profile.avatar ? `[avatar ${avatarAttrs}]${profile.avatar}[/avatar]` : '';
+    
+    let styleAttrs = `type=${type}`;
+    const finalColor = profile.color?.trim() || AUTHOR_TAG_COLOR;
+    styleAttrs += ` color=${finalColor}`;
+    if (options?.size) styleAttrs += ` size=${options.size}`;
+    if (options?.bold ?? true) styleAttrs += ` b`;
+    
+    return `${avatarTag}[style ${styleAttrs}]u/${displayName}:[/style]`;
 };
 
-const wrapText = (text: string, type?: string, options?: { color?: string; bold?: boolean }) => {
+const wrapText = (text: string, type?: string, options?: { color?: string; bold?: boolean; size?: number; align?: string; bg?: string }) => {
     if (!text) return '';
 
     // 如果已经整体包裹了，说明是合法的，直接返回
     if (text.startsWith('<#text#>') && text.endsWith('</#text#>')) return text;
-    if (type && text.startsWith(`[style type=${type}]`) && text.endsWith('[/style]')) return text;
+    // 注意：这里放宽一点，只要是以 [style 开头且包含 type=type 即可，不一定要完全匹配，因为可能多了 size 等属性
+    if (type && text.startsWith(`[style`) && text.includes(`type=${type}`) && text.endsWith('[/style]')) return text;
 
     // 常见的 DSL 标签（不应被包裹进翻译标签的）
     // 注意：我们要把标签作为分隔符，同时保留它们
@@ -100,18 +138,21 @@ const wrapText = (text: string, type?: string, options?: { color?: string; bold?
     const result = wrappedParts.join('');
     if (type && result) {
         let styleAttrs = `type=${type}`;
+        if (options?.size) styleAttrs += ` size=${options.size}`;
         if (options?.color) styleAttrs += ` color=${options.color}`;
         if (options?.bold) styleAttrs += ` b`;
+        if (options?.align) styleAttrs += ` align=${options.align}`;
+        if (options?.bg) styleAttrs += ` bg=${options.bg}`;
         return `[style ${styleAttrs}]${result}[/style]`;
     }
     return result;
 };
 
 const stripLeadingAuthorHeader = (content: string) =>
-    content.replace(/^\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
+    content.replace(/^(?:\[avatar[^\]]*\].*?\[\/avatar\])?\s*\[style[^\]]*\]u\/[^:\]]+:\[\/style\]\s*/i, '');
 
-const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'author') => {
-    const header = buildAuthorHeader(author, profiles, type);
+const prependAuthorHeader = (author: string, content: string, profiles: Record<string, AuthorProfile>, type: string = 'author', options?: { size?: number; color?: string; bold?: boolean; avatarSize?: number; avatarShape?: 'circle' | 'square'; avatarOffset?: number }) => {
+    const header = buildAuthorHeader(author, profiles, type, options);
     const normalized = (content || '').trim();
     if (!normalized) return header;
     if (normalized.startsWith(header)) return normalized;
@@ -212,20 +253,75 @@ const DEFAULT_OPTIONS: Required<TransformOptions> = {
     replyOrder: 'preserve',
     authorProfiles: {},
     imageLayoutMode: 'gallery',
-    contentColor: '',
-    contentBold: false,
+    contentFontColor: '',
+    contentFontBold: false,
+    authorFontSize: 0,
+    authorFontBold: false,
+    contentFontSize: 0,
+    titleFontSize: 0,
+    titleFontColor: '',
+    titleFontBold: false,
+    titleAlignment: '',
+    avatarSize: 0,
+    avatarShape: 'circle',
+    avatarOffset: 0,
+    maxQuoteDepth: 4,
+    quoteFontSize: 0,
+    quoteFontColor: '',
+    quoteBackgroundColor: '',
+    quoteBorderColor: '',
+    sceneBackgroundColor: '',
+    sceneBackgroundColorEnd: '',
+    sceneBackgroundGradientMode: false,
+    itemBackgroundColor: '',
+    itemBackgroundColorEnd: '',
+    itemBackgroundGradientMode: false,
+    canvas: createDefaultVideoCanvasConfig(),
 };
 
 const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>): CleanPost => {
     const postAuthor = normalizeAuthor(data.author);
+    const totalComments = Array.isArray(data.comments) ? data.comments.length : 0;
+    const totalScenes = totalComments + 1; // +1 for post scene
+
+    const getGradientItemBg = (index: number) => {
+        if (!options.itemBackgroundGradientMode) return options.itemBackgroundColor;
+        const factor = totalScenes > 1 ? index / (totalScenes - 1) : 0;
+        return interpolateColor(options.itemBackgroundColor, options.itemBackgroundColorEnd, factor);
+    };
+
     const normalizedComments = Array.isArray(data.comments)
-        ? data.comments.map((comment) => {
+        ? data.comments.map((comment, idx) => {
             const commentAuthor = normalizeAuthor(comment.author);
             const displayAuthor = getAuthorDisplayName(commentAuthor, options.authorProfiles);
+            const currentItemBg = getGradientItemBg(idx + 1); // idx+1 because post is 0
+
+            // 重新包裹 body 以应用正确的渐变背景色
+            // 注意：这里需要先剥离旧的 [style] 标签，或者让 wrapText 处理
+            // 实际上 prependAuthorHeader 会处理 header，wrapText 会处理 body
+            
+            // 剥离旧的包裹，重新应用样式
+            const rawBody = stripLeadingAuthorHeader(comment.body || '');
+            // 移除可能存在的 [style type=context] 包裹
+            const cleanBody = rawBody.replace(/^\[style type=context[^\]]*\]([\s\S]*?)\[\/style\]$/i, '$1');
+
+            const newRawContent = wrapText(cleanBody, 'context', { 
+                color: options.contentFontColor, 
+                bold: options.contentFontBold,
+                size: options.contentFontSize,
+                bg: currentItemBg
+            });
+
             return {
                 ...comment,
                 author: displayAuthor,
-                body: prependAuthorHeader(commentAuthor, comment.body || '', options.authorProfiles, 'author'),
+                body: prependAuthorHeader(commentAuthor, newRawContent, options.authorProfiles, 'author', {
+                    size: options.authorFontSize,
+                    bold: options.authorFontBold,
+                    avatarSize: options.avatarSize,
+                    avatarShape: options.avatarShape,
+                    avatarOffset: options.avatarOffset
+                }),
                 parentAuthor: comment.parentAuthor
                     ? getAuthorDisplayName(normalizeAuthor(comment.parentAuthor), options.authorProfiles)
                     : comment.parentAuthor,
@@ -241,12 +337,26 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
         })
         : [];
 
+    const postItemBg = getGradientItemBg(0);
+
     return {
         ...data,
         author: getAuthorDisplayName(postAuthor, options.authorProfiles),
-        title: wrapText(data.title, 'title'),
+        title: wrapText(data.title, 'title', {
+            size: options.titleFontSize,
+            color: options.titleFontColor,
+            bold: options.titleFontBold,
+            align: options.titleAlignment,
+            bg: postItemBg
+        }),
         // 关键修正：content 已经是处理过的，不需要再次 wrapText
-        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles, 'author'),
+        content: prependAuthorHeader(postAuthor, data.content || '', options.authorProfiles, 'author', {
+            size: options.authorFontSize,
+            bold: options.authorFontBold,
+            avatarSize: options.avatarSize,
+            avatarShape: options.avatarShape,
+            avatarOffset: options.avatarOffset
+        }),
         comments: options.replyOrder === 'global'
             ? sortFlatComments(normalizedComments, options.sortMode)
             : normalizedComments,
@@ -255,12 +365,7 @@ const normalizeCleanPost = (data: CleanPost, options: Required<TransformOptions>
 
 export function transformRedditJson(rawData: any, options: TransformOptions = {}): CleanPost {
     const mergedOptions: Required<TransformOptions> = {
-        sortMode: 'best',
-        replyOrder: 'preserve',
-        authorProfiles: {},
-        imageLayoutMode: 'gallery',
-        contentColor: '',
-        contentBold: false,
+        ...DEFAULT_OPTIONS,
         ...options,
     };
 
@@ -317,9 +422,13 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     const flattenComments = (
         children: any[],
         depth = 0,
-        replyChain: { author: string; id?: string; content: string }[] = []
+        replyChain: { author: string; id?: string; content: string }[] = [],
+        commentIndexOffset = 1 // 默认从 1 开始，0 是主贴
     ): CleanComment[] => {
         if (!children || !Array.isArray(children)) return [];
+
+        const totalScenes = (rawData?.[1]?.data?.children?.length || 0) + 1; // 这是一个近似值，因为有递归，但对于顶级评论排序是够用的
+        // 注意：在 global 排序下，这里的 index 可能不准确，但 transformRedditJson 后面会处理 normalizeCleanPost
 
         let flatList: CleanComment[] = [];
         const orderedChildren = [...children].sort((left, right) => {
@@ -329,24 +438,45 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             return compareRawComments(left.data, right.data, mergedOptions.sortMode);
         });
 
-        orderedChildren.forEach(child => {
+        orderedChildren.forEach((child, idx) => {
             if (child.kind === 't1') {
                 const c = child.data;
                 const { imageUrl, cleanText } = processContent(c.body || '');
                 // 因为 processContent 已经把图片转换成 [image] 标签放入 cleanText 了
-                // 所以我们不需要在这里额外添加一次，否则会重复
+                // 所以 we 不需要在这里额外添加一次，否则会重复
                 const commentAuthor = normalizeAuthor(c.author);
                 const displayAuthor = getAuthorDisplayName(commentAuthor, mergedOptions.authorProfiles);
+                
+                // 计算当前评论的背景色（如果是渐变模式）
+                const currentCommentIdx = commentIndexOffset + idx;
+                const getGradientItemBg = (index: number) => {
+                    if (!mergedOptions.itemBackgroundGradientMode) return mergedOptions.itemBackgroundColor;
+                    // 注意：这里的 totalScenes 可能不准，因为是递归的。
+                    // 但在 transformRedditJson 最后的 normalizeCleanPost 中我们会重新计算
+                    return mergedOptions.itemBackgroundColor; 
+                };
+
                 // 关键修正：评论正文也需要先区分文本和图片再包裹
-                const currentRawContent = wrapText(cleanText, 'context', { color: mergedOptions.contentColor, bold: mergedOptions.contentBold });
-                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles, 'author');
+                const currentRawContent = wrapText(cleanText, 'context', { 
+                    color: mergedOptions.contentFontColor, 
+                    bold: mergedOptions.contentFontBold,
+                    size: mergedOptions.contentFontSize,
+                    bg: mergedOptions.itemBackgroundColor // 这里暂时用基色，normalizeCleanPost 会统一处理
+                });
+                const currentContent = prependAuthorHeader(commentAuthor, currentRawContent, mergedOptions.authorProfiles, 'author', {
+                    size: mergedOptions.authorFontSize,
+                    bold: mergedOptions.authorFontBold,
+                    avatarSize: mergedOptions.avatarSize,
+                    avatarShape: mergedOptions.avatarShape,
+                    avatarOffset: mergedOptions.avatarOffset
+                });
 
                 // 祖先引用构建规则：
                 // 1) 最外层是最近的父评论，最内层是最早的评论
                 // 2) 结构：[quote=父级] [quote=更早父级]...[/quote] \n 父级内容 [/quote]
-                // 3) 最大支持 4 层嵌套以防止 UI 溢出和脚本过大
+                // 3) 最大支持 N 层嵌套以防止 UI 溢出和脚本过大
                 let nestedAncestorQuote = '';
-                const MAX_QUOTE_NESTING = 4;
+                const MAX_QUOTE_NESTING = mergedOptions.maxQuoteDepth;
                 const startIdx = Math.max(0, replyChain.length - MAX_QUOTE_NESTING);
 
                 for (let i = startIdx; i < replyChain.length; i++) {
@@ -358,13 +488,25 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
                     const quoteAuthor = normalizeAuthor(quote.author);
                     const quoteAuthorName = getAuthorDisplayName(quoteAuthor, mergedOptions.authorProfiles);
                     const quoteAuthorToken = normalizeAuthorToken(quoteAuthorName);
-                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles, 'author')} `;
+                    const authorHeader = `${buildAuthorHeader(quoteAuthor, mergedOptions.authorProfiles, 'author', {
+                        size: mergedOptions.authorFontSize,
+                        bold: mergedOptions.authorFontBold,
+                        avatarSize: mergedOptions.avatarSize,
+                        avatarShape: mergedOptions.avatarShape,
+                        avatarOffset: mergedOptions.avatarOffset
+                    })} `;
                     const contentPart = nestedAncestorQuote
                         ? `\n${nestedAncestorQuote}\n${authorHeader}${stripLeadingAuthorHeader(quote.content)}`
                         : `${authorHeader}${stripLeadingAuthorHeader(quote.content)}`;
 
                     const quotedIdAttr = quote.id ? ` id=${quote.id}` : '';
-                    nestedAncestorQuote = `[quote=${quoteAuthorToken}${quotedIdAttr} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
+                    let quoteAttrs = `${quoteAuthorToken}${quotedIdAttr}`;
+                    if (mergedOptions.quoteFontSize) quoteAttrs += ` size=${mergedOptions.quoteFontSize}`;
+                    if (mergedOptions.quoteFontColor) quoteAttrs += ` color=${mergedOptions.quoteFontColor}`;
+                    if (mergedOptions.quoteBackgroundColor) quoteAttrs += ` bg=${mergedOptions.quoteBackgroundColor}`;
+                    if (mergedOptions.quoteBorderColor) quoteAttrs += ` bc=${mergedOptions.quoteBorderColor}`;
+
+                    nestedAncestorQuote = `[quote=${quoteAttrs} #第 ${level} 层级 | 来自于 u/${quoteAuthorName} 的评论内容]${contentPart}[/quote]`;
                 }
 
                 const finalContent = nestedAncestorQuote
@@ -470,12 +612,28 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
     if (multiImageTag) {
         postText += multiImageTag;
     }
-    postText = wrapText(postText, 'context');
+    postText = wrapText(postText, 'context', {
+        color: mergedOptions.contentFontColor,
+        bold: mergedOptions.contentFontBold,
+        size: mergedOptions.contentFontSize,
+        bg: mergedOptions.itemBackgroundColor
+    });
 
     // 构建最终对象
     return {
-        title: wrapText(postDetail.title, 'title'),
-        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles, 'author'),
+        title: wrapText(postDetail.title, 'title', {
+            size: mergedOptions.titleFontSize,
+            color: mergedOptions.titleFontColor,
+            bold: mergedOptions.titleFontBold,
+            align: mergedOptions.titleAlignment
+        }),
+        content: prependAuthorHeader(normalizeAuthor(postDetail.author), postText, mergedOptions.authorProfiles, 'author', {
+            size: mergedOptions.authorFontSize,
+            bold: mergedOptions.authorFontBold,
+            avatarSize: mergedOptions.avatarSize,
+            avatarShape: mergedOptions.avatarShape,
+            avatarOffset: mergedOptions.avatarOffset
+        }),
         image: postImg,
         images: postImages,
         author: getAuthorDisplayName(normalizeAuthor(postDetail.author), mergedOptions.authorProfiles),
@@ -484,6 +642,7 @@ export function transformRedditJson(rawData: any, options: TransformOptions = {}
             upvotes: postDetail.ups,
             commentCount: postDetail.num_comments
         },
+        canvas: mergedOptions.canvas,
         comments: (() => {
             const flattened = flattenComments(commentWrapper.data.children);
             if (mergedOptions.replyOrder === 'global') {

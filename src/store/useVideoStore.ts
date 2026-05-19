@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { VideoConfig, TitleAlignmentType } from '@/types';
+import { VideoConfig, TitleAlignmentType, VideoCanvasConfig } from '@/types';
 import { createDefaultVideoCanvasConfig, normalizeVideoConfig } from '@/rendering/videoCanvas';
 import { VIDEO_CONFIG_STORAGE_KEY } from '@/constants/storage';
+import { interpolateColor } from '@/utils/color/interpolateColor';
 
 interface VideoState {
   videoConfig: VideoConfig;
@@ -16,24 +17,31 @@ interface VideoState {
   canUndo: () => boolean;
   canRedo: () => boolean;
 
-  buildVideoConfigFromResult: (
+    buildVideoConfigFromResult: (
     nextResult: any,
     globalSettings: {
       titleAlignment: TitleAlignmentType;
       titleFontSize: number;
       contentFontSize: number;
+      authorFontSize: number;
       quoteFontSize: number;
       titleFontColor: string;
       contentFontColor: string;
       quoteFontColor: string;
       titleFontBold: boolean;
       contentFontBold: boolean;
+      authorFontBold: boolean;
       quoteBackgroundColor: string;
       quoteBorderColor: string;
       maxQuoteDepth: number;
       defaultQuoteMaxLimit: number;
       sceneBackgroundColor: string;
+      sceneBackgroundColorEnd: string;
+      sceneBackgroundGradientMode: boolean;
       itemBackgroundColor: string;
+      itemBackgroundColorEnd: string;
+      itemBackgroundGradientMode: boolean;
+      canvas?: VideoCanvasConfig;
     }
   ) => VideoConfig;
 
@@ -126,13 +134,29 @@ export const useVideoStore = create<VideoState>()(
 
       buildVideoConfigFromResult: (nextResult, globalSettings) => {
         const {
-          titleAlignment, titleFontSize, contentFontSize,
+          titleAlignment, titleFontSize, contentFontSize, authorFontSize,
           quoteFontSize, titleFontColor, contentFontColor,
-          quoteFontColor, titleFontBold, contentFontBold,
+          quoteFontColor, titleFontBold, contentFontBold, authorFontBold,
           quoteBackgroundColor, quoteBorderColor,
-          maxQuoteDepth, defaultQuoteMaxLimit, sceneBackgroundColor,
-          itemBackgroundColor
+          maxQuoteDepth, defaultQuoteMaxLimit, 
+          sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
+          itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
+          canvas: globalCanvas
         } = globalSettings;
+
+        const totalScenes = nextResult.comments.length + 1;
+
+        const getSceneBg = (index: number) => {
+          if (!sceneBackgroundGradientMode) return sceneBackgroundColor;
+          const factor = totalScenes > 1 ? index / (totalScenes - 1) : 0;
+          return interpolateColor(sceneBackgroundColor, sceneBackgroundColorEnd, factor);
+        };
+
+        const getItemBg = (index: number) => {
+          if (!itemBackgroundGradientMode) return itemBackgroundColor;
+          const factor = totalScenes > 1 ? index / (totalScenes - 1) : 0;
+          return interpolateColor(itemBackgroundColor, itemBackgroundColorEnd, factor);
+        };
 
         const postScene = {
           id: 'scene-post-' + Date.now(),
@@ -140,24 +164,28 @@ export const useVideoStore = create<VideoState>()(
           title: '贴子正文',
           layout: 'top' as const,
           duration: 5,
+          backgroundColor: getSceneBg(0),
           items: [{
             id: 'post-content',
             author: nextResult.author,
-            content: `[style size=${titleFontSize} color=${titleFontColor}${titleFontBold ? ' b' : ''} align=${titleAlignment} type=title]${nextResult.title}[/style]\n\n[style size=${contentFontSize} type=context]${nextResult.content || ''}[/style]`,
+            content: `${nextResult.title}\n\n${nextResult.content || ''}`,
+            backgroundColor: getItemBg(0),
           }]
         };
 
-        const commentScenes = nextResult.comments.map((c: any) => ({
+        const commentScenes = nextResult.comments.map((c: any, idx: number) => ({
           id: 'scene-' + c.id,
           type: 'comments' as const,
           title: `评论 u/${c.author}`,
           layout: 'center' as const,
           duration: 3,
+          backgroundColor: getSceneBg(idx + 1),
           items: [{
             id: c.id,
             author: c.author,
-            content: `[style size=${contentFontSize} type=context]${c.body}[/style]`,
-            replyChain: c.replyChain
+            content: `${c.body}`,
+            replyChain: c.replyChain,
+            backgroundColor: getItemBg(idx + 1),
           }]
         }));
 
@@ -167,19 +195,25 @@ export const useVideoStore = create<VideoState>()(
           scenes: [postScene, ...commentScenes],
           titleFontSize,
           contentFontSize,
+          authorFontSize,
           quoteFontSize,
           titleFontColor,
           contentFontColor,
           quoteFontColor,
           titleFontBold,
           contentFontBold,
+          authorFontBold,
           quoteBackgroundColor,
           quoteBorderColor,
           maxQuoteDepth,
           defaultQuoteMaxLimit,
           sceneBackgroundColor,
+          sceneBackgroundColorEnd,
+          sceneBackgroundGradientMode,
           itemBackgroundColor,
-          canvas: createDefaultVideoCanvasConfig(),
+          itemBackgroundColorEnd,
+          itemBackgroundGradientMode,
+          canvas: nextResult.canvas || globalCanvas || createDefaultVideoCanvasConfig(),
         };
       },
 

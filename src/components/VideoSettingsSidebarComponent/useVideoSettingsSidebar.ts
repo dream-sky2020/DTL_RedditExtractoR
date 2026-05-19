@@ -21,9 +21,9 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
   } = props;
 
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
+  const [isCanvasConfigCollapsed, setIsCanvasConfigCollapsed] = useState(false);
   const [isMultiSelectCollapsed, setIsMultiSelectCollapsed] = useState(false);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
-  const [isBatchSelectionCollapsed, setIsBatchSelectionCollapsed] = useState(false);
   const [isBatchDuplicateCollapsed, setIsBatchDuplicateCollapsed] = useState(false);
   const [isBatchSplitCollapsed, setIsBatchSplitCollapsed] = useState(false);
   const [isBatchClearQuotesCollapsed, setIsBatchClearQuotesCollapsed] = useState(false);
@@ -132,6 +132,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     handleClearQuotes,
     handleRemoveLineBreakTags,
     handleRemoveFirstLineBreakTag,
+    handleAddLineBreakAfterAuthor,
     handleBatchInsertTextToItem,
     handleBatchItemKeyframesChange,
     canInsertText,
@@ -209,9 +210,9 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
   return {
     // Collapse states
     isConfigCollapsed, setIsConfigCollapsed,
+    isCanvasConfigCollapsed, setIsCanvasConfigCollapsed,
     isMultiSelectCollapsed, setIsMultiSelectCollapsed,
     isHistoryCollapsed, setIsHistoryCollapsed,
-    isBatchSelectionCollapsed, setIsBatchSelectionCollapsed,
     isBatchDuplicateCollapsed, setIsBatchDuplicateCollapsed,
     isBatchSplitCollapsed, setIsBatchSplitCollapsed,
     isBatchClearQuotesCollapsed, setIsBatchClearQuotesCollapsed,
@@ -271,6 +272,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     handleClearQuotes,
     handleRemoveLineBreakTags,
     handleRemoveFirstLineBreakTag,
+    handleAddLineBreakAfterAuthor,
     handleBatchInsertTextToItem,
     handleBatchItemKeyframesChange,
     canInsertText,

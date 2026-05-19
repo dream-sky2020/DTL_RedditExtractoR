@@ -15,6 +15,7 @@ import { transformRedditJson } from '../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../utils/aliasGenerator';
 import { useVideoStore } from '@/store';
 import { hslToHex } from '../utils/color/hslToHex';
+import { interpolateColor } from '../utils/color/interpolateColor';
 import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
 
 type GlobalSceneLayout = Extract<SceneLayoutType, 'top' | 'center'>;
@@ -45,8 +46,10 @@ interface VideoSettingsOptions {
   setContentFontColor: (color: string) => void;
   setQuoteFontColor: (color: string) => void;
   setTitleFontBold: (bold: boolean) => void;
-  setContentFontBold: (bold: boolean) => void;
-  setMaxQuoteDepth: (depth: number) => void;
+    setContentFontBold: (bold: boolean) => void;
+    setAuthorFontSize: (size: number) => void;
+    setAuthorFontBold: (bold: boolean) => void;
+    setMaxQuoteDepth: (depth: number) => void;
   setDefaultQuoteMaxLimit: (limit: number) => void;
   setSceneBackgroundColor: (color: string) => void;
   setSceneBackgroundColorEnd: (color: string) => void;
@@ -67,12 +70,14 @@ interface VideoSettingsOptions {
   titleFontColor: string;
   contentFontColor: string;
   quoteFontColor: string;
-  avatarSize: number;
-  avatarShape: 'circle' | 'square';
-  avatarOffset: number;
-  titleFontBold: boolean;
-  contentFontBold: boolean;
-  maxQuoteDepth: number;
+    avatarSize: number;
+    avatarShape: 'circle' | 'square';
+    avatarOffset: number;
+    titleFontBold: boolean;
+    contentFontBold: boolean;
+    authorFontSize: number;
+    authorFontBold: boolean;
+    maxQuoteDepth: number;
   defaultQuoteMaxLimit: number;
   sceneBackgroundColor: string;
   sceneBackgroundColorEnd: string;
@@ -94,6 +99,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setContentFontSize, setQuoteFontSize, 
     setTitleFontColor, setContentFontColor, setQuoteFontColor,
     setTitleFontBold, setContentFontBold,
+    setAuthorFontSize, setAuthorFontBold,
     setMaxQuoteDepth, setDefaultQuoteMaxLimit,
     setSceneBackgroundColor, setSceneBackgroundColorEnd, setSceneBackgroundGradientMode,
     setItemBackgroundColor, setItemBackgroundColorEnd, setItemBackgroundGradientMode,
@@ -103,6 +109,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     titleFontColor, contentFontColor, quoteFontColor,
     avatarSize, avatarShape, avatarOffset,
     titleFontBold, contentFontBold,
+    authorFontSize, authorFontBold,
     maxQuoteDepth, defaultQuoteMaxLimit, 
     sceneBackgroundColor, sceneBackgroundColorEnd, sceneBackgroundGradientMode,
     itemBackgroundColor, itemBackgroundColorEnd, itemBackgroundGradientMode,
@@ -112,7 +119,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   // --- 统一的 [style] 标签更新逻辑 ---
   const updateStyleInContent = (
     content: string, 
-    type: 'title' | 'context', 
+    type: 'title' | 'context' | 'author', 
     updates: Record<string, string | number | boolean>
   ) => {
     // 严格匹配 type=xxx，确保它是作为一个独立的属性存在
@@ -175,34 +182,6 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       }
       return part;
     }).join('');
-  };
-
-  // --- 内部辅助函数 ---
-  const interpolateColor = (color1: string, color2: string, factor: number) => {
-    if (color1 === 'transparent' || color2 === 'transparent') {
-      return factor < 0.5 ? color1 : color2;
-    }
-    
-    const hex = (x: string) => {
-      const h = x.replace('#', '');
-      if (h.length === 3) return h.split('').map(c => c + c).join('');
-      return h;
-    };
-
-    const r1 = parseInt(hex(color1).substring(0, 2), 16);
-    const g1 = parseInt(hex(color1).substring(2, 4), 16);
-    const b1 = parseInt(hex(color1).substring(4, 6), 16);
-
-    const r2 = parseInt(hex(color2).substring(0, 2), 16);
-    const g2 = parseInt(hex(color2).substring(2, 4), 16);
-    const b2 = parseInt(hex(color2).substring(4, 6), 16);
-
-    const r = Math.round(r1 + factor * (r2 - r1));
-    const g = Math.round(g1 + factor * (g2 - g1));
-    const b = Math.round(b1 + factor * (b2 - b1));
-
-    const toHex = (n: number) => n.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
   const applyColorsToConfig = (config: VideoConfig, overrideOpts?: Partial<VideoSettingsOptions>) => {
@@ -315,6 +294,28 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       replyOrder,
       authorProfiles: profiles,
       imageLayoutMode: videoConfig.imageLayoutMode,
+      contentFontSize: opts.contentFontSize,
+      contentFontColor: opts.contentFontColor,
+      contentFontBold: opts.contentFontBold,
+      titleFontSize: opts.titleFontSize,
+      titleFontColor: opts.titleFontColor,
+      titleFontBold: opts.titleFontBold,
+      titleAlignment: opts.titleAlignment,
+      avatarSize: opts.avatarSize,
+      avatarShape: opts.avatarShape,
+      avatarOffset: opts.avatarOffset,
+      maxQuoteDepth: opts.maxQuoteDepth,
+      quoteFontSize: opts.quoteFontSize,
+      quoteFontColor: opts.quoteFontColor,
+      quoteBackgroundColor: opts.quoteBackgroundColor,
+      quoteBorderColor: opts.quoteBorderColor,
+      sceneBackgroundColor: opts.sceneBackgroundColor,
+      sceneBackgroundColorEnd: opts.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: opts.sceneBackgroundGradientMode,
+      itemBackgroundColor: opts.itemBackgroundColor,
+      itemBackgroundColorEnd: opts.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: opts.itemBackgroundGradientMode,
+      canvas: videoConfig.canvas,
     });
 
     // 使用 useVideoStore 中的统一构建逻辑
@@ -334,7 +335,12 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       maxQuoteDepth: opts.maxQuoteDepth,
       defaultQuoteMaxLimit: opts.defaultQuoteMaxLimit,
       sceneBackgroundColor: opts.sceneBackgroundColor,
+      sceneBackgroundColorEnd: opts.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: opts.sceneBackgroundGradientMode,
       itemBackgroundColor: opts.itemBackgroundColor,
+      itemBackgroundColorEnd: opts.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: opts.itemBackgroundGradientMode,
+      canvas: videoConfig.canvas,
     });
 
     setResult(nextResult);
@@ -496,6 +502,32 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setVideoConfig(newConfig);
   };
 
+  const handleAuthorFontSizeChange = (size: number) => {
+    setAuthorFontSize(size);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'author', { size })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, authorFontSize: size });
+    setVideoConfig(newConfig);
+  };
+
+  const handleAuthorFontBoldChange = (bold: boolean) => {
+    setAuthorFontBold(bold);
+    const newScenes = videoConfig.scenes.map(scene => {
+      const newItems = scene.items.map(item => ({
+        ...item,
+        content: updateStyleInContent(item.content, 'author', { b: bold })
+      }));
+      return { ...scene, items: newItems };
+    });
+    const newConfig = normalizeVideoConfig({ ...videoConfig, scenes: newScenes, authorFontBold: bold });
+    setVideoConfig(newConfig);
+  };
+
   const handleQuoteFontColorChange = (color: string) => {
     setQuoteFontColor(color);
     const newConfig = normalizeVideoConfig({ ...videoConfig, quoteFontColor: color });
@@ -595,9 +627,29 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const handleRefreshColors = () => {
-    const newConfig = normalizeVideoConfig(applyColorsToConfig(videoConfig));
-    setVideoConfig(newConfig);
-    toast.success('已刷新所有背景颜色');
+    const nextConfig = applyColorsToConfig(videoConfig);
+    const total = nextConfig.scenes.length;
+    
+    const newScenes = nextConfig.scenes.map((scene, index) => {
+      const factor = total > 1 ? index / (total - 1) : 0;
+      const currentItemBg = itemBackgroundGradientMode 
+        ? interpolateColor(itemBackgroundColor, itemBackgroundColorEnd, factor)
+        : itemBackgroundColor;
+
+      const newItems = scene.items.map(item => {
+        let newContent = item.content;
+        const updates = { bg: currentItemBg };
+        newContent = updateStyleInContent(newContent, 'title', updates);
+        newContent = updateStyleInContent(newContent, 'context', updates);
+        newContent = updateStyleInContent(newContent, 'author', updates);
+        return { ...item, content: newContent, backgroundColor: currentItemBg };
+      });
+      return { ...scene, items: newItems };
+    });
+    
+    const finalConfig = normalizeVideoConfig({ ...nextConfig, scenes: newScenes });
+    setVideoConfig(finalConfig);
+    toast.success('已刷新所有背景颜色（支持渐变）及脚本样式');
   };
 
   const setAllSceneLayouts = (layout: 'top' | 'center') => {
@@ -644,13 +696,21 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
           size: titleFontSize,
           color: titleFontColor,
           align: titleAlignment,
-          b: titleFontBold
+          b: titleFontBold,
+          bg: itemBackgroundColor
         });
         // 更新 context 类型的 style 标签
         newContent = updateStyleInContent(newContent, 'context', {
           size: contentFontSize,
           color: contentFontColor,
-          b: contentFontBold
+          b: contentFontBold,
+          bg: itemBackgroundColor
+        });
+        // 更新 author 类型的 style 标签
+        newContent = updateStyleInContent(newContent, 'author', {
+          size: authorFontSize,
+          b: authorFontBold,
+          bg: itemBackgroundColor
         });
         return { ...item, content: newContent };
       });
@@ -662,10 +722,12 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       scenes: newScenes,
       titleFontSize,
       contentFontSize,
+      authorFontSize,
       titleFontColor,
       contentFontColor,
       titleFontBold,
       contentFontBold,
+      authorFontBold,
       titleAlignment,
     });
     setVideoConfig(newConfig);
@@ -687,6 +749,28 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       replyOrder,
       authorProfiles,
       imageLayoutMode: videoConfig.imageLayoutMode,
+      contentFontSize: opts.contentFontSize,
+      contentFontColor: opts.contentFontColor,
+      contentFontBold: opts.contentFontBold,
+      titleFontSize: opts.titleFontSize,
+      titleFontColor: opts.titleFontColor,
+      titleFontBold: opts.titleFontBold,
+      titleAlignment: opts.titleAlignment,
+      avatarSize: opts.avatarSize,
+      avatarShape: opts.avatarShape,
+      avatarOffset: opts.avatarOffset,
+      maxQuoteDepth: opts.maxQuoteDepth,
+      quoteFontSize: opts.quoteFontSize,
+      quoteFontColor: opts.quoteFontColor,
+      quoteBackgroundColor: opts.quoteBackgroundColor,
+      quoteBorderColor: opts.quoteBorderColor,
+      sceneBackgroundColor: opts.sceneBackgroundColor,
+      sceneBackgroundColorEnd: opts.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: opts.sceneBackgroundGradientMode,
+      itemBackgroundColor: opts.itemBackgroundColor,
+      itemBackgroundColorEnd: opts.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: opts.itemBackgroundGradientMode,
+      canvas: videoConfig.canvas,
     });
 
     // 获取排序后的 ID 列表
@@ -738,7 +822,9 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     handleRearrangeColorsAndApply, updateAuthorProfile, handleImageLayoutModeChange,
     handleSceneLayoutChange, handleTitleAlignmentChange, handleTitleFontSizeChange,
     handleContentFontSizeChange, handleTitleFontColorChange, handleContentFontColorChange,
-    handleTitleFontBoldChange, handleContentFontBoldChange, handleQuoteFontColorChange,
+    handleTitleFontBoldChange,     handleContentFontBoldChange,
+    handleAuthorFontSizeChange, handleAuthorFontBoldChange,
+    handleQuoteFontColorChange,
     handleQuoteFontSizeChange, handleMaxQuoteDepthChange,
     handleDefaultQuoteMaxLimitChange,
     handleQuoteBackgroundColorChange,
