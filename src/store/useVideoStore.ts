@@ -51,7 +51,7 @@ interface VideoState {
   applyProjectState: (payload: { videoConfig: VideoConfig }) => void;
 }
 
-const HISTORY_LIMIT = 30;
+const HISTORY_LIMIT = 15;
 
 export const useVideoStore = create<VideoState>()(
   persist(
@@ -83,7 +83,12 @@ export const useVideoStore = create<VideoState>()(
         const { videoConfig: currentConfig, past } = get();
         const videoConfig = normalizeVideoConfig(newConfig);
 
-        // 如果数据没变，不处理
+        // 快速引用相等检查
+        if (currentConfig === videoConfig) {
+          return;
+        }
+
+        // 只有在引用不等时才进行昂贵的字符串化检查
         if (JSON.stringify(currentConfig) === JSON.stringify(videoConfig)) {
           return;
         }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Card,
   Row,
@@ -13,6 +13,7 @@ import {
   Modal,
   Tag,
 } from 'antd';
+import { useShallow } from 'zustand/react/shallow';
 import { toast } from '@components/Toast';
 import {
   FileImageOutlined,
@@ -54,7 +55,45 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
   const {
     videoConfig,
     setVideoConfig,
-  } = useVideoStore();
+  } = useVideoStore(useShallow(state => ({
+    videoConfig: state.videoConfig,
+    setVideoConfig: state.setVideoConfig,
+  })));
+
+  const settings = useSettingsStore(useShallow(state => ({
+    commentSortMode: state.commentSortMode, setCommentSortMode: state.setCommentSortMode, 
+    replyOrderMode: state.replyOrderMode, setReplyOrderMode: state.setReplyOrderMode,
+    imageLayoutMode: state.imageLayoutMode, setImageLayoutMode: state.setImageLayoutMode, 
+    sceneLayout: state.sceneLayout, setSceneLayout: state.setSceneLayout,
+    titleAlignment: state.titleAlignment, setTitleAlignment: state.setTitleAlignment, 
+    titleFontSize: state.titleFontSize, setTitleFontSize: state.setTitleFontSize,
+    contentFontSize: state.contentFontSize, setContentFontSize: state.setContentFontSize, 
+    quoteFontSize: state.quoteFontSize, setQuoteFontSize: state.setQuoteFontSize,
+    titleFontColor: state.titleFontColor, setTitleFontColor: state.setTitleFontColor,
+    contentFontColor: state.contentFontColor, setContentFontColor: state.setContentFontColor,
+    quoteFontColor: state.quoteFontColor, setQuoteFontColor: state.setQuoteFontColor, 
+    titleFontBold: state.titleFontBold, setTitleFontBold: state.setTitleFontBold,
+    contentFontBold: state.contentFontBold, setContentFontBold: state.setContentFontBold,
+    authorFontBold: state.authorFontBold, setAuthorFontBold: state.setAuthorFontBold,
+    authorFontSize: state.authorFontSize, setAuthorFontSize: state.setAuthorFontSize,
+    maxQuoteDepth: state.maxQuoteDepth, setMaxQuoteDepth: state.setMaxQuoteDepth, 
+    defaultQuoteMaxLimit: state.defaultQuoteMaxLimit, setDefaultQuoteMaxLimit: state.setDefaultQuoteMaxLimit,
+    sceneBackgroundColor: state.sceneBackgroundColor, setSceneBackgroundColor: state.setSceneBackgroundColor, 
+    sceneBackgroundColorEnd: state.sceneBackgroundColorEnd, setSceneBackgroundColorEnd: state.setSceneBackgroundColorEnd,
+    sceneBackgroundGradientMode: state.sceneBackgroundGradientMode, setSceneBackgroundGradientMode: state.setSceneBackgroundGradientMode,
+    itemBackgroundColor: state.itemBackgroundColor, setItemBackgroundColor: state.setItemBackgroundColor,
+    itemBackgroundColorEnd: state.itemBackgroundColorEnd, setItemBackgroundColorEnd: state.setItemBackgroundColorEnd,
+    itemBackgroundGradientMode: state.itemBackgroundGradientMode, setItemBackgroundGradientMode: state.setItemBackgroundGradientMode,
+    quoteBackgroundColor: state.quoteBackgroundColor, setQuoteBackgroundColor: state.setQuoteBackgroundColor, 
+    quoteBorderColor: state.quoteBorderColor, setQuoteBorderColor: state.setQuoteBorderColor,
+    avatarSize: state.avatarSize, setAvatarSize: state.setAvatarSize, 
+    avatarShape: state.avatarShape, setAvatarShape: state.setAvatarShape, 
+    avatarOffset: state.avatarOffset, setAvatarOffset: state.setAvatarOffset,
+    colorArrangement: state.colorArrangement, setColorArrangement: state.setColorArrangement,
+    sceneDisplayMode: state.sceneDisplayMode,
+    editorUiSettings: state.editorUiSettings,
+    setStudioUiSettings: state.setStudioUiSettings,
+  })));
 
   const {
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
@@ -79,7 +118,16 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     sceneDisplayMode,
     editorUiSettings,
     setStudioUiSettings,
-  } = useSettingsStore();
+  } = settings;
+
+  const reddit = useRedditStore(useShallow(state => ({
+    rawResult: state.rawResult,
+    result: state.result,
+    setResult: state.setResult,
+    allAuthors: state.allAuthors,
+    authorProfiles: state.authorProfiles,
+    setAuthorProfiles: state.setAuthorProfiles,
+  })));
 
   const {
     rawResult,
@@ -88,7 +136,12 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     allAuthors,
     authorProfiles,
     setAuthorProfiles,
-  } = useRedditStore();
+  } = reddit;
+
+  const persistAuthorProfiles = useCallback((p: Record<string, any>) => {
+    setAuthorProfiles(p);
+    localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
+  }, [setAuthorProfiles]);
 
   // 使用自定义 Hook 处理视频设置逻辑
   const videoSettingsHandlers = useVideoSettings({
@@ -96,10 +149,7 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
     commentSortMode, setCommentSortMode, replyOrderMode, setReplyOrderMode,
     rawResult, setResult, colorArrangement, setColorArrangement,
     allAuthors, authorProfiles, setAuthorProfiles, 
-    persistAuthorProfiles: (p) => {
-      setAuthorProfiles(p);
-      localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
-    },
+    persistAuthorProfiles,
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
     setContentFontSize, setQuoteFontSize, 
     setTitleFontColor, setContentFontColor, setQuoteFontColor,

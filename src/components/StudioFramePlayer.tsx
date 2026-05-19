@@ -23,7 +23,7 @@ interface StudioFramePlayerProps {
   selectionIndex?: number; // 选中的顺序，1开始
 }
 
-export const StudioFramePlayer: React.FC<StudioFramePlayerProps> = ({
+export const StudioFramePlayer: React.FC<StudioFramePlayerProps> = React.memo(({
   idx,
   isSelected,
   isCompact,
@@ -166,4 +166,4 @@ export const StudioFramePlayer: React.FC<StudioFramePlayerProps> = ({
       )}
     </div>
   );
-};
+});

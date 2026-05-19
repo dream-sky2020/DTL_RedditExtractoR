@@ -334,15 +334,31 @@ const MediaContent: React.FC<{
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let isMounted = true;
     setManualIndex(0);
+    
+    const images: HTMLImageElement[] = [];
+    
     mediaItems.forEach((item) => {
       const resolvedUrl = getMediaUrl(item.url);
       const img = new Image();
       img.src = resolvedUrl;
       img.onload = () => {
-        setLoadedUrls((prev) => new Set(prev).add(item.url));
+        if (isMounted) {
+          setLoadedUrls((prev) => new Set(prev).add(item.url));
+        }
       };
+      images.push(img);
     });
+
+    return () => {
+      isMounted = false;
+      images.forEach(img => {
+        img.onload = null;
+        img.onerror = null;
+        img.src = ''; // 尝试中断加载
+      });
+    };
   }, [mediaItems.map((item) => `${item.url}|${item.duration}`).join(',')]);
 
   const playbackSeconds = playbackFrame != null && fps ? playbackFrame / fps : 0;
