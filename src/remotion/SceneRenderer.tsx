@@ -248,6 +248,7 @@ const SceneItem: React.FC<SceneItemProps> = ({
     <div
       style={{
         position: 'relative',
+        flexShrink: 0,
         ...itemBaseStyle,
         borderRadius: 8,
         padding: '12px',
@@ -419,7 +420,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
                 />
               ))}
             </div>
-            <div style={{ padding: '4px 8px' }}>
+            <div style={{ padding: '4px 8px', flexShrink: 0 }}>
               <SceneItem
                 key={scene.items[stickyIdx].id}
                 item={scene.items[stickyIdx]}
