@@ -47,7 +47,6 @@ import {
 } from '../../types';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { normalizeVideoConfig } from '@/rendering/videoCanvas';
-import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 import { RenderTask } from '@/hooks/useVideoRender';
 
 const { Header, Content } = Layout;

@@ -44,7 +44,6 @@ import { transformRedditJson } from '@/utils/redditTransformer';
 import { StudioFramePlayer } from '../../components/StudioFramePlayer';
 import { DEFAULT_PREVIEW_FPS, getTotalFrames } from '../../components/VideoPreviewPlayer';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
-import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 import { AVATAR_POOL } from '@/constants/avatars';
 import { dialogs } from '../../components/Dialogs';
 
@@ -197,6 +196,7 @@ export const IdentityManagementPage: React.FC = () => {
       // 保持当前的排序和回复模式
       sortMode: (useRedditStore.getState() as any).sortMode || 'best',
       replyOrder: (useRedditStore.getState() as any).replyOrder || 'preserve',
+      imageLayoutMode: (useSettingsStore.getState() as any).imageLayoutMode,
       contentFontColor: globalSettings.contentFontColor,
       contentFontBold: globalSettings.contentFontBold,
       authorFontSize: globalSettings.authorFontSize,
@@ -206,6 +206,7 @@ export const IdentityManagementPage: React.FC = () => {
       titleFontColor: globalSettings.titleFontColor,
       titleFontBold: globalSettings.titleFontBold,
       titleAlignment: globalSettings.titleAlignment,
+      canvas: videoConfig.canvas,
     });
 
     setResult(nextResult);

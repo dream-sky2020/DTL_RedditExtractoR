@@ -26,8 +26,6 @@ import { useDslTranslate } from '@hooks/useDslTranslate';
 import { dialogs } from '@components/Dialogs';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '../../rendering/videoCanvas';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
-import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
-
 
 export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; toolDesc: string }> = ({ onApply, onBack, toolDesc }) => {
   const {
@@ -77,7 +75,6 @@ export const EditorPage: React.FC<{ onApply: () => void; onBack: () => void; too
     allAuthors, authorProfiles, setAuthorProfiles,
     persistAuthorProfiles: (p) => {
       setAuthorProfiles(p);
-      localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
     },
     setImageLayoutMode, setSceneLayout, setTitleAlignment, setTitleFontSize,
     setContentFontSize, setQuoteFontSize, 

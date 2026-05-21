@@ -1,4 +1,5 @@
 import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
+import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
@@ -249,6 +250,7 @@ export const useRedditStore = create<RedditState>()(
             sortMode: commentSortMode,
             replyOrder: replyOrderMode,
             authorProfiles: nextProfiles,
+            imageLayoutMode: globalSettings.imageLayoutMode,
             contentFontColor: globalSettings.contentFontColor,
             contentFontBold: globalSettings.contentFontBold,
             authorFontSize: globalSettings.authorFontSize,
@@ -272,6 +274,7 @@ export const useRedditStore = create<RedditState>()(
             itemBackgroundColor: globalSettings.itemBackgroundColor,
             itemBackgroundColorEnd: globalSettings.itemBackgroundColorEnd,
             itemBackgroundGradientMode: globalSettings.itemBackgroundGradientMode,
+            canvas: (await import('./useVideoStore')).useVideoStore.getState().videoConfig.canvas,
           });
 
           // 更新 Reddit 数据
@@ -354,9 +357,31 @@ export const useRedditStore = create<RedditState>()(
     {
       name: 'reddit-storage',
       storage: createIndexedDBWithMigration('reddit-storage'),
+      onRehydrateStorage: (state) => {
+        return (rehydratedState, error) => {
+          if (error || !rehydratedState) return;
+
+          // 兼容性迁移：如果现有的 authorProfiles 为空，尝试从旧的 AUTHOR_PROFILES_STORAGE_KEY 恢复
+          if (Object.keys(rehydratedState.authorProfiles || {}).length === 0) {
+            const legacyData = localStorage.getItem(AUTHOR_PROFILES_STORAGE_KEY);
+            if (legacyData) {
+              try {
+                const parsed = JSON.parse(legacyData);
+                if (parsed && typeof parsed === 'object') {
+                  rehydratedState.setAuthorProfiles(parsed);
+                  localStorage.removeItem(AUTHOR_PROFILES_STORAGE_KEY);
+                  console.log('[useRedditStore] Migrated authorProfiles from legacy storage and cleared legacy key');
+                }
+              } catch (e) {
+                console.error('[useRedditStore] Failed to migrate legacy authorProfiles:', e);
+              }
+            }
+          }
+        };
+      },
       partialize: (state) => ({
         redditUrl: state.redditUrl,
-        // rawResult: state.rawResult, // 优化：不再持久化原始 JSON，减少存储压力
+        rawResult: state.rawResult, // 恢复持久化：现在使用 IndexedDB，空间不再是限制
         result: state.result,
         authorProfiles: state.authorProfiles,
         allAuthors: state.allAuthors,

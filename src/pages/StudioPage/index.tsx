@@ -31,7 +31,6 @@ import { useDslTranslate } from '@hooks/useDslTranslate';
 import { dialogs } from '@components/Dialogs';
 import { StudioFramePlayer } from '../../components/StudioFramePlayer';
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
-import { AUTHOR_PROFILES_STORAGE_KEY } from '@/constants/storage';
 
 const { Text } = Typography;
 type PreviewLayoutMode = 'auto' | 'fixed';
@@ -140,7 +139,6 @@ export const StudioPage: React.FC<{ onViewScene?: (idx: number) => void }> = ({ 
 
   const persistAuthorProfiles = useCallback((p: Record<string, any>) => {
     setAuthorProfiles(p);
-    localStorage.setItem(AUTHOR_PROFILES_STORAGE_KEY, JSON.stringify(p));
   }, [setAuthorProfiles]);
 
   // 使用自定义 Hook 处理视频设置逻辑
