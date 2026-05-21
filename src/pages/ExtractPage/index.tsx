@@ -12,6 +12,7 @@ import {
   Tag,
   Row,
   Col,
+  List,
 } from 'antd';
 import { toast } from '@components/Toast';
 import {
@@ -51,12 +52,18 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
     error,
     errorDebug,
     result,
+    results,
     fetchRedditData,
     clearPersistedData,
     hasStoredRawData,
+    removeRawResult,
   } = useRedditStore();
 
   const { commentSortMode, replyOrderMode, colorArrangement } = useSettingsStore();
+  const previewResults = results.length > 0 ? results : result ? [result] : [];
+  const hasExtractedData = previewResults.length > 0 || hasStoredRawData;
+
+  const stripDslTags = (value: string) => value.replace(/\[\/?[^\]]+\]/g, '').trim();
 
   const handleFetch = () => {
     fetchRedditData(commentSortMode, replyOrderMode, colorArrangement);
@@ -179,7 +186,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
             >
               清除本地原始数据缓存
             </Button>
-            {result && (
+            {hasExtractedData && (
               <Space>
                 <Button 
                   size="large" 
@@ -216,6 +223,40 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
             )}
           </Space>
         </Form>
+
+        {previewResults.length > 0 && (
+          <List
+            style={{ marginTop: 16 }}
+            header={<Text strong>已提取帖子（{previewResults.length}）</Text>}
+            bordered
+            dataSource={previewResults}
+            renderItem={(item, index) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="remove"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeRawResult(index)}
+                  >
+                    移除
+                  </Button>
+                ]}
+              >
+                <List.Item.Meta
+                  title={stripDslTags(item.title || '未命名帖子') || '未命名帖子'}
+                  description={
+                    <Space size="middle" wrap>
+                      <Text type="secondary">作者：{item.author || '-'}</Text>
+                      <Text type="secondary">评论数：{item.stats?.commentCount ?? 0}</Text>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        )}
       </Card>
 
       {result && (

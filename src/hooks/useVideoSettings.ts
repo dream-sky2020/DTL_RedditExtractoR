@@ -13,7 +13,7 @@ import {
 import { normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../rendering/videoCanvas';
 import { transformRedditJson } from '../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../utils/aliasGenerator';
-import { useVideoStore, useSettingsStore } from '@/store';
+import { useVideoStore, useSettingsStore, useRedditStore } from '@/store';
 import { hslToHex } from '../utils/color/hslToHex';
 import { interpolateColor } from '../utils/color/interpolateColor';
 import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
@@ -281,7 +281,14 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     profiles: Record<string, AuthorProfile>,
     successMessage: string,
   ) => {
-    if (!rawResult) {
+    const redditStore = useRedditStore.getState();
+    const sourceRawResults = Array.isArray(redditStore.rawResults) && redditStore.rawResults.length > 0
+      ? redditStore.rawResults
+      : rawResult
+        ? [rawResult]
+        : [];
+
+    if (sourceRawResults.length === 0) {
       toast.warning('请先提取 Reddit 数据，再进行排序重排');
       return;
     }
@@ -289,7 +296,7 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
     setCommentSortMode(sortMode);
     setReplyOrderMode(replyOrder);
 
-    const nextResult = transformRedditJson(rawResult, {
+    const transformOptions = {
       sortMode,
       replyOrder,
       authorProfiles: profiles,
@@ -318,11 +325,11 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       itemBackgroundColorEnd: opts.itemBackgroundColorEnd,
       itemBackgroundGradientMode: opts.itemBackgroundGradientMode,
       canvas: videoConfig.canvas,
-    });
+    };
 
     // 使用 useVideoStore 中的统一构建逻辑
     const videoStore = (useVideoStore.getState() as any);
-    const nextConfig = videoStore.buildVideoConfigFromResult(nextResult, {
+    const buildConfigOptions = {
       titleAlignment: opts.titleAlignment,
       titleFontSize: opts.titleFontSize,
       contentFontSize: opts.contentFontSize,
@@ -345,13 +352,39 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
       itemBackgroundColorEnd: opts.itemBackgroundColorEnd,
       itemBackgroundGradientMode: opts.itemBackgroundGradientMode,
       canvas: videoConfig.canvas,
+    };
+
+    const rebuildStamp = Date.now();
+    const allScenes: VideoScene[] = [];
+    const nextResults = sourceRawResults.map((raw, idx) => {
+      const nextResult = transformRedditJson(raw, transformOptions);
+      const nextConfig = videoStore.buildVideoConfigFromResult(nextResult, buildConfigOptions);
+      const scenes = idx === 0
+        ? nextConfig.scenes
+        : nextConfig.scenes.map((scene: VideoScene) => ({
+            ...scene,
+            id: `${scene.id}-rebuild-${idx}-${rebuildStamp}`,
+            items: scene.items.map((item) => ({
+              ...item,
+              id: `${item.id}-rebuild-${idx}-${rebuildStamp}`,
+            })),
+          }));
+
+      allScenes.push(...scenes);
+      return nextResult;
     });
 
-    setResult(nextResult);
-    const normalizedConfig = normalizeVideoConfig({
-      ...nextConfig,
+    const baseConfig = videoStore.buildVideoConfigFromResult(nextResults[0], buildConfigOptions);
+
+    const normalizedConfig = normalizeVideoConfig(applyColorsToConfig({
+      ...baseConfig,
+      title: nextResults.map((item: any) => item.title).join(' + '),
       imageLayoutMode: videoConfig.imageLayoutMode,
-    });
+      scenes: allScenes,
+    }));
+
+    redditStore.setResults(nextResults);
+    setResult(nextResults[nextResults.length - 1]);
     setVideoConfig(normalizedConfig);
     toast.success(successMessage);
   };
@@ -761,6 +794,16 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const handleRearrangeScenes = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
+    const rawResults = useRedditStore.getState().rawResults;
+    const hasMultiplePosts = Array.isArray(rawResults) && rawResults.length > 1;
+
+    if (hasMultiplePosts) {
+      setCommentSortMode(sortMode);
+      setReplyOrderMode(replyOrder);
+      toast.warning('多帖模式下请使用“重置并重新生成”来应用新的排序规则');
+      return;
+    }
+
     if (!rawResult) {
       toast.warning('请先提取 Reddit 数据，再进行排序重排');
       return;

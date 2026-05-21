@@ -35,11 +35,18 @@ const suffixSceneIds = (scenes: VideoScene[], suffix: string): VideoScene[] =>
     })),
   }));
 
+const uniqueAuthorsFromRawResults = (rawResults: any[]) => {
+  const authors = rawResults.flatMap((raw) => extractAuthorsFromRawData(raw));
+  return Array.from(new Set(authors));
+};
+
 interface RedditState {
   redditUrl: string;
   loading: boolean;
   result: any;
   rawResult: any;
+  results: any[];
+  rawResults: any[];
   error: string;
   errorDebug: string;
   allAuthors: string[];
@@ -50,9 +57,12 @@ interface RedditState {
   setRedditUrl: (url: string) => void;
   setResult: (result: any) => void;
   setRawResult: (raw: any) => void;
+  setResults: (results: any[]) => void;
+  setRawResults: (rawResults: any[]) => void;
   setAuthorProfiles: (profiles: Record<string, AuthorProfile>) => void;
   setAllAuthors: (authors: string[]) => void;
   setHasStoredRawData: (has: boolean) => void;
+  removeRawResult: (index: number) => void;
 
   fetchRedditData: (
     commentSortMode: CommentSortMode,
@@ -80,6 +90,8 @@ interface RedditState {
     redditUrl: string;
     result: any;
     rawResult: any;
+    results: any[];
+    rawResults: any[];
     allAuthors: string[];
     authorProfiles: Record<string, AuthorProfile>;
     hasStoredRawData: boolean;
@@ -88,6 +100,8 @@ interface RedditState {
     redditUrl: string;
     result: any;
     rawResult: any;
+    results?: any[];
+    rawResults?: any[];
     allAuthors: string[];
     authorProfiles: Record<string, AuthorProfile>;
     hasStoredRawData: boolean;
@@ -112,6 +126,8 @@ export const useRedditStore = create<RedditState>()(
       loading: false,
       result: null,
       rawResult: null,
+      results: [],
+      rawResults: [],
       error: '',
       errorDebug: '',
       allAuthors: [],
@@ -121,9 +137,34 @@ export const useRedditStore = create<RedditState>()(
       setRedditUrl: (redditUrl) => set({ redditUrl }),
       setResult: (result) => set({ result }),
       setRawResult: (rawResult) => set({ rawResult }),
+      setResults: (results) => set({
+        results,
+        result: results[results.length - 1] ?? null,
+      }),
+      setRawResults: (rawResults) => set({
+        rawResults,
+        rawResult: rawResults[rawResults.length - 1] ?? null,
+        hasStoredRawData: rawResults.length > 0,
+      }),
       setAuthorProfiles: (authorProfiles) => set({ authorProfiles }),
       setAllAuthors: (allAuthors) => set({ allAuthors }),
       setHasStoredRawData: (hasStoredRawData) => set({ hasStoredRawData }),
+      removeRawResult: (index) => {
+        const { rawResults, results } = get();
+        if (index < 0 || index >= rawResults.length) return;
+
+        const nextRawResults = rawResults.filter((_, currentIndex) => currentIndex !== index);
+        const nextResults = results.filter((_, currentIndex) => currentIndex !== index);
+
+        set({
+          rawResults: nextRawResults,
+          results: nextResults,
+          rawResult: nextRawResults[nextRawResults.length - 1] ?? null,
+          result: nextResults[nextResults.length - 1] ?? null,
+          allAuthors: uniqueAuthorsFromRawResults(nextRawResults),
+          hasStoredRawData: nextRawResults.length > 0,
+        });
+      },
 
       buildProfilesForAuthors: (authors, previousProfiles, settings, options = {}) => {
         const { refreshColors, refreshAvatars, refreshAliases } = options;
@@ -204,6 +245,8 @@ export const useRedditStore = create<RedditState>()(
           redditUrl: state.redditUrl,
           result: state.result,
           rawResult: state.rawResult,
+          results: state.results,
+          rawResults: state.rawResults,
           allAuthors: state.allAuthors,
           authorProfiles: state.authorProfiles,
           hasStoredRawData: state.hasStoredRawData,
@@ -211,13 +254,26 @@ export const useRedditStore = create<RedditState>()(
       },
 
       applyProjectState: (payload) => {
+        const rawResults = Array.isArray(payload.rawResults)
+          ? payload.rawResults
+          : payload.rawResult
+            ? [payload.rawResult]
+            : [];
+        const results = Array.isArray(payload.results)
+          ? payload.results
+          : payload.result
+            ? [payload.result]
+            : [];
+
         set({
           redditUrl: payload.redditUrl || '',
-          result: payload.result ?? null,
-          rawResult: payload.rawResult ?? null,
+          result: results[results.length - 1] ?? null,
+          rawResult: rawResults[rawResults.length - 1] ?? null,
+          results,
+          rawResults,
           allAuthors: Array.isArray(payload.allAuthors) ? payload.allAuthors : [],
           authorProfiles: payload.authorProfiles || {},
-          hasStoredRawData: Boolean(payload.hasStoredRawData),
+          hasStoredRawData: rawResults.length > 0 || Boolean(payload.hasStoredRawData),
           loading: false,
           error: '',
           errorDebug: '',
@@ -228,7 +284,20 @@ export const useRedditStore = create<RedditState>()(
         const { redditUrl, authorProfiles, buildProfilesForAuthors } = get();
         if (!redditUrl.trim()) return;
 
-        set({ loading: true, error: '', errorDebug: '', result: null, rawResult: null });
+        set({
+          loading: true,
+          error: '',
+          errorDebug: '',
+          ...(mode === 'replace'
+            ? {
+                result: null,
+                rawResult: null,
+                results: [],
+                rawResults: [],
+                hasStoredRawData: false,
+              }
+            : {}),
+        });
 
         try {
           const inputUrl = redditUrl.trim();
@@ -242,7 +311,13 @@ export const useRedditStore = create<RedditState>()(
           const response = await axios.get(proxyUrl);
 
           const nextAuthors = extractAuthorsFromRawData(response.data);
-          const nextProfiles = buildProfilesForAuthors(nextAuthors, authorProfiles, colorArrangement);
+          const nextRawResults = mode === 'append'
+            ? [...get().rawResults, response.data]
+            : [response.data];
+          const allAuthors = mode === 'append'
+            ? Array.from(new Set([...get().allAuthors, ...nextAuthors]))
+            : nextAuthors;
+          const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement);
 
           const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();
 
@@ -278,9 +353,15 @@ export const useRedditStore = create<RedditState>()(
           });
 
           // 更新 Reddit 数据
+          const nextResults = mode === 'append'
+            ? [...get().results, nextResult]
+            : [nextResult];
+
           set({
-            allAuthors: nextAuthors,
+            allAuthors,
             authorProfiles: nextProfiles,
+            rawResults: nextRawResults,
+            results: nextResults,
             rawResult: response.data,
             result: nextResult,
             hasStoredRawData: true,
@@ -347,6 +428,8 @@ export const useRedditStore = create<RedditState>()(
           hasStoredRawData: false,
           result: null,
           rawResult: null,
+          results: [],
+          rawResults: [],
           allAuthors: [],
           authorProfiles: {},
           redditUrl: ''
@@ -360,6 +443,20 @@ export const useRedditStore = create<RedditState>()(
       onRehydrateStorage: (state) => {
         return (rehydratedState, error) => {
           if (error || !rehydratedState) return;
+
+          const migratedRawResults = (!Array.isArray(rehydratedState.rawResults) || rehydratedState.rawResults.length === 0)
+            && rehydratedState.rawResult
+            ? [rehydratedState.rawResult]
+            : rehydratedState.rawResults;
+          const migratedResults = (!Array.isArray(rehydratedState.results) || rehydratedState.results.length === 0)
+            && rehydratedState.result
+            ? [rehydratedState.result]
+            : rehydratedState.results;
+
+          if (migratedRawResults !== rehydratedState.rawResults || migratedResults !== rehydratedState.results) {
+            rehydratedState.setRawResults(Array.isArray(migratedRawResults) ? migratedRawResults : []);
+            rehydratedState.setResults(Array.isArray(migratedResults) ? migratedResults : []);
+          }
 
           // 兼容性迁移：如果现有的 authorProfiles 为空，尝试从旧的 AUTHOR_PROFILES_STORAGE_KEY 恢复
           if (Object.keys(rehydratedState.authorProfiles || {}).length === 0) {
@@ -382,7 +479,9 @@ export const useRedditStore = create<RedditState>()(
       partialize: (state) => ({
         redditUrl: state.redditUrl,
         rawResult: state.rawResult, // 恢复持久化：现在使用 IndexedDB，空间不再是限制
+        rawResults: state.rawResults,
         result: state.result,
+        results: state.results,
         authorProfiles: state.authorProfiles,
         allAuthors: state.allAuthors,
         hasStoredRawData: state.hasStoredRawData,
