@@ -79,7 +79,6 @@ export const IdentityManagementPage: React.FC = () => {
     authorProfiles,
     setAuthorProfiles,
     buildProfilesForAuthors,
-    clearAllAliases,
     rawResult,
     setResult
   } = useRedditStore();
@@ -89,6 +88,8 @@ export const IdentityManagementPage: React.FC = () => {
     colorArrangement,
     setColorArrangement,
     editorUiSettings,
+    postAuthorSuffix,
+    setPostAuthorSuffix,
     ...globalSettings
   } = useSettingsStore();
 
@@ -97,13 +98,20 @@ export const IdentityManagementPage: React.FC = () => {
     setGlobalProfile,
     removeGlobalProfile,
     batchSetGlobalProfiles,
-    clearAllAliases: clearGlobalAliases
   } = useIdentityStore();
 
   const [activeTab, setActiveTab] = useState('project');
   const [searchText, setSearchText] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
+
+  // 获取题主作者
+  const postAuthor = useMemo(() => {
+    if (Array.isArray(rawResult) && rawResult.length >= 2) {
+      return rawResult[0]?.data?.children?.[0]?.data?.author;
+    }
+    return '';
+  }, [rawResult]);
 
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const totalFrames = getTotalFrames(videoConfig, DEFAULT_PREVIEW_FPS);
@@ -121,10 +129,35 @@ export const IdentityManagementPage: React.FC = () => {
   // 查找包含该作者的场景
   const relatedScenesWithIndex = useMemo(() => {
     if (!selectedAuthor) return [];
+    const profile = authorProfiles[selectedAuthor];
+    const displayName = profile?.alias || selectedAuthor;
+
     return videoConfig.scenes
       .map((scene, index) => ({ scene, index }))
-      .filter(({ scene }) => scene.items.some(item => item.author === selectedAuthor));
-  }, [selectedAuthor, videoConfig.scenes]);
+      .filter(({ scene }) => scene.items.some(item => item.author === displayName));
+  }, [selectedAuthor, authorProfiles, videoConfig.scenes]);
+
+  // 计算每个作者出现的画面格数量
+  const authorSceneCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // 创建一个反向映射：displayName -> originalAuthor
+    const displayToOriginal: Record<string, string> = {};
+    allAuthors.forEach(author => {
+      const profile = authorProfiles[author];
+      const displayName = profile?.alias || author;
+      displayToOriginal[displayName] = author;
+    });
+
+    videoConfig.scenes.forEach(scene => {
+      const sceneAuthors = new Set(scene.items.map(item => item.author));
+      sceneAuthors.forEach(displayName => {
+        const originalAuthor = displayToOriginal[displayName] || displayName;
+        counts[originalAuthor] = (counts[originalAuthor] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [allAuthors, authorProfiles, videoConfig.scenes]);
 
   const sceneDurationRange = useMemo(() => {
     const durations = videoConfig.scenes.map((scene) => scene.duration).filter(Number.isFinite);
@@ -203,12 +236,22 @@ export const IdentityManagementPage: React.FC = () => {
   };
 
   const handleUpdateProfile = (author: string, updates: Partial<AuthorProfile>) => {
+    let finalUpdates = { ...updates };
+    
+    // 如果是题主且正在修改代号，强制加上指定的后缀
+    if (author === postAuthor && updates.alias !== undefined) {
+      let newAlias = updates.alias.trim();
+      if (newAlias && !newAlias.endsWith(postAuthorSuffix)) {
+        finalUpdates.alias = `${newAlias}${postAuthorSuffix}`;
+      }
+    }
+
     if (activeTab === 'project') {
-      const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...updates, updatedAt: Date.now() } };
+      const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...finalUpdates, updatedAt: Date.now() } };
       setAuthorProfiles(next);
       syncProjectData(next);
     } else {
-      const next = { ...(globalProfiles[author] || {}), ...updates, updatedAt: Date.now() };
+      const next = { ...(globalProfiles[author] || {}), ...finalUpdates, updatedAt: Date.now() };
       setGlobalProfile(author, next);
     }
   };
@@ -237,7 +280,14 @@ export const IdentityManagementPage: React.FC = () => {
     const nextProfiles = { ...authorProfiles };
     allAuthors.forEach(author => {
       if (globalProfiles[author]) {
-        nextProfiles[author] = { ...globalProfiles[author], updatedAt: Date.now() };
+        let profile = { ...globalProfiles[author], updatedAt: Date.now() };
+        
+        // 如果是题主，确保有指定的后缀
+        if (author === postAuthor && profile.alias && !profile.alias.endsWith(postAuthorSuffix)) {
+          profile.alias = `${profile.alias}${postAuthorSuffix}`;
+        }
+        
+        nextProfiles[author] = profile;
         count++;
       }
     });
@@ -296,22 +346,31 @@ export const IdentityManagementPage: React.FC = () => {
 
   const handleClearAliases = () => {
     dialogs.confirm({
-      title: '确认清空',
-      content: '确定要清空所有（包括当前项目和全局库）用户的代号吗？',
+      title: '确认还原',
+      content: '确定要将所有（包括当前项目和全局库）用户的代号还原为原始用户名吗？',
       okType: 'danger',
       onOk: () => {
-        // 1. 清空当前项目的代号
-        clearAllAliases();
+        // 1. 还原当前项目的代号
         const next = { ...authorProfiles };
         Object.keys(next).forEach(author => {
-          next[author] = { ...next[author], alias: '', updatedAt: Date.now() };
+          let alias = author;
+          if (author === postAuthor) {
+            alias = `${author}${postAuthorSuffix}`;
+          }
+          next[author] = { ...next[author], alias, updatedAt: Date.now() };
         });
+        setAuthorProfiles(next);
         syncProjectData(next);
 
-        // 2. 清空全局库的代号
-        clearGlobalAliases();
+        // 2. 还原全局库的代号
+        const nextGlobal = { ...globalProfiles };
+        Object.keys(nextGlobal).forEach(author => {
+          // 全局库还原时不带 OP 后缀，因为 OP 是项目特定的
+          nextGlobal[author] = { ...nextGlobal[author], alias: author, updatedAt: Date.now() };
+        });
+        batchSetGlobalProfiles(nextGlobal);
         
-        toast.success('已清空所有代号');
+        toast.success('已将所有代号还原为原始名称');
       }
     });
   };
@@ -409,15 +468,51 @@ export const IdentityManagementPage: React.FC = () => {
                   <Tooltip title="刷新头像"><Button size="small" icon={<UserOutlined />} onClick={handleRefreshAvatars} block /></Tooltip>
                   <Tooltip title="刷新颜色"><Button size="small" icon={<BgColorsOutlined />} onClick={handleRefreshColors} block /></Tooltip>
                   <Tooltip title="刷新代号"><Button size="small" icon={<FontSizeOutlined />} onClick={handleRefreshAliases} block /></Tooltip>
-                  <Tooltip title="清空代号"><Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block /></Tooltip>
+                  <Tooltip title="还原为原名"><Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block /></Tooltip>
                 </>
               ) : (
                 <div style={{ display: 'flex', gap: 4, width: '100%' }}>
-                  <Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block>清空代号</Button>
+                  <Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block>还原为原名</Button>
                   <Button size="small" danger icon={<DeleteOutlined />} onClick={() => dialogs.confirm({ title: '清空全局库', content: '确定要清空所有全局身份记录吗？', okType: 'danger', onOk: useIdentityStore.getState().clearGlobalLibrary })} block>清空库</Button>
                 </div>
               )}
             </div>
+
+            {activeTab === 'project' && (
+              <Card size="small" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--brand-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>题主 (OP) 标识符设置</Text>
+                  <Input 
+                    size="small" 
+                    value={postAuthorSuffix} 
+                    onChange={e => setPostAuthorSuffix(e.target.value)}
+                    placeholder="例如: (OP) 或 (帖子)"
+                    suffix={
+                      <Tooltip title="应用到当前项目所有题主">
+                        <Button 
+                          type="text" 
+                          size="small" 
+                          icon={<SyncOutlined />} 
+                          onClick={() => {
+                            const next = { ...authorProfiles };
+                            allAuthors.forEach(author => {
+                              if (author === postAuthor) {
+                                let alias = next[author]?.alias || '';
+                                // 移除旧后缀（如果有的话，这里简单处理，假设用户只是想换个后缀）
+                                // 实际上更稳妥的方法是重新生成或正则替换
+                                // 这里我们直接触发一次刷新代号逻辑
+                                handleRefreshAliases();
+                              }
+                            });
+                            toast.success('已更新题主标识符并刷新代号');
+                          }} 
+                        />
+                      </Tooltip>
+                    }
+                  />
+                </div>
+              </Card>
+            )}
 
             {activeTab === 'project' && (
               <div style={{ display: 'flex', gap: 4 }}>
@@ -446,6 +541,7 @@ export const IdentityManagementPage: React.FC = () => {
                 render: (val) => {
                   const profile = activeTab === 'project' ? authorProfiles[val] : globalProfiles[val];
                   const inGlobal = activeTab === 'project' && !!globalProfiles[val];
+                  
                   return (
                     <Space size="small">
                       <Badge dot={inGlobal} offset={[-2, 22]} color="cyan">
@@ -457,7 +553,13 @@ export const IdentityManagementPage: React.FC = () => {
                         />
                       </Badge>
                       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                        <Text style={{ color: selectedAuthor === val ? 'var(--text-primary)' : 'inherit', fontSize: 12 }}>u/{val}</Text>
+                        <Text style={{ 
+                          color: selectedAuthor === val ? '#1890ff' : 'inherit', 
+                          fontSize: 12,
+                          fontWeight: selectedAuthor === val ? 600 : 400
+                        }}>
+                          u/{val}
+                        </Text>
                         {profile?.alias && <Text type="secondary" style={{ fontSize: 10 }}>{profile.alias}</Text>}
                       </div>
                     </Space>
@@ -465,8 +567,23 @@ export const IdentityManagementPage: React.FC = () => {
                 }
               },
               {
+                title: '屏数',
+                key: 'sceneCount',
+                width: 70,
+                align: 'center',
+                sorter: (a, b) => (authorSceneCounts[a.author] || 0) - (authorSceneCounts[b.author] || 0),
+                render: (_, record) => {
+                  const count = authorSceneCounts[record.author] || 0;
+                  return (
+                    <Tag bordered={false} style={{ fontSize: 10, margin: 0, opacity: count > 0 ? 1 : 0.5 }}>
+                      {count} 屏
+                    </Tag>
+                  );
+                }
+              },
+              {
                 title: '操作',
-                width: 60,
+                width: 50,
                 align: 'right',
                 render: (_, record) => (
                   activeTab === 'global' ? (

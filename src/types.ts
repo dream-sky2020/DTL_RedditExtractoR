@@ -49,6 +49,7 @@ export interface GlobalSettings {
   quoteBackgroundColor: string;
   quoteBorderColor: string;
   sceneDisplayMode: SceneDisplayMode;
+  postAuthorSuffix: string;
 }
 
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -81,6 +82,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   quoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
   quoteBorderColor: '#e0e0e0',
   sceneDisplayMode: 'normal',
+  postAuthorSuffix: ' (OP)',
 };
 
 export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'background_video' | 'bgm_settings' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity' | 'history_manager' | 'avatar_manager';

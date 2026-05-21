@@ -1,3 +1,4 @@
+import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from '@components/Toast';
@@ -277,6 +278,7 @@ export const useProjectsStore = create<ProjectsState>()(
     }),
     {
       name: PROJECTS_STORAGE_KEY,
+      storage: createIndexedDBWithMigration(PROJECTS_STORAGE_KEY),
       partialize: (state) => ({
         projects: state.projects,
         currentProjectId: state.currentProjectId,

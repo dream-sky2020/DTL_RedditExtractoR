@@ -1,3 +1,4 @@
+import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
@@ -15,6 +16,7 @@ import {
 } from '@/types';
 import { AVATAR_POOL } from '@/constants/avatars';
 import { useAvatarStore } from './useAvatarStore';
+import { useSettingsStore } from './useSettingsStore';
 import { hslToHex } from '@/utils/color/hslToHex';
 import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
 
@@ -126,9 +128,18 @@ export const useRedditStore = create<RedditState>()(
         const { refreshColors, refreshAvatars, refreshAliases } = options;
         let nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
 
+        // 获取题主作者
+        const { rawResult } = get();
+        let postAuthor = '';
+        if (Array.isArray(rawResult) && rawResult.length >= 2) {
+          postAuthor = rawResult[0]?.data?.children?.[0]?.data?.author;
+        }
+
+        const { postAuthorSuffix } = (useSettingsStore.getState() as any);
+
         // 1. 处理代号刷新
         if (refreshAliases) {
-          nextProfiles = generateRandomAliasProfiles(authors, nextProfiles);
+          nextProfiles = generateRandomAliasProfiles(authors, nextProfiles, postAuthor, postAuthorSuffix);
         }
 
         // 2. 获取头像池
@@ -149,8 +160,10 @@ export const useRedditStore = create<RedditState>()(
           const needsColor = refreshColors || !existing.color;
           const needsAvatar = refreshAvatars || !existing.avatar;
           const needsAlias = !existing.alias; // 即使不刷新，缺失的也要补全
+          const isOP = postAuthor && author === postAuthor;
+          const opMissingSuffix = isOP && existing.alias && !existing.alias.endsWith(postAuthorSuffix);
 
-          if (needsColor || needsAvatar || needsAlias) {
+          if (needsColor || needsAvatar || needsAlias || opMissingSuffix) {
             const profile = { ...existing };
             if (needsColor) {
               profile.color = buildColorWithSettings(index, settings);
@@ -160,7 +173,13 @@ export const useRedditStore = create<RedditState>()(
               profile.avatar = avatarPool[avatarIdx];
             }
             if (needsAlias) {
-              profile.alias = nextUniqueAlias(usedAliases);
+              let alias = nextUniqueAlias(usedAliases);
+              if (isOP) {
+                alias = `${alias}${postAuthorSuffix}`;
+              }
+              profile.alias = alias;
+            } else if (opMissingSuffix) {
+              profile.alias = `${existing.alias}${postAuthorSuffix}`;
             }
             profile.updatedAt = Date.now();
             nextProfiles[author] = profile;
@@ -333,10 +352,11 @@ export const useRedditStore = create<RedditState>()(
       },
     }),
     {
-      name: 'reddit-storage', // 使用统一的前缀或单独的 key，这里暂时用这个，后面可以统一
+      name: 'reddit-storage',
+      storage: createIndexedDBWithMigration('reddit-storage'),
       partialize: (state) => ({
         redditUrl: state.redditUrl,
-        rawResult: state.rawResult,
+        // rawResult: state.rawResult, // 优化：不再持久化原始 JSON，减少存储压力
         result: state.result,
         authorProfiles: state.authorProfiles,
         allAuthors: state.allAuthors,

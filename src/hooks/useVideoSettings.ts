@@ -13,7 +13,7 @@ import {
 import { normalizeVideoConfig, createDefaultVideoCanvasConfig } from '../rendering/videoCanvas';
 import { transformRedditJson } from '../utils/redditTransformer';
 import { generateRandomAliasProfiles } from '../utils/aliasGenerator';
-import { useVideoStore } from '@/store';
+import { useVideoStore, useSettingsStore } from '@/store';
 import { hslToHex } from '../utils/color/hslToHex';
 import { interpolateColor } from '../utils/color/interpolateColor';
 import { pseudoRandom01 } from '../utils/random/pseudoRandom01';
@@ -360,7 +360,12 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const handleRandomizeAliasesAndApply = (sortMode: CommentSortMode, replyOrder: ReplyOrderMode) => {
-    const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles);
+    let postAuthor = '';
+    if (Array.isArray(rawResult) && rawResult.length >= 2) {
+      postAuthor = rawResult[0]?.data?.children?.[0]?.data?.author;
+    }
+    const { postAuthorSuffix } = (useSettingsStore.getState() as any);
+    const nextProfiles = generateRandomAliasProfiles(allAuthors, authorProfiles, postAuthor, postAuthorSuffix);
     setAuthorProfiles(nextProfiles);
     rebuildFromRaw(sortMode, replyOrder, nextProfiles, '已随机生成代号并重建脚本');
   };
@@ -393,7 +398,24 @@ export const useVideoSettings = (opts: VideoSettingsOptions) => {
   };
 
   const updateAuthorProfile = (author: string, updates: Partial<AuthorProfile>) => {
-    const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...updates } };
+    let finalUpdates = { ...updates };
+    
+    // 获取题主作者
+    let postAuthor = '';
+    if (Array.isArray(rawResult) && rawResult.length >= 2) {
+      postAuthor = rawResult[0]?.data?.children?.[0]?.data?.author;
+    }
+
+    // 如果是题主且正在修改代号，强制加上后缀
+    const { postAuthorSuffix } = (useSettingsStore.getState() as any);
+    if (author === postAuthor && updates.alias !== undefined) {
+      let newAlias = updates.alias.trim();
+      if (newAlias && !newAlias.endsWith(postAuthorSuffix)) {
+        finalUpdates.alias = `${newAlias}${postAuthorSuffix}`;
+      }
+    }
+
+    const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...finalUpdates } };
     setAuthorProfiles(next);
     persistAuthorProfiles(next);
   };

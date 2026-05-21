@@ -36,6 +36,8 @@ export const nextUniqueAlias = (used: Set<string>) => {
 export function generateRandomAliasProfiles(
   authors: string[],
   previousProfiles: Record<string, AuthorProfile>,
+  postAuthor?: string,
+  postAuthorSuffix: string = ' (OP)'
 ): Record<string, AuthorProfile> {
   const nextProfiles: Record<string, AuthorProfile> = { ...previousProfiles };
   const usedAliases = new Set<string>();
@@ -47,9 +49,18 @@ export function generateRandomAliasProfiles(
 
   authors.forEach((author) => {
     const profile = nextProfiles[author] || {};
+    let alias = nextUniqueAlias(usedAliases);
+    
+    // 如果是题主，加上指定的后缀
+    if (postAuthor && author === postAuthor) {
+      if (!alias.endsWith(postAuthorSuffix)) {
+        alias = `${alias}${postAuthorSuffix}`;
+      }
+    }
+
     nextProfiles[author] = {
       ...profile,
-      alias: nextUniqueAlias(usedAliases),
+      alias: alias,
     };
   });
 

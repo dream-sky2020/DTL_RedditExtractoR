@@ -1,3 +1,4 @@
+import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { VideoConfig, TitleAlignmentType, VideoCanvasConfig } from '@/types';
@@ -236,6 +237,7 @@ export const useVideoStore = create<VideoState>()(
     }),
     {
       name: VIDEO_CONFIG_STORAGE_KEY,
+      storage: createIndexedDBWithMigration(VIDEO_CONFIG_STORAGE_KEY),
       partialize: (state) => ({
         videoConfig: state.videoConfig,
       }),

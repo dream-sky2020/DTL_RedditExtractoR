@@ -1,3 +1,4 @@
+import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AuthorProfile } from '@/types';
@@ -58,6 +59,7 @@ export const useIdentityStore = create<IdentityState>()(
     }),
     {
       name: GLOBAL_PROFILES_KEY,
+      storage: createIndexedDBWithMigration(GLOBAL_PROFILES_KEY),
     }
   )
 );

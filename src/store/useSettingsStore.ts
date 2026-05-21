@@ -1,3 +1,4 @@
+import { createIndexedDBWithMigration } from '@/utils/storageAdapter';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
@@ -101,6 +102,7 @@ interface SettingsState extends GlobalSettings {
   setItemBackgroundColorEnd: (color: string) => void;
   setItemBackgroundGradientMode: (mode: boolean) => void;
   setSceneDisplayMode: (mode: SceneDisplayMode) => void;
+  setPostAuthorSuffix: (suffix: string) => void;
   getProjectState: () => GlobalSettings & { colorArrangement: ColorArrangementSettings };
   applyProjectState: (payload: Partial<GlobalSettings> & { colorArrangement?: ColorArrangementSettings }) => void;
 }
@@ -220,6 +222,7 @@ export const useSettingsStore = create<SettingsState>()(
       setItemBackgroundColorEnd: (itemBackgroundColorEnd) => set({ itemBackgroundColorEnd }),
       setItemBackgroundGradientMode: (itemBackgroundGradientMode) => set({ itemBackgroundGradientMode }),
       setSceneDisplayMode: (sceneDisplayMode) => set({ sceneDisplayMode }),
+      setPostAuthorSuffix: (postAuthorSuffix) => set({ postAuthorSuffix }),
 
       getProjectState: () => {
         const state = get();
@@ -253,6 +256,7 @@ export const useSettingsStore = create<SettingsState>()(
           avatarShape: state.avatarShape,
           avatarOffset: state.avatarOffset,
           sceneDisplayMode: state.sceneDisplayMode,
+          postAuthorSuffix: state.postAuthorSuffix,
           colorArrangement: state.colorArrangement,
         };
       },
@@ -270,6 +274,11 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: GLOBAL_CONFIG_STORAGE_KEY,
+      storage: createIndexedDBWithMigration(GLOBAL_CONFIG_STORAGE_KEY),
+      partialize: (state) => {
+        const { editorUiSettings, ...rest } = state;
+        return rest;
+      },
     }
   )
 );
