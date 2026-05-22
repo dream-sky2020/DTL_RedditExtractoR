@@ -294,6 +294,7 @@ export const useRedditStore = create<RedditState>()(
                 rawResult: null,
                 results: [],
                 rawResults: [],
+                allAuthors: [],
                 hasStoredRawData: false,
               }
             : {}),
@@ -314,9 +315,7 @@ export const useRedditStore = create<RedditState>()(
           const nextRawResults = mode === 'append'
             ? [...get().rawResults, response.data]
             : [response.data];
-          const allAuthors = mode === 'append'
-            ? Array.from(new Set([...get().allAuthors, ...nextAuthors]))
-            : nextAuthors;
+          const allAuthors = Array.from(new Set([...get().allAuthors, ...nextAuthors]));
           const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement);
 
           const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   Layout,
   Row,
@@ -79,6 +79,7 @@ export const IdentityManagementPage: React.FC = () => {
     setAuthorProfiles,
     buildProfilesForAuthors,
     rawResult,
+    rawResults,
     setResult
   } = useRedditStore();
 
@@ -89,7 +90,6 @@ export const IdentityManagementPage: React.FC = () => {
     editorUiSettings,
     postAuthorSuffix,
     setPostAuthorSuffix,
-    ...globalSettings
   } = useSettingsStore();
 
   const {
@@ -104,13 +104,19 @@ export const IdentityManagementPage: React.FC = () => {
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>([]);
 
-  // 获取题主作者
-  const postAuthor = useMemo(() => {
-    if (Array.isArray(rawResult) && rawResult.length >= 2) {
-      return rawResult[0]?.data?.children?.[0]?.data?.author;
-    }
-    return '';
-  }, [rawResult]);
+  const postAuthors = useMemo(() => {
+    const sourceRawResults = Array.isArray(rawResults) && rawResults.length > 0
+      ? rawResults
+      : rawResult
+        ? [rawResult]
+        : [];
+
+    return new Set(sourceRawResults
+      .map((raw) => Array.isArray(raw) && raw.length >= 2
+        ? raw[0]?.data?.children?.[0]?.data?.author
+        : raw?.author)
+      .filter(Boolean));
+  }, [rawResult, rawResults]);
 
   const activeCanvas = getActiveVideoCanvasSize(videoConfig);
   const totalFrames = getTotalFrames(videoConfig, DEFAULT_PREVIEW_FPS);
@@ -188,59 +194,132 @@ export const IdentityManagementPage: React.FC = () => {
     );
   };
 
-  const syncProjectData = (nextProfiles: Record<string, AuthorProfile>) => {
-    if (!rawResult) return;
+  const syncProjectData = useCallback((nextProfiles: Record<string, AuthorProfile>) => {
+    const redditStore = useRedditStore.getState();
+    const sourceRawResults = Array.isArray(redditStore.rawResults) && redditStore.rawResults.length > 0
+      ? redditStore.rawResults
+      : rawResult
+        ? [rawResult]
+        : [];
 
-    const nextResult = transformRedditJson(rawResult, {
+    if (sourceRawResults.length === 0) return;
+
+    const settings = useSettingsStore.getState();
+    const currentVideoConfig = useVideoStore.getState().videoConfig;
+    const transformOptions = {
       authorProfiles: nextProfiles,
-      // 保持当前的排序和回复模式
-      sortMode: (useRedditStore.getState() as any).sortMode || 'best',
-      replyOrder: (useRedditStore.getState() as any).replyOrder || 'preserve',
-      imageLayoutMode: (useSettingsStore.getState() as any).imageLayoutMode,
-      contentFontColor: globalSettings.contentFontColor,
-      contentFontBold: globalSettings.contentFontBold,
-      authorFontSize: globalSettings.authorFontSize,
-      authorFontBold: globalSettings.authorFontBold,
-      contentFontSize: globalSettings.contentFontSize,
-      titleFontSize: globalSettings.titleFontSize,
-      titleFontColor: globalSettings.titleFontColor,
-      titleFontBold: globalSettings.titleFontBold,
-      titleAlignment: globalSettings.titleAlignment,
-      canvas: videoConfig.canvas,
+      sortMode: settings.commentSortMode,
+      replyOrder: settings.replyOrderMode,
+      imageLayoutMode: currentVideoConfig.imageLayoutMode ?? settings.imageLayoutMode,
+      contentFontColor: settings.contentFontColor,
+      contentFontBold: settings.contentFontBold,
+      authorFontSize: settings.authorFontSize,
+      authorFontBold: settings.authorFontBold,
+      contentFontSize: settings.contentFontSize,
+      titleFontSize: settings.titleFontSize,
+      titleFontColor: settings.titleFontColor,
+      titleFontBold: settings.titleFontBold,
+      titleAlignment: settings.titleAlignment,
+      avatarSize: settings.avatarSize,
+      avatarShape: settings.avatarShape,
+      avatarOffset: settings.avatarOffset,
+      maxQuoteDepth: settings.maxQuoteDepth,
+      quoteFontSize: settings.quoteFontSize,
+      quoteFontColor: settings.quoteFontColor,
+      quoteBackgroundColor: settings.quoteBackgroundColor,
+      quoteBorderColor: settings.quoteBorderColor,
+      sceneBackgroundColor: settings.sceneBackgroundColor,
+      sceneBackgroundColorEnd: settings.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: settings.sceneBackgroundGradientMode,
+      itemBackgroundColor: settings.itemBackgroundColor,
+      itemBackgroundColorEnd: settings.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: settings.itemBackgroundGradientMode,
+      canvas: currentVideoConfig.canvas,
+    };
+    const buildConfigOptions = {
+      titleAlignment: settings.titleAlignment,
+      titleFontSize: settings.titleFontSize,
+      contentFontSize: settings.contentFontSize,
+      authorFontSize: settings.authorFontSize,
+      quoteFontSize: settings.quoteFontSize,
+      titleFontColor: settings.titleFontColor,
+      contentFontColor: settings.contentFontColor,
+      quoteFontColor: settings.quoteFontColor,
+      titleFontBold: settings.titleFontBold,
+      contentFontBold: settings.contentFontBold,
+      authorFontBold: settings.authorFontBold,
+      quoteBackgroundColor: settings.quoteBackgroundColor,
+      quoteBorderColor: settings.quoteBorderColor,
+      maxQuoteDepth: settings.maxQuoteDepth,
+      defaultQuoteMaxLimit: settings.defaultQuoteMaxLimit,
+      sceneBackgroundColor: settings.sceneBackgroundColor,
+      sceneBackgroundColorEnd: settings.sceneBackgroundColorEnd,
+      sceneBackgroundGradientMode: settings.sceneBackgroundGradientMode,
+      itemBackgroundColor: settings.itemBackgroundColor,
+      itemBackgroundColorEnd: settings.itemBackgroundColorEnd,
+      itemBackgroundGradientMode: settings.itemBackgroundGradientMode,
+      canvas: currentVideoConfig.canvas,
+    };
+
+    const rebuildStamp = Date.now();
+    const allScenes: VideoScene[] = [];
+    const nextResults = sourceRawResults.map((raw, idx) => {
+      const nextResult = transformRedditJson(raw, transformOptions);
+      const nextConfig = buildVideoConfigFromResult(nextResult, buildConfigOptions);
+      const scenes = idx === 0
+        ? nextConfig.scenes
+        : nextConfig.scenes.map((scene: VideoScene) => {
+            const suffix = `sync-${idx}-${rebuildStamp}`;
+            return {
+              ...scene,
+              id: `${scene.id}-${suffix}`,
+              items: scene.items.map((item) => ({
+                ...item,
+                id: `${item.id}-${suffix}`,
+              })),
+            };
+          });
+
+      allScenes.push(...scenes);
+      return nextResult;
     });
 
-    setResult(nextResult);
-    const nextConfig = buildVideoConfigFromResult(nextResult, {
-      titleAlignment: globalSettings.titleAlignment,
-      titleFontSize: globalSettings.titleFontSize,
-      contentFontSize: globalSettings.contentFontSize,
-      authorFontSize: globalSettings.authorFontSize,
-      quoteFontSize: globalSettings.quoteFontSize,
-      titleFontColor: globalSettings.titleFontColor,
-      contentFontColor: globalSettings.contentFontColor,
-      quoteFontColor: globalSettings.quoteFontColor,
-      titleFontBold: globalSettings.titleFontBold,
-      contentFontBold: globalSettings.contentFontBold,
-      authorFontBold: globalSettings.authorFontBold,
-      quoteBackgroundColor: globalSettings.quoteBackgroundColor,
-      quoteBorderColor: globalSettings.quoteBorderColor,
-      maxQuoteDepth: globalSettings.maxQuoteDepth,
-      defaultQuoteMaxLimit: globalSettings.defaultQuoteMaxLimit,
-      sceneBackgroundColor: globalSettings.sceneBackgroundColor,
-      sceneBackgroundColorEnd: globalSettings.sceneBackgroundColorEnd,
-      sceneBackgroundGradientMode: globalSettings.sceneBackgroundGradientMode,
-      itemBackgroundColor: globalSettings.itemBackgroundColor,
-      itemBackgroundColorEnd: globalSettings.itemBackgroundColorEnd,
-      itemBackgroundGradientMode: globalSettings.itemBackgroundGradientMode,
+    const baseConfig = buildVideoConfigFromResult(nextResults[0], buildConfigOptions);
+    redditStore.setResults(nextResults);
+    setResult(nextResults[nextResults.length - 1]);
+    setVideoConfig({
+      ...currentVideoConfig,
+      ...baseConfig,
+      title: nextResults.map((item: any) => item.title).join(' + '),
+      imageLayoutMode: currentVideoConfig.imageLayoutMode,
+      canvas: currentVideoConfig.canvas,
+      scenes: allScenes,
     });
-    setVideoConfig(nextConfig);
-  };
+  }, [buildVideoConfigFromResult, rawResult, setResult, setVideoConfig]);
+
+  const syncProjectDataDebounceRef = useRef<number | null>(null);
+  const debouncedSyncProjectData = useCallback((nextProfiles: Record<string, AuthorProfile>) => {
+    if (syncProjectDataDebounceRef.current) {
+      window.clearTimeout(syncProjectDataDebounceRef.current);
+    }
+
+    syncProjectDataDebounceRef.current = window.setTimeout(() => {
+      syncProjectData(nextProfiles);
+      syncProjectDataDebounceRef.current = null;
+    }, 250);
+  }, [syncProjectData]);
+
+  useEffect(() => () => {
+    if (syncProjectDataDebounceRef.current) {
+      window.clearTimeout(syncProjectDataDebounceRef.current);
+    }
+  }, []);
 
   const handleUpdateProfile = (author: string, updates: Partial<AuthorProfile>) => {
     let finalUpdates = { ...updates };
     
     // 如果是题主且正在修改代号，强制加上指定的后缀
-    if (author === postAuthor && updates.alias !== undefined) {
+    if (postAuthors.has(author) && updates.alias !== undefined) {
       let newAlias = updates.alias.trim();
       if (newAlias && !newAlias.endsWith(postAuthorSuffix)) {
         finalUpdates.alias = `${newAlias}${postAuthorSuffix}`;
@@ -250,7 +329,7 @@ export const IdentityManagementPage: React.FC = () => {
     if (activeTab === 'project') {
       const next = { ...authorProfiles, [author]: { ...(authorProfiles[author] || {}), ...finalUpdates, updatedAt: Date.now() } };
       setAuthorProfiles(next);
-      syncProjectData(next);
+      debouncedSyncProjectData(next);
     } else {
       const next = { ...(globalProfiles[author] || {}), ...finalUpdates, updatedAt: Date.now() };
       setGlobalProfile(author, next);
@@ -284,7 +363,7 @@ export const IdentityManagementPage: React.FC = () => {
         let profile = { ...globalProfiles[author], updatedAt: Date.now() };
         
         // 如果是题主，确保有指定的后缀
-        if (author === postAuthor && profile.alias && !profile.alias.endsWith(postAuthorSuffix)) {
+        if (postAuthors.has(author) && profile.alias && !profile.alias.endsWith(postAuthorSuffix)) {
           profile.alias = `${profile.alias}${postAuthorSuffix}`;
         }
         
@@ -355,7 +434,7 @@ export const IdentityManagementPage: React.FC = () => {
         const next = { ...authorProfiles };
         Object.keys(next).forEach(author => {
           let alias = author;
-          if (author === postAuthor) {
+          if (postAuthors.has(author)) {
             alias = `${author}${postAuthorSuffix}`;
           }
           next[author] = { ...next[author], alias, updatedAt: Date.now() };
@@ -495,16 +574,9 @@ export const IdentityManagementPage: React.FC = () => {
                           size="small" 
                           icon={<SyncOutlined />} 
                           onClick={() => {
-                            const next = { ...authorProfiles };
-                            allAuthors.forEach(author => {
-                              if (author === postAuthor) {
-                                let alias = next[author]?.alias || '';
-                                // 移除旧后缀（如果有的话，这里简单处理，假设用户只是想换个后缀）
-                                // 实际上更稳妥的方法是重新生成或正则替换
-                                // 这里我们直接触发一次刷新代号逻辑
-                                handleRefreshAliases();
-                              }
-                            });
+                            if (allAuthors.some(author => postAuthors.has(author))) {
+                              handleRefreshAliases();
+                            }
                             toast.success('已更新题主标识符并刷新代号');
                           }} 
                         />
@@ -699,6 +771,7 @@ export const IdentityManagementPage: React.FC = () => {
                       onClick={() => {
                         const next = { ...authorProfiles, [selectedAuthor]: { ...currentProfile, updatedAt: Date.now() } };
                         setAuthorProfiles(next);
+                        syncProjectData(next);
                         toast.success(`已应用 u/${selectedAuthor} 到当前项目`);
                       }}
                       block
