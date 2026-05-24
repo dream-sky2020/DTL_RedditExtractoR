@@ -267,7 +267,7 @@ export const VideoSettingsSidebar: React.FC<VideoSettingsSidebarProps> = (props)
               </CollapsibleSection>
 
               <CollapsibleSection title="设置居中项" isCollapsed={state.isBatchStickyCollapsed} onToggle={() => state.setIsBatchStickyCollapsed(!state.isBatchStickyCollapsed)}>
-                <BatchStickySection selectedSceneIds={selectedSceneIds} stickyItemIndex={state.stickyItemIndex} setStickyItemIndex={state.setStickyItemIndex} stickyValue={state.stickyValue} setStickyValue={state.setStickyValue} handleBatchStickyChange={state.handleBatchStickyChange} />
+                <BatchStickySection selectedSceneIds={selectedSceneIds} stickyItemIndex={state.stickyItemIndex} setStickyItemIndex={state.setStickyItemIndex} stickyValue={state.stickyValue} setStickyValue={state.setStickyValue} handleBatchStickyChange={state.handleBatchStickyChange} handleClearBatchStickyChange={state.handleClearBatchStickyChange} />
               </CollapsibleSection>
 
               <CollapsibleSection title="批量内容与动画" isCollapsed={state.isBatchContentCollapsed} onToggle={() => state.setIsBatchContentCollapsed(!state.isBatchContentCollapsed)}>

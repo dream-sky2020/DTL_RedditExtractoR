@@ -97,7 +97,7 @@ export const TAGS_METADATA: Record<string, TagMetadata> = {
       { name: 'ae', label: '动画缓动', type: 'select', options: EASING_OPTIONS, alias: ['animateEasing'] },
       { name: 'o', label: '偏移', type: 'css', alias: ['offset'], placeholder: 'x: 10; y: 20' },
       { name: 'kf', label: '关键帧动画', type: 'keyframes', alias: ['keyframes'], placeholder: '0: opacity: 0, y: 20, rotate: -8; 0.5 @ease-out: scaleX: 1.1, scaleY: 1.1; 1 @cubic-bezier(0.22, 1, 0.36, 1): opacity: 1, y: 0, rotate: 0' },
-      { name: 'sticky', label: '强制居中', type: 'boolean', description: '使该项强制在场景中心，其他项自动让位' },
+      { name: 'sticky', label: '强制居中比例', type: 'number', min: 0, max: 1, step: 0.1, defaultValue: 0.5, description: '使该项按比例定位到场景高度内，0.5 为正中心' },
       { name: 'glass', label: '玻璃', type: 'boolean', description: '开启后该 item 使用半透明玻璃卡片渲染' },
       { name: 'glassBlur', label: '玻璃模糊', type: 'number', min: 0, step: 1, defaultValue: 16, alias: ['gb'] },
       { name: 'glassOpacity', label: '玻璃透明度', type: 'number', min: 0, max: 1, step: 0.05, defaultValue: 0.42, alias: ['go'] },

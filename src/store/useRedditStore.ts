@@ -305,6 +305,7 @@ export const useRedditStore = create<RedditState>()(
           const parsed = new URL(inputUrl);
           const cleanPath = parsed.pathname.replace(/\/$/, '');
           parsed.pathname = cleanPath.endsWith('.json') ? cleanPath : `${cleanPath}.json`;
+          parsed.searchParams.set('limit', '500');
           parsed.searchParams.set('raw_json', '1');
           const jsonUrl = parsed.toString();
           const proxyUrl = `http://localhost:5000/fetch_reddit?url=${encodeURIComponent(jsonUrl)}`;

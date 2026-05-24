@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T16:19:57.295457",
+  "updatedAt": "2026-05-23T23:01:17.396452",
   "items": {
     "public/audio/shortAudio/Unassigned/999-social-credit-siren.mp3": {
       "alias": "",
@@ -313,6 +313,30 @@
       "tags": [],
       "category": "",
       "previewVolume": 0.25
+    },
+    "public/audio/shortAudio/Unassigned/Battle_endcommand_10415_1.wav": {
+      "alias": "无我良秀开始攻击",
+      "tags": [],
+      "category": "",
+      "previewVolume": 0.5
+    },
+    "public/audio/shortAudio/Unassigned/Battle_endcommand_10715_1.wav": {
+      "alias": "中指大哥希斯克利夫准备好大哥来了",
+      "tags": [],
+      "category": "",
+      "previewVolume": 0.5
+    },
+    "public/audio/shortAudio/Unassigned/Battle_break_10715_1.wav": {
+      "alias": "中指大哥希斯克利夫啧……呸",
+      "tags": [],
+      "category": "",
+      "previewVolume": 0.5
+    },
+    "public/audio/shortAudio/Unassigned/Choice_success_p_10715_2.wav": {
+      "alias": "中指大哥希斯克利夫检查通过",
+      "tags": [],
+      "category": "",
+      "previewVolume": 0.5
     }
   }
 }

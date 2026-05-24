@@ -90,16 +90,16 @@ https://www.reddit.com/r/limbuscompany/comments/1stoxuh/sure_fire_way_to_prevent
 
 <scene id="scene-thank1" duration=3 type="comments" layout="center" title="评论 u/Subject_Lu" bg="#10004c">
   <item id="thank" author="Subject_Lu" enterAt=0 exitAt=3 enterAnimation="none" exitAnimation="none" bg="#F5F5DC" glass=true>
-[style size=36][style align=center]<#text#>[\n]各位观众如果享受本期视频的话能给我点一个免费的赞吗？[\n](￣▽￣)[\n]</#text#>[/style][/style]
+[style size=36][style align=center  type=context ]<#text#>[\n]各位观众如果享受本期视频的话能给我点一个免费的赞吗？[\n](￣▽￣)[\n]</#text#>[/style][/style]
   </item>
 </scene>
 <scene id="scene-thank2" duration=3 type="comments" layout="center" title="评论 u/Subject_Lu" bg="#0f004b">
   <item id="thank23" author="Subject_Lu" enterAt=0 exitAt=3 enterAnimation="none" exitAnimation="none" bg="#F5F5DC" glass=true>
-[style size=36][style align=center]<#text#>[\n]各位观众如果享受本期视频的话能给我点一个免费的赞吗？[\n](￣▽￣)[\n]</#text#>[/style][/style]
+[style size=36][style align=center  type=context ]<#text#>[\n]各位观众如果享受本期视频的话能给我点一个免费的赞吗？[\n](￣▽￣)[\n]</#text#>[/style][/style]
   </item>
 
   <item id="t6yo3b34n" author="Subject_Lu" enterAt=0 exitAt=3 enterAnimation="none" exitAnimation="none" bg="#F5F5DC" glass=true>
-[style size=36][style align=center]<#text#>[\n]要是能关注+收藏+转发+投币就更好了[\n](*^_^*)[\n]</#text#>[/style][/style]
+[style size=36][style align=center   type=context]<#text#>[\n]要是能关注+收藏+转发+投币就更好了[\n](*^_^*)[\n]</#text#>[/style][/style]
   </item>
 </scene>
 
@@ -107,3 +107,16 @@ https://www.reddit.com/r/limbuscompany/comments/1stoxuh/sure_fire_way_to_prevent
 第一个tts生成音频
 第二个音频可视化
 第三个支持评论UI透明化,可以通过UI显示背后的战斗视频,让内容变得丰富,让视频观看者可以有分心的空间
+
+
+https://www.reddit.com/r/fishmaell/comments/1tijsym/outis_fumbles/
+https://www.reddit.com/r/fishmaell/comments/1tkiiu8/_/
+https://www.reddit.com/r/TheOdysseyHadAPurpose/comments/1tl008r/something_something_little_sacrifice/
+https://www.reddit.com/r/limbuscompany/comments/1tike2i/whoever_gets_to_kiramael_first_gets_the_one_1_burn/
+https://www.reddit.com/r/limbuscompany/comments/1tkj0jl/the_pressure_is_intense_by_kojocho05/
+https://www.reddit.com/r/fishmaell/comments/1ti77b5/this_shit_sealed/
+https://www.reddit.com/r/fishmaell/comments/1thtj26/packing_order_at_the_house_of_spiders/
+https://www.reddit.com/r/limbuscompany/comments/1tkny36/speed_contest_by_manapilyo/
+https://www.reddit.com/r/limbuscompany/comments/1thrfoh/another_banger_from_yours_truly/
+https://www.reddit.com/r/limbuscompany/comments/1tjzgig/a_little_sacrifice_aint_a_thing_if_its_for_your/
+https://www.reddit.com/r/limbuscompany/comments/1tki62x/lose_that_clash_did_you/

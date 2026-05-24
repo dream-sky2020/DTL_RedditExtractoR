@@ -21,11 +21,23 @@ export const BackgroundVideoTrack: React.FC<BackgroundVideoTrackProps> = ({ back
     singleLoopFrames,
     opacity,
     shouldRenderBlurredBackground,
+    blurredBackgroundContain,
+    containPosition,
     blurAmount,
     audioVolume,
   } = useBackgroundVideo({ backgroundVideo, fps, frame });
 
   if (!enabled || !src) return null;
+
+  const objectPositionMap: Record<string, string> = {
+    center: 'center center',
+    top: 'center top',
+    bottom: 'center bottom',
+    left: 'left center',
+    right: 'right center',
+  };
+
+  const objectPosition = objectPositionMap[containPosition] || 'center center';
 
   const blurredVideo = !hasEnded && shouldRenderBlurredBackground ? (
     <OffthreadVideo
@@ -39,10 +51,10 @@ export const BackgroundVideoTrack: React.FC<BackgroundVideoTrackProps> = ({ back
         zIndex: 0,
         width: '100%',
         height: '100%',
-        objectFit: 'cover',
+        objectFit: blurredBackgroundContain ? 'fill' : 'cover',
         opacity,
         filter: `blur(${blurAmount}px)`,
-        transform: 'scale(1.08)',
+        transform: blurredBackgroundContain ? 'none' : 'scale(1.08)',
       }}
     />
   ) : null;
@@ -60,6 +72,7 @@ export const BackgroundVideoTrack: React.FC<BackgroundVideoTrackProps> = ({ back
         width: '100%',
         height: '100%',
         objectFit: backgroundVideo?.fit || 'cover',
+        objectPosition: backgroundVideo?.fit === 'contain' ? objectPosition : 'center center',
         opacity,
       }}
     />

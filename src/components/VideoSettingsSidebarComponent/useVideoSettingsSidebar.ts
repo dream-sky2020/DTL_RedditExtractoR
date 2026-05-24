@@ -56,7 +56,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     offsetX,
     offsetY,
     stickyItemIndex,
-    stickyValue,
+    stickyValue: rawStickyValue,
     insertTextItemIndex,
     insertTextMode = 'fixed',
     insertTextValue,
@@ -83,7 +83,14 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
   const setOffsetX = (value: number) => setMultiSelectUiSettings({ offsetX: value });
   const setOffsetY = (value: number) => setMultiSelectUiSettings({ offsetY: value });
   const setStickyItemIndex = (value: number) => setMultiSelectUiSettings({ stickyItemIndex: value });
-  const setStickyValue = (value: number | boolean) => setMultiSelectUiSettings({ stickyValue: value });
+  const stickyValue = Number.isFinite(rawStickyValue)
+    ? Math.max(0, Math.min(1, rawStickyValue))
+    : 0.5;
+
+  const setStickyValue = (value: number) => {
+    const nextValue = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.5;
+    setMultiSelectUiSettings({ stickyValue: nextValue });
+  };
   const setInsertTextItemIndex = (value: number) => setMultiSelectUiSettings({ insertTextItemIndex: value });
   const setInsertTextMode = (value: any) => setMultiSelectUiSettings({ insertTextMode: value });
   const setInsertTextValue = (value: string) => setMultiSelectUiSettings({ insertTextValue: value });
@@ -173,6 +180,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     handleBatchSceneDurationChange,
     handleBatchOffsetChange,
     handleBatchStickyChange,
+    handleClearBatchStickyChange,
   } = useBatchLayoutActions({
     selectedSceneIds: selectedSceneIds || [],
     draftConfig,
@@ -283,6 +291,7 @@ export const useVideoSettingsSidebar = (props: VideoSettingsSidebarProps) => {
     handleBatchSceneDurationChange,
     handleBatchOffsetChange,
     handleBatchStickyChange,
+    handleClearBatchStickyChange,
     handleChatFlow,
     handleBatchBgImageChange,
     handleBatchItemBgImageChange,

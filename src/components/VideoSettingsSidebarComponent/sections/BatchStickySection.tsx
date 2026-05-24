@@ -9,9 +9,10 @@ interface BatchStickySectionProps {
   selectedSceneIds: string[];
   stickyItemIndex: number;
   setStickyItemIndex: (val: number) => void;
-  stickyValue: number | boolean;
-  setStickyValue: (val: number | boolean) => void;
+  stickyValue: number;
+  setStickyValue: (val: number) => void;
   handleBatchStickyChange: () => void;
+  handleClearBatchStickyChange: () => void;
 }
 
 export const BatchStickySection: React.FC<BatchStickySectionProps> = ({
@@ -21,12 +22,14 @@ export const BatchStickySection: React.FC<BatchStickySectionProps> = ({
   stickyValue,
   setStickyValue,
   handleBatchStickyChange,
+  handleClearBatchStickyChange,
 }) => {
   const hasSelected = selectedSceneIds.length > 0;
+  const clampStickyValue = (value: number) => Math.max(0, Math.min(1, value));
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>居中项:</Text>
+      <Text style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>定位项:</Text>
       <Tooltip title="正数从前往后(1,2...)，负数从后往前(-1,-2...)">
         <InputNumber
           size="small"
@@ -37,15 +40,15 @@ export const BatchStickySection: React.FC<BatchStickySectionProps> = ({
           style={{ width: 55 }}
         />
       </Tooltip>
-      <Tooltip title="居中位置比例 (0-1)，0.5 为正中心">
+      <Tooltip title="sticky 位置比例 (0-1)，0.5 为正中心">
         <InputNumber
           size="small"
           min={0}
           max={1}
           step={0.1}
           placeholder="比例"
-          value={typeof stickyValue === 'number' ? stickyValue : 0.5}
-          onChange={(val) => setStickyValue(val ?? 0.5)}
+          value={stickyValue}
+          onChange={(val) => setStickyValue(clampStickyValue(val ?? 0.5))}
           style={{ width: 55 }}
         />
       </Tooltip>
@@ -61,7 +64,15 @@ export const BatchStickySection: React.FC<BatchStickySectionProps> = ({
           borderColor: hasSelected ? '#fa8c16' : 'var(--brand-border)',
         }}
       >
-        设置居中项
+        设置定位项
+      </Button>
+      <Button
+        size="small"
+        danger
+        disabled={!hasSelected}
+        onClick={handleClearBatchStickyChange}
+      >
+        清除
       </Button>
     </div>
   );

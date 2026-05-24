@@ -20,11 +20,19 @@ import {
 } from 'antd';
 import { toast } from '@components/Toast';
 import { ReloadOutlined, VideoCameraOutlined, FolderOpenOutlined } from '@ant-design/icons';
-import { BackgroundVideoConfig } from '@/types';
+import { BackgroundVideoConfig, BackgroundVideoContainPosition } from '@/types';
 import { useVideoStore } from '@/store';
 import { getActiveVideoCanvasSize, getAspectRatioLabel } from '@/rendering/videoCanvas';
 
 const { Text, Title } = Typography;
+
+const CONTAIN_POSITION_TO_OBJECT_POSITION: Record<BackgroundVideoContainPosition, string> = {
+  center: 'center center',
+  top: 'center top',
+  bottom: 'center bottom',
+  left: 'left center',
+  right: 'right center',
+};
 
 interface VisualColorInputProps {
   value?: string;
@@ -63,10 +71,12 @@ const DEFAULT_BACKGROUND_VIDEO: BackgroundVideoConfig = {
   enabled: false,
   src: '',
   fit: 'cover',
+  containPosition: 'center',
   opacity: 1,
   overlayColor: 'rgba(0,0,0,0.25)',
   blurredBackgroundEnabled: false,
   blurredBackgroundBlur: 24,
+  blurredBackgroundContain: false,
   playbackRate: 1,
   startOffset: 0,
   audioEnabled: false,
@@ -102,7 +112,7 @@ const formatDuration = (seconds?: number): string => {
 export const BackgroundVideoPage: React.FC = () => {
   const { videoConfig, setVideoConfig } = useVideoStore();
   const backgroundVideo = useMemo(
-    () => ({ ...DEFAULT_BACKGROUND_VIDEO, ...(videoConfig.backgroundVideo || {}) }),
+    () => ({ ...DEFAULT_BACKGROUND_VIDEO, ...(videoConfig.backgroundVideo || {}) }) as BackgroundVideoConfig,
     [videoConfig.backgroundVideo]
   );
   const [items, setItems] = useState<BackgroundVideoItem[]>([]);
@@ -140,6 +150,10 @@ export const BackgroundVideoPage: React.FC = () => {
   const shouldShowBlurredBackground = backgroundVideo.fit === 'contain' && backgroundVideo.blurredBackgroundEnabled;
   const previewOpacity = Math.max(0, Math.min(1, backgroundVideo.opacity ?? 1));
   const previewBlurAmount = Math.max(0, backgroundVideo.blurredBackgroundBlur ?? 24);
+  const shouldStretchBlurredBackground = shouldShowBlurredBackground && backgroundVideo.blurredBackgroundContain;
+  const previewObjectPosition = backgroundVideo.fit === 'contain'
+    ? CONTAIN_POSITION_TO_OBJECT_POSITION[(backgroundVideo.containPosition || 'center') as BackgroundVideoContainPosition]
+    : 'center center';
 
   const updateBackgroundVideo = (updates: Partial<BackgroundVideoConfig>) => {
     setVideoConfig({
@@ -300,10 +314,10 @@ export const BackgroundVideoPage: React.FC = () => {
                           inset: 0,
                           width: '100%',
                           height: '100%',
-                          objectFit: 'cover',
+                          objectFit: shouldStretchBlurredBackground ? 'fill' : 'cover',
                           opacity: previewOpacity,
                           filter: `blur(${previewBlurAmount}px)`,
-                          transform: 'scale(1.08)',
+                          transform: shouldStretchBlurredBackground ? 'none' : 'scale(1.08)',
                           pointerEvents: 'none',
                         }}
                       />
@@ -319,6 +333,7 @@ export const BackgroundVideoPage: React.FC = () => {
                         height: '100%',
                         display: 'block',
                         objectFit: backgroundVideo.fit || 'cover',
+                        objectPosition: previewObjectPosition,
                         opacity: previewOpacity,
                       }}
                       onLoadedMetadata={(event) => {
@@ -433,11 +448,42 @@ export const BackgroundVideoPage: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
+                <Form.Item label="玻璃背景拉伸完整铺满">
+                  <Switch
+                    checked={Boolean(backgroundVideo.blurredBackgroundContain)}
+                    disabled={backgroundVideo.fit !== 'contain' || !backgroundVideo.blurredBackgroundEnabled}
+                    onChange={(blurredBackgroundContain) => updateBackgroundVideo({ blurredBackgroundContain })}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={8}>
+                <Form.Item label="完整显示位置">
+                  <Select
+                    value={backgroundVideo.containPosition || 'center'}
+                    disabled={backgroundVideo.fit !== 'contain'}
+                    onChange={(containPosition) => updateBackgroundVideo({ containPosition })}
+                    options={[
+                      { label: '居中', value: 'center' },
+                      { label: '靠上', value: 'top' },
+                      { label: '靠下', value: 'bottom' },
+                      { label: '靠左', value: 'left' },
+                      { label: '靠右', value: 'right' },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={8}>
                 <Alert
                   type="info"
                   showIcon
                   message="只作用于 contain"
-                  description="底层会复制同一视频并 cover 铺满、放大模糊，用来补齐完整显示产生的边缘空白。"
+                  description="默认底层会复制同一视频并 cover 铺满、放大模糊；开启玻璃背景拉伸完整铺满后，底层玻璃视频会压缩/拉伸到画面宽高，完整显示且铺满界面。"
                 />
               </Col>
             </Row>

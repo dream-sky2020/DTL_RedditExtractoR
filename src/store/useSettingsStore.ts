@@ -34,7 +34,7 @@ interface MultiSelectUiSettings {
   offsetX: number;
   offsetY: number;
   stickyItemIndex: number;
-  stickyValue: number | boolean;
+  stickyValue: number;
   insertTextItemIndex: number;
   insertTextMode: 'fixed' | 'weightedRandom';
   insertTextValue: string;

@@ -1,6 +1,11 @@
 import { VideoConfig } from '../types';
 import { toast } from '@components/Toast';
 
+const clampStickyProportion = (value: number): number => {
+  if (!Number.isFinite(value)) return 0.5;
+  return Math.max(0, Math.min(1, value));
+};
+
 interface UseBatchLayoutActionsProps {
   selectedSceneIds: string[];
   draftConfig: VideoConfig;
@@ -10,7 +15,7 @@ interface UseBatchLayoutActionsProps {
   offsetX: number;
   offsetY: number;
   stickyItemIndex: number;
-  stickyValue: number | boolean;
+  stickyValue: number;
 }
 
 export const useBatchLayoutActions = ({
@@ -105,7 +110,7 @@ export const useBatchLayoutActions = ({
       }
 
       if (targetIdx >= 0 && targetIdx < items.length) {
-        items[targetIdx] = { ...items[targetIdx], sticky: stickyValue };
+        items[targetIdx] = { ...items[targetIdx], sticky: clampStickyProportion(stickyValue) };
       }
 
       return { ...scene, items };
@@ -115,11 +120,31 @@ export const useBatchLayoutActions = ({
     toast.success(`已更新 ${selectedSceneIds.length} 个场景的强制居中设置`);
   };
 
+  const handleClearBatchStickyChange = () => {
+    if (selectedSceneIds.length === 0) return;
+
+    const newScenes = draftConfig.scenes.map(scene => {
+      if (!selectedSceneIds.includes(scene.id)) return scene;
+
+      const items = scene.items.map(item => {
+        const nextItem = { ...item };
+        delete nextItem.sticky;
+        return nextItem;
+      });
+
+      return { ...scene, items };
+    });
+
+    setDraftConfig({ ...draftConfig, scenes: newScenes });
+    toast.success(`已清除 ${selectedSceneIds.length} 个场景的 sticky 定位设置`);
+  };
+
   return {
     handleBatchLayoutChange,
     handleBatchItemSpacingChange,
     handleBatchSceneDurationChange,
     handleBatchOffsetChange,
     handleBatchStickyChange,
+    handleClearBatchStickyChange,
   };
 };

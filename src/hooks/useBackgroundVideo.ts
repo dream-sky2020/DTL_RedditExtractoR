@@ -90,6 +90,8 @@ export const useBackgroundVideo = ({ backgroundVideo, fps, frame }: UseBackgroun
   }
 
   const shouldRenderBlurredBackground = backgroundVideo.fit === 'contain' && backgroundVideo.blurredBackgroundEnabled;
+  const blurredBackgroundContain = !!backgroundVideo.blurredBackgroundContain;
+  const containPosition = backgroundVideo.containPosition || 'center';
   const blurAmount = Math.max(0, backgroundVideo.blurredBackgroundBlur ?? 24);
   const audioVolume = clampAudioVolume(backgroundVideo.audioVolume, 0.35);
 
@@ -105,6 +107,8 @@ export const useBackgroundVideo = ({ backgroundVideo, fps, frame }: UseBackgroun
     singleLoopFrames,
     opacity,
     shouldRenderBlurredBackground,
+    blurredBackgroundContain,
+    containPosition,
     blurAmount,
     audioVolume,
   };

@@ -316,6 +316,9 @@ const SceneItem: React.FC<SceneItemProps> = ({
   );
 };
 
+const isStickyEnabled = (item: VideoContentItem): boolean =>
+  item.sticky !== undefined && item.sticky !== false;
+
 export interface SceneRendererProps {
   scene: VideoScene;
   frame: number;
@@ -336,11 +339,12 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const bgColor = hasFinalBackgroundVideo ? 'transparent' : (scene.backgroundColor || '#ffffff');
   const bgImageStyle = getBackgroundImageStyle(scene.backgroundImage, scene.backgroundImageMode);
 
-  const stickyIdx = scene.items.findIndex(item => item.sticky);
+  const stickyIdx = scene.items.findIndex(isStickyEnabled);
   const hasSticky = stickyIdx !== -1;
   const stickyItem = hasSticky ? scene.items[stickyIdx] : null;
   const stickyValue = stickyItem?.sticky;
-  const stickyProportion = typeof stickyValue === 'number' ? stickyValue : 0.5;
+  const stickyProportion = typeof stickyValue === 'number' ? clamp01(stickyValue, 0.5) : 0.5;
+  const itemSpacing = Math.max(0, scene.itemSpacing ?? 12);
 
   const sceneAnimateStyle: React.CSSProperties = {};
   const sceneTransforms: string[] = [];
@@ -365,6 +369,26 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
     }
     Object.assign(sceneAnimateStyle, customStyle);
   }
+
+  const renderSceneItem = (item: VideoContentItem) => (
+    <SceneItem
+      key={item.id}
+      item={item}
+      sceneDuration={scene.duration}
+      relativeFrame={frame}
+      fps={fps}
+      quoteFontSize={config.quoteFontSize}
+      quoteFontColor={config.quoteFontColor}
+      maxQuoteDepth={config.maxQuoteDepth}
+      defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
+      defaultItemBackgroundColor={config.itemBackgroundColor}
+      quoteBackgroundColor={config.quoteBackgroundColor}
+      quoteBorderColor={config.quoteBorderColor}
+      avatarSize={config.avatarSize}
+      avatarShape={config.avatarShape}
+      isRemotion={isRemotion}
+    />
+  );
 
   return (
     <div
@@ -396,76 +420,32 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-end',
-              gap: scene.itemSpacing ?? 12,
+              gap: itemSpacing,
               padding: '4px 8px',
               overflow: 'hidden'
             }}>
-              {scene.items.slice(0, stickyIdx).map((item: VideoContentItem) => (
-                <SceneItem
-                  key={item.id}
-                  item={item}
-                  sceneDuration={scene.duration}
-                  relativeFrame={frame}
-                  fps={fps}
-                  quoteFontSize={config.quoteFontSize}
-                  quoteFontColor={config.quoteFontColor}
-                  maxQuoteDepth={config.maxQuoteDepth}
-                  defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
-                  defaultItemBackgroundColor={config.itemBackgroundColor}
-                  quoteBackgroundColor={config.quoteBackgroundColor}
-                  quoteBorderColor={config.quoteBorderColor}
-                  avatarSize={config.avatarSize}
-                  avatarShape={config.avatarShape}
-                  isRemotion={isRemotion}
-                />
-              ))}
+              {scene.items.slice(0, stickyIdx).map((item: VideoContentItem) => renderSceneItem(item))}
             </div>
-            <div style={{ padding: '4px 8px', flexShrink: 0 }}>
-              <SceneItem
-                key={scene.items[stickyIdx].id}
-                item={scene.items[stickyIdx]}
-                sceneDuration={scene.duration}
-                relativeFrame={frame}
-                fps={fps}
-                quoteFontSize={config.quoteFontSize}
-                maxQuoteDepth={config.maxQuoteDepth}
-                defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
-                defaultItemBackgroundColor={config.itemBackgroundColor}
-                quoteBackgroundColor={config.quoteBackgroundColor}
-                quoteBorderColor={config.quoteBorderColor}
-                avatarSize={config.avatarSize}
-                avatarShape={config.avatarShape}
-                isRemotion={isRemotion}
-              />
+            <div
+              style={{
+                padding: '4px 8px',
+                flexShrink: 0,
+                marginTop: stickyIdx > 0 ? itemSpacing : 0,
+                marginBottom: stickyIdx < scene.items.length - 1 ? itemSpacing : 0,
+              }}
+            >
+              {renderSceneItem(scene.items[stickyIdx])}
             </div>
             <div style={{
               flex: 1 - stickyProportion,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'flex-start',
-              gap: scene.itemSpacing ?? 12,
+              gap: itemSpacing,
               padding: '4px 8px',
               overflow: 'hidden'
             }}>
-              {scene.items.slice(stickyIdx + 1).map((item: VideoContentItem) => (
-                <SceneItem
-                  key={item.id}
-                  item={item}
-                  sceneDuration={scene.duration}
-                  relativeFrame={frame}
-                  fps={fps}
-                  quoteFontSize={config.quoteFontSize}
-                  quoteFontColor={config.quoteFontColor}
-                  maxQuoteDepth={config.maxQuoteDepth}
-                  defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
-                  defaultItemBackgroundColor={config.itemBackgroundColor}
-                  quoteBackgroundColor={config.quoteBackgroundColor}
-                  quoteBorderColor={config.quoteBorderColor}
-                  avatarSize={config.avatarSize}
-                  avatarShape={config.avatarShape}
-                  isRemotion={isRemotion}
-                />
-              ))}
+              {scene.items.slice(stickyIdx + 1).map((item: VideoContentItem) => renderSceneItem(item))}
             </div>
           </>
         ) : (
@@ -474,30 +454,13 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
               display: 'flex',
               flexDirection: 'column',
               justifyContent: layoutMode === 'center' ? 'center' : (layoutMode === 'bottom' ? 'flex-end' : 'flex-start'),
-              gap: scene.itemSpacing ?? 12,
+              gap: itemSpacing,
               padding: '4px 8px',
               height: '100%',
               overflow: 'hidden',
             }}
           >
-            {scene.items.map((item: VideoContentItem) => (
-              <SceneItem
-                key={item.id}
-                item={item}
-                sceneDuration={scene.duration}
-                relativeFrame={frame}
-                fps={fps}
-                quoteFontSize={config.quoteFontSize}
-                maxQuoteDepth={config.maxQuoteDepth}
-                defaultQuoteMaxLimit={config.defaultQuoteMaxLimit}
-                defaultItemBackgroundColor={config.itemBackgroundColor}
-                quoteBackgroundColor={config.quoteBackgroundColor}
-                quoteBorderColor={config.quoteBorderColor}
-                avatarSize={config.avatarSize}
-                avatarShape={config.avatarShape}
-                isRemotion={isRemotion}
-              />
-            ))}
+            {scene.items.map((item: VideoContentItem) => renderSceneItem(item))}
           </div>
         )}
       </div>

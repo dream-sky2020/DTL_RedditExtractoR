@@ -139,7 +139,9 @@ export const sceneToDsl = (scene: VideoScene): string => {
       if (item.animateDuration !== undefined) itemAttrs.push(`animateDuration=${item.animateDuration}`);
       if (item.animateEasing) itemAttrs.push(`animateEasing="${escapeAttr(item.animateEasing)}"`);
       if (item.offset) itemAttrs.push(`offset="${escapeAttr(item.offset)}"`);
-      if (item.sticky) itemAttrs.push(`sticky=true`);
+      if (item.sticky !== undefined && item.sticky !== false) {
+        itemAttrs.push(`sticky=${typeof item.sticky === 'number' ? item.sticky : 'true'}`);
+      }
       if (item.keyframes) itemAttrs.push(`keyframes="${escapeAttr(item.keyframes)}"`);
       if (item.glass !== undefined) itemAttrs.push(`glass=${item.glass ? 'true' : 'false'}`);
       if (item.glassBlur !== undefined) itemAttrs.push(`glassBlur=${item.glassBlur}`);

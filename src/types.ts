@@ -123,6 +123,7 @@ export interface VideoCanvasConfig {
 
 export type RenderMode = 'preview' | 'final';
 export type BackgroundVideoFit = 'cover' | 'contain' | 'fill';
+export type BackgroundVideoContainPosition = 'center' | 'top' | 'bottom' | 'left' | 'right';
 export type BackgroundImageMode = 'stretch' | 'contain' | 'cover' | 'repeat';
 export type BackgroundVideoPlaybackMode = 'play-once' | 'repeat-count';
 export type BackgroundVideoAfterEndMode = 'color' | 'image';
@@ -132,10 +133,12 @@ export interface BackgroundVideoConfig {
   enabled?: boolean;
   src?: string;
   fit?: BackgroundVideoFit;
+  containPosition?: BackgroundVideoContainPosition;
   opacity?: number;
   overlayColor?: string;
   blurredBackgroundEnabled?: boolean;
   blurredBackgroundBlur?: number;
+  blurredBackgroundContain?: boolean;
   playbackRate?: number;
   startOffset?: number;
   audioEnabled?: boolean;

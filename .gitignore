@@ -14,3 +14,4 @@ scripts/__pycache__/
 public/docs/临时*
 public/audio/bgm/
 public/background-videos/
+.render-props-*.json
