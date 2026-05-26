@@ -55,8 +55,9 @@ export const useBatchLayoutActions = ({
     toast.success(isAll ? `已将全部场景的项目间距改为 ${batchItemSpacing}` : `已将 ${selectedSceneIds.length} 个场景的项目间距改为 ${batchItemSpacing}`);
   };
 
-  const handleBatchSceneDurationChange = () => {
-    if (!Number.isFinite(batchSceneDuration) || batchSceneDuration <= 0) {
+  const handleBatchSceneDurationChange = (val?: number) => {
+    const duration = val ?? batchSceneDuration;
+    if (!Number.isFinite(duration) || duration <= 0) {
       toast.warning('请输入大于 0 的场景时长');
       return;
     }
@@ -68,16 +69,16 @@ export const useBatchLayoutActions = ({
       if (!targetIds.includes(scene.id)) return scene;
       return {
         ...scene,
-        duration: batchSceneDuration,
+        duration: duration,
         items: scene.items.map(item => ({
           ...item,
-          exitAt: batchSceneDuration,
+          exitAt: duration,
         })),
       };
     });
 
     setDraftConfig({ ...draftConfig, scenes: newScenes });
-    toast.success(isAll ? `已将全部场景的时长改为 ${batchSceneDuration}s` : `已将 ${selectedSceneIds.length} 个场景的时长和 item exitAt 改为 ${batchSceneDuration}s`);
+    toast.success(isAll ? `已将全部场景的时长改为 ${duration}s` : `已将 ${selectedSceneIds.length} 个场景的时长和 item exitAt 改为 ${duration}s`);
   };
 
   const handleBatchOffsetChange = () => {
