@@ -129,6 +129,29 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
     return '';
   };
 
+  const buildManualJsonUrl = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+
+    try {
+      const parsed = new URL(trimmed);
+      parsed.hash = '';
+
+      // Reddit 原始 JSON 兜底：帖子链接补 .json，默认附加 raw_json=1
+      if (!parsed.pathname.endsWith('.json')) {
+        parsed.pathname = `${parsed.pathname.replace(/\/+$/, '')}.json`;
+      }
+      if (!parsed.searchParams.has('raw_json')) {
+        parsed.searchParams.set('raw_json', '1');
+      }
+      return parsed.toString();
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const manualJsonUrl = buildManualJsonUrl(redditUrl);
+
   const handlePasteAndExtractUrl = async () => {
     try {
       const clipboardText = await navigator.clipboard.readText();
@@ -229,6 +252,27 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               onPressEnter={handleFetch}
             />
           </Form.Item>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="提取失败时可手动导入 Reddit JSON"
+            description={
+              <Space direction="vertical" size={4}>
+                <Text type="secondary">
+                  如果自动提取失败，请将帖子链接末尾加上 <code>.json</code>（建议再加 <code>?raw_json=1</code>）后访问。
+                </Text>
+                <Text type="secondary">
+                  打开页面后复制完整 JSON 内容，再点击“手动导入（剪贴板 JSON）”或“手动导入并追加（剪贴板 JSON）”。
+                </Text>
+                {manualJsonUrl && (
+                  <Text copyable={{ text: manualJsonUrl }}>
+                    手动 JSON 链接：{manualJsonUrl}
+                  </Text>
+                )}
+              </Space>
+            }
+          />
           <Space>
             <Button
               type="primary"
