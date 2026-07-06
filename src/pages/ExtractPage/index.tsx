@@ -22,6 +22,8 @@ import {
   DeleteOutlined,
   RocketOutlined,
   PlusOutlined,
+  InboxOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { dialogs } from '../../components/Dialogs';
 import { useRedditStore, useSettingsStore } from '@/store';
@@ -54,6 +56,7 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
     result,
     results,
     fetchRedditData,
+    importRedditRawData,
     clearPersistedData,
     hasStoredRawData,
     removeRawResult,
@@ -71,6 +74,81 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
 
   const handleFetchAndAppend = () => {
     fetchRedditData(commentSortMode, replyOrderMode, colorArrangement, 'append');
+  };
+
+  const handleManualImport = async () => {
+    await handleManualImportByMode('replace');
+  };
+
+  const handleManualImportAndAppend = async () => {
+    await handleManualImportByMode('append');
+  };
+
+  const handleManualImportByMode = async (mode: 'replace' | 'append') => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (!clipboardText.trim()) {
+        toast.error('剪贴板为空，请先复制 Reddit JSON');
+        return;
+      }
+      const parsed = JSON.parse(clipboardText);
+      await importRedditRawData(parsed, commentSortMode, replyOrderMode, colorArrangement, mode);
+    } catch (err) {
+      console.error(err);
+      toast.error('读取剪贴板失败或 JSON 格式无效');
+    }
+  };
+
+  const tryExtractRawUrl = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+
+    // 支持日志整行复制：GET /fetch_reddit?url=... HTTP/1.1
+    const lineMatch = trimmed.match(/\/fetch_reddit\?url=([^\s"]+)/);
+    if (lineMatch?.[1]) {
+      return decodeURIComponent(lineMatch[1]);
+    }
+
+    // 支持完整代理 URL：http://localhost:5000/fetch_reddit?url=...
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.pathname.includes('/fetch_reddit')) {
+        const wrapped = parsed.searchParams.get('url');
+        return wrapped ? decodeURIComponent(wrapped) : '';
+      }
+    } catch (e) {
+      // 不是标准 URL，继续按普通 query 片段处理
+    }
+
+    // 支持直接粘贴 query 片段：/fetch_reddit?url=...
+    const queryMatch = trimmed.match(/url=([^&\s]+)/);
+    if (queryMatch?.[1]) {
+      return decodeURIComponent(queryMatch[1]);
+    }
+
+    return '';
+  };
+
+  const handlePasteAndExtractUrl = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (!clipboardText.trim()) {
+        toast.error('剪贴板为空，请先复制代理 URL 或日志行');
+        return;
+      }
+
+      const extractedUrl = tryExtractRawUrl(clipboardText);
+      if (!extractedUrl) {
+        toast.error('未识别到 fetch_reddit?url=... 中的原始链接');
+        return;
+      }
+
+      setRedditUrl(extractedUrl);
+      toast.success('已解析并填入原始 JSON 链接');
+    } catch (err) {
+      console.error(err);
+      toast.error('读取剪贴板失败');
+    }
   };
 
   const copyToClipboard = async () => {
@@ -169,6 +247,29 @@ export const ExtractPage: React.FC<ExtractPageProps> = ({
               onClick={handleFetchAndAppend}
             >
               提取并追加到当前脚本
+            </Button>
+            <Button
+              size="large"
+              loading={loading}
+              icon={<InboxOutlined />}
+              onClick={handleManualImport}
+            >
+              手动导入（剪贴板 JSON）
+            </Button>
+            <Button
+              size="large"
+              loading={loading}
+              icon={<PlusOutlined />}
+              onClick={handleManualImportAndAppend}
+            >
+              手动导入并追加（剪贴板 JSON）
+            </Button>
+            <Button
+              size="large"
+              icon={<LinkOutlined />}
+              onClick={handlePasteAndExtractUrl}
+            >
+              粘贴并解析代理 URL
             </Button>
             <Button
               danger

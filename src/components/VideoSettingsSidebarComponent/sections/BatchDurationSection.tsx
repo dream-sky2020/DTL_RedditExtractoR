@@ -19,7 +19,7 @@ export const BatchDurationSection: React.FC<BatchDurationSectionProps> = ({
   const hasSelected = selectedSceneIds.length > 0;
   const btnColor = hasSelected ? '#fa8c16' : '#1890ff';
 
-  const presets = [2.5, 3, 3.5, 4, 4.5, 5];
+  const presets = [2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

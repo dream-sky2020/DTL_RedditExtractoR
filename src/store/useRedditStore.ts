@@ -21,7 +21,7 @@ import { useSettingsStore } from './useSettingsStore';
 import { hslToHex } from '@/utils/color/hslToHex';
 import { pseudoRandom01 } from '@/utils/random/pseudoRandom01';
 
-import { generateRandomAliasProfiles, nextUniqueAlias } from '@/utils/aliasGenerator';
+import { generateRandomAliasProfiles } from '@/utils/aliasGenerator';
 
 type FetchRedditDataMode = 'replace' | 'append';
 
@@ -65,6 +65,13 @@ interface RedditState {
   removeRawResult: (index: number) => void;
 
   fetchRedditData: (
+    commentSortMode: CommentSortMode,
+    replyOrderMode: ReplyOrderMode,
+    colorArrangement: ColorArrangementSettings,
+    mode?: FetchRedditDataMode
+  ) => Promise<void>;
+  importRedditRawData: (
+    rawData: any,
     commentSortMode: CommentSortMode,
     replyOrderMode: ReplyOrderMode,
     colorArrangement: ColorArrangementSettings,
@@ -191,12 +198,6 @@ export const useRedditStore = create<RedditState>()(
           avatarPool = AVATAR_POOL.map(a => `public/avatar/${a}`);
         }
 
-        // 3. 准备已使用的代号集合（用于补全缺失代号）
-        const usedAliases = new Set<string>();
-        Object.values(nextProfiles).forEach(p => {
-          if (p.alias) usedAliases.add(p.alias.toLowerCase());
-        });
-
         authors.forEach((author, index) => {
           const existing = nextProfiles[author] || {};
           const needsColor = refreshColors || !existing.color;
@@ -215,7 +216,7 @@ export const useRedditStore = create<RedditState>()(
               profile.avatar = avatarPool[avatarIdx];
             }
             if (needsAlias) {
-              let alias = nextUniqueAlias(usedAliases);
+              let alias = author;
               if (isOP) {
                 alias = `${alias}${postAuthorSuffix}`;
               }
@@ -419,6 +420,128 @@ export const useRedditStore = create<RedditState>()(
           } else {
             errorDebug = err instanceof Error ? err.message : String(err);
           }
+          set({ error: errorMsg, errorDebug, loading: false });
+        }
+      },
+
+      importRedditRawData: async (rawData, commentSortMode, replyOrderMode, colorArrangement, mode = 'replace') => {
+        const { authorProfiles, buildProfilesForAuthors } = get();
+        set({
+          loading: true,
+          error: '',
+          errorDebug: '',
+          ...(mode === 'replace'
+            ? {
+                result: null,
+                rawResult: null,
+                results: [],
+                rawResults: [],
+                allAuthors: [],
+                hasStoredRawData: false,
+              }
+            : {}),
+        });
+
+        try {
+          const nextAuthors = extractAuthorsFromRawData(rawData);
+          const nextRawResults = mode === 'append'
+            ? [...get().rawResults, rawData]
+            : [rawData];
+          const allAuthors = Array.from(new Set([...get().allAuthors, ...nextAuthors]));
+          const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement);
+
+          const globalSettings = (await import('./useSettingsStore')).useSettingsStore.getState();
+
+          const nextResult = transformRedditJson(rawData, {
+            sortMode: commentSortMode,
+            replyOrder: replyOrderMode,
+            authorProfiles: nextProfiles,
+            imageLayoutMode: globalSettings.imageLayoutMode,
+            contentFontColor: globalSettings.contentFontColor,
+            contentFontBold: globalSettings.contentFontBold,
+            authorFontSize: globalSettings.authorFontSize,
+            authorFontBold: globalSettings.authorFontBold,
+            contentFontSize: globalSettings.contentFontSize,
+            titleFontSize: globalSettings.titleFontSize,
+            titleFontColor: globalSettings.titleFontColor,
+            titleFontBold: globalSettings.titleFontBold,
+            titleAlignment: globalSettings.titleAlignment,
+            avatarSize: globalSettings.avatarSize,
+            avatarShape: globalSettings.avatarShape,
+            avatarOffset: globalSettings.avatarOffset,
+            maxQuoteDepth: globalSettings.maxQuoteDepth,
+            quoteFontSize: globalSettings.quoteFontSize,
+            quoteFontColor: globalSettings.quoteFontColor,
+            quoteBackgroundColor: globalSettings.quoteBackgroundColor,
+            quoteBorderColor: globalSettings.quoteBorderColor,
+            sceneBackgroundColor: globalSettings.sceneBackgroundColor,
+            sceneBackgroundColorEnd: globalSettings.sceneBackgroundColorEnd,
+            sceneBackgroundGradientMode: globalSettings.sceneBackgroundGradientMode,
+            itemBackgroundColor: globalSettings.itemBackgroundColor,
+            itemBackgroundColorEnd: globalSettings.itemBackgroundColorEnd,
+            itemBackgroundGradientMode: globalSettings.itemBackgroundGradientMode,
+            canvas: (await import('./useVideoStore')).useVideoStore.getState().videoConfig.canvas,
+          });
+
+          const nextResults = mode === 'append'
+            ? [...get().results, nextResult]
+            : [nextResult];
+
+          set({
+            allAuthors,
+            authorProfiles: nextProfiles,
+            rawResults: nextRawResults,
+            results: nextResults,
+            rawResult: rawData,
+            result: nextResult,
+            hasStoredRawData: true,
+            loading: false
+          });
+
+          const videoStore = (await import('./useVideoStore')).useVideoStore.getState();
+          const newConfig = videoStore.buildVideoConfigFromResult(nextResult, {
+            titleAlignment: globalSettings.titleAlignment,
+            titleFontSize: globalSettings.titleFontSize,
+            contentFontSize: globalSettings.contentFontSize,
+            authorFontSize: globalSettings.authorFontSize,
+            quoteFontSize: globalSettings.quoteFontSize,
+            titleFontColor: globalSettings.titleFontColor,
+            contentFontColor: globalSettings.contentFontColor,
+            quoteFontColor: globalSettings.quoteFontColor,
+            titleFontBold: globalSettings.titleFontBold,
+            contentFontBold: globalSettings.contentFontBold,
+            authorFontBold: globalSettings.authorFontBold,
+            quoteBackgroundColor: globalSettings.quoteBackgroundColor,
+            quoteBorderColor: globalSettings.quoteBorderColor,
+            maxQuoteDepth: globalSettings.maxQuoteDepth,
+            defaultQuoteMaxLimit: globalSettings.defaultQuoteMaxLimit,
+            sceneBackgroundColor: globalSettings.sceneBackgroundColor,
+            sceneBackgroundColorEnd: globalSettings.sceneBackgroundColorEnd,
+            sceneBackgroundGradientMode: globalSettings.sceneBackgroundGradientMode,
+            itemBackgroundColor: globalSettings.itemBackgroundColor,
+            itemBackgroundColorEnd: globalSettings.itemBackgroundColorEnd,
+            itemBackgroundGradientMode: globalSettings.itemBackgroundGradientMode,
+          });
+
+          if (mode === 'append') {
+            const suffix = `append-${Date.now()}`;
+            const currentConfig = videoStore.videoConfig;
+            videoStore.setVideoConfig({
+              ...currentConfig,
+              scenes: [
+                ...currentConfig.scenes,
+                ...suffixSceneIds(newConfig.scenes, suffix),
+              ],
+            });
+          } else {
+            videoStore.setVideoConfig(newConfig);
+          }
+
+          toast.success(mode === 'append' ? '手动导入成功，已追加到当前脚本' : '手动导入成功');
+        } catch (err) {
+          console.error(err);
+          const errorMsg = '手动导入失败，请确认剪贴板内容是 Reddit 帖子 JSON。';
+          const errorDebug = err instanceof Error ? err.message : JSON.stringify(err, null, 2);
           set({ error: errorMsg, errorDebug, loading: false });
         }
       },

@@ -417,11 +417,11 @@ export const IdentityManagementPage: React.FC = () => {
     toast.success('已重新随机生成所有颜色');
   };
 
-  const handleRefreshAliases = () => {
-    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement, { refreshAliases: true });
+  const handleResetAliasesToOriginal = () => {
+    const nextProfiles = buildProfilesForAuthors(allAuthors, authorProfiles, colorArrangement);
     setAuthorProfiles(nextProfiles);
     syncProjectData(nextProfiles);
-    toast.success('已重新随机生成所有代号');
+    toast.success('已按原名重置所有代号');
   };
 
   const handleClearAliases = () => {
@@ -547,7 +547,7 @@ export const IdentityManagementPage: React.FC = () => {
                   <Tooltip title="全随机生成"><Button size="small" icon={<ReloadOutlined />} onClick={handleRandomize} block /></Tooltip>
                   <Tooltip title="刷新头像"><Button size="small" icon={<UserOutlined />} onClick={handleRefreshAvatars} block /></Tooltip>
                   <Tooltip title="刷新颜色"><Button size="small" icon={<BgColorsOutlined />} onClick={handleRefreshColors} block /></Tooltip>
-                  <Tooltip title="刷新代号"><Button size="small" icon={<FontSizeOutlined />} onClick={handleRefreshAliases} block /></Tooltip>
+                  <Tooltip title="按原名重置代号"><Button size="small" icon={<FontSizeOutlined />} onClick={handleResetAliasesToOriginal} block /></Tooltip>
                   <Tooltip title="还原为原名"><Button size="small" danger icon={<ClearOutlined />} onClick={handleClearAliases} block /></Tooltip>
                 </>
               ) : (
@@ -575,7 +575,7 @@ export const IdentityManagementPage: React.FC = () => {
                           icon={<SyncOutlined />} 
                           onClick={() => {
                             if (allAuthors.some(author => postAuthors.has(author))) {
-                              handleRefreshAliases();
+                              handleResetAliasesToOriginal();
                             }
                             toast.success('已更新题主标识符并刷新代号');
                           }} 

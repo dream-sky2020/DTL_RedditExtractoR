@@ -52,7 +52,7 @@ export const useIdentityStore = create<IdentityState>()(
       clearAllAliases: () => set((state) => {
         const next = { ...state.globalProfiles };
         Object.keys(next).forEach(author => {
-          next[author] = { ...next[author], alias: '', updatedAt: Date.now() };
+          next[author] = { ...next[author], alias: author, updatedAt: Date.now() };
         });
         return { globalProfiles: next };
       }),
