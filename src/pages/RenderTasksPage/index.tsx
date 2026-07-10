@@ -178,6 +178,22 @@ export const RenderTasksPage: React.FC<RenderTasksPageProps> = ({
                 />
               )}
               <Text type="secondary">{task.message || task.progress?.task || '-'}</Text>
+              {task.detail && task.status === 'error' && (
+                <pre
+                  style={{
+                    marginTop: 6,
+                    marginBottom: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 180,
+                    overflow: 'auto',
+                    fontSize: 12,
+                    color: '#8c8c8c',
+                  }}
+                >
+                  {task.detail}
+                </pre>
+              )}
               {task.outputPath && (
                 <div>
                   <Text type="secondary">输出：{task.outputPath}</Text>

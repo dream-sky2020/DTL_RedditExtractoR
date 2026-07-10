@@ -27,16 +27,34 @@ AVATAR_MANIFEST_FILENAME = 'avatar-manifest.json'
 ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
 ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp')
 ALLOWED_BACKGROUND_VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mov')
+SNAPSHOT_DIR = os.path.join(PROJECT_ROOT, 'snapshots')
+ENABLE_REQUEST_DEBUG_LOG = os.environ.get('SERVER_DEBUG_LOG', '1') == '1'
 
 # 确保目录存在
 for d in ['queued', 'running', 'success', 'error', 'cancelled']:
     os.makedirs(os.path.join(TASKS_DIR, d), exist_ok=True)
+os.makedirs(SNAPSHOT_DIR, exist_ok=True)
 
 def project_path(*parts):
     return os.path.join(PROJECT_ROOT, *parts)
 
 def normalize_path(path):
     return path.replace('\\', '/')
+
+@app.before_request
+def debug_log_request():
+    if not ENABLE_REQUEST_DEBUG_LOG:
+        return
+    origin = request.headers.get('Origin', '')
+    acrm = request.headers.get('Access-Control-Request-Method', '')
+    acrh = request.headers.get('Access-Control-Request-Headers', '')
+    print(
+        f"[REQ] {datetime.now().isoformat()} "
+        f"{request.method} {request.path} "
+        f"origin={origin or '-'} "
+        f"preflight_method={acrm or '-'} "
+        f"preflight_headers={acrh or '-'}"
+    )
 
 def get_audio_manifest_path():
     return os.path.join(AUDIO_DIR, MANIFEST_FILENAME)
@@ -430,6 +448,98 @@ def proxy_local_file():
     except Exception as e:
         return str(e), 500
 
+@app.route('/snapshot/save_file', methods=['POST', 'OPTIONS'])
+def save_snapshot_file():
+    try:
+        if request.method == 'OPTIONS':
+            return jsonify({"success": True, "message": "preflight ok"}), 200
+
+        body = request.json or {}
+        scenes = body.get('scenes')
+        if not isinstance(scenes, list):
+            return jsonify({"success": False, "message": "无效的快照数据，scenes 必须为数组"}), 400
+
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path = filedialog.asksaveasfilename(
+            title="保存 DSL 快照",
+            initialdir=SNAPSHOT_DIR,
+            initialfile=f"dsl_snapshot_{timestamp}.json",
+            defaultextension=".json",
+            filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")]
+        )
+        root.destroy()
+
+        if not file_path:
+            return jsonify({"success": False, "cancelled": True, "message": "用户已取消保存"})
+
+        file_path = os.path.abspath(os.path.normpath(file_path))
+        parent_dir = os.path.dirname(file_path)
+        os.makedirs(parent_dir, exist_ok=True)
+
+        payload = {
+            "version": 1,
+            "createdAt": datetime.now().isoformat(),
+            "scenes": scenes
+        }
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+        return jsonify({
+            "success": True,
+            "path": normalize_path(file_path),
+            "sceneCount": len(scenes)
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/snapshot/load_file', methods=['GET', 'OPTIONS'])
+def load_snapshot_file():
+    try:
+        if request.method == 'OPTIONS':
+            return jsonify({"success": True, "message": "preflight ok"}), 200
+
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        file_path = filedialog.askopenfilename(
+            title="读取 DSL 快照",
+            initialdir=SNAPSHOT_DIR,
+            filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")]
+        )
+        root.destroy()
+
+        if not file_path:
+            return jsonify({"success": False, "cancelled": True, "message": "用户已取消读取"})
+
+        file_path = os.path.abspath(os.path.normpath(file_path))
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            payload = json.load(f)
+
+        scenes = payload.get('scenes') if isinstance(payload, dict) else None
+        if not isinstance(scenes, list):
+            return jsonify({"success": False, "message": "快照文件格式无效，缺少 scenes 数组"}), 400
+
+        return jsonify({
+            "success": True,
+            "path": normalize_path(file_path),
+            "sceneCount": len(scenes),
+            "scenes": scenes
+        })
+    except json.JSONDecodeError:
+        return jsonify({"success": False, "message": "快照文件不是有效的 JSON"}), 400
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route('/filter_history', methods=['POST'])
 def filter_history():
     try:
@@ -463,6 +573,20 @@ def filter_history():
         })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/debug/server_info', methods=['GET'])
+def debug_server_info():
+    routes = sorted([rule.rule for rule in app.url_map.iter_rules()])
+    return jsonify({
+        "success": True,
+        "scriptFile": normalize_path(os.path.abspath(__file__)),
+        "cwd": normalize_path(os.getcwd()),
+        "projectRoot": normalize_path(PROJECT_ROOT),
+        "hasSnapshotSaveRoute": '/snapshot/save_file' in routes,
+        "hasSnapshotLoadRoute": '/snapshot/load_file' in routes,
+        "routesCount": len(routes),
+        "routes": routes
+    })
 
 if __name__ == '__main__':
     print("--------------------------------------")

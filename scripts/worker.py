@@ -6,12 +6,16 @@ import requests
 import re
 import hashlib
 import sys
+import traceback
+from collections import deque
 from datetime import datetime
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TASKS_DIR = os.path.join(PROJECT_ROOT, 'tasks')
 CACHE_DIR = os.path.join(PROJECT_ROOT, 'public', 'cache')
 CACHE_PUBLIC_BASE_URL = 'http://127.0.0.1:5000/cache'
+TASK_IO_RETRIES = 6
+TASK_IO_RETRY_DELAY = 0.08
 
 IMAGE_BLOCK_RE = re.compile(r'(\[image[^\]]*\])(.+?)(\[/image\])', re.IGNORECASE | re.DOTALL)
 GALLERY_BLOCK_RE = re.compile(r'(\[gallery[^\]]*\])(.+?)(\[/gallery\])', re.IGNORECASE | re.DOTALL)
@@ -21,19 +25,57 @@ def update_task_file(task_id, updates):
     path = os.path.join(TASKS_DIR, 'running', f"{task_id}.json")
     if not os.path.exists(path):
         return None
-    
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            task = json.load(f)
-        
-        task.update(updates)
-        
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(task, f, ensure_ascii=False, indent=2)
-        return task
-    except Exception as e:
-        print(f"更新任务文件失败 {task_id}: {e}")
-        return None
+
+    last_error = None
+    last_traceback = None
+    for attempt in range(1, TASK_IO_RETRIES + 1):
+        tmp_path = f"{path}.tmp"
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                task = json.load(f)
+
+            task.update(updates)
+
+            # 优先原子替换；如果在 Windows 上被并发读取锁住，则回退到覆盖写入
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(task, f, ensure_ascii=False, indent=2)
+
+            try:
+                os.replace(tmp_path, path)
+            except PermissionError as replace_err:
+                if os.path.exists(tmp_path):
+                    with open(tmp_path, 'r', encoding='utf-8') as src:
+                        content = src.read()
+                    with open(path, 'w', encoding='utf-8') as dst:
+                        dst.write(content)
+                    os.remove(tmp_path)
+                    print(f"ℹ️ 任务文件回退写入 task={task_id} attempt={attempt}: {replace_err!r}")
+                else:
+                    raise
+
+            return task
+
+        except (PermissionError, OSError, MemoryError, json.JSONDecodeError) as e:
+            last_error = e
+            last_traceback = traceback.format_exc()
+            if attempt < TASK_IO_RETRIES:
+                time.sleep(TASK_IO_RETRY_DELAY * attempt)
+                continue
+        except Exception as e:
+            last_error = e
+            last_traceback = traceback.format_exc()
+            break
+        finally:
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+
+    print(f"更新任务文件失败 {task_id}: {last_error!r} (path={path})")
+    if last_traceback:
+        print(last_traceback)
+    return None
 
 def download_resource(url, context='unknown'):
     if not url or not url.startswith('http'):
@@ -129,6 +171,7 @@ def run_worker():
             # 2. 移动到运行目录
             os.rename(queued_path, running_path)
             print(f"🚀 开始处理任务: {task_id}")
+            print(f"🧭 任务路径 queued={queued_path} running={running_path}")
             
             with open(running_path, 'r', encoding='utf-8') as f:
                 task = json.load(f)
@@ -179,14 +222,27 @@ def run_worker():
                 bufsize=0,
                 cwd=PROJECT_ROOT
             )
+
+            render_recent_logs = deque(maxlen=80)
+            render_pipe_error = None
             
             while True:
-                line = process.stdout.readline()
+                try:
+                    line = process.stdout.readline()
+                except OSError as pipe_err:
+                    render_pipe_error = pipe_err
+                    print(f"⚠️ 读取渲染进程管道异常 task={task_id}: {pipe_err!r}")
+                    if getattr(pipe_err, 'winerror', None) == 233:
+                        print("⚠️ WinError 233: 管道另一端进程已退出或句柄被关闭，将停止读取并等待进程退出。")
+                    break
                 if not line and process.poll() is not None:
                     break
                 if line:
                     text = line.decode('utf-8', errors='replace').strip()
                     if not text: continue
+                    render_recent_logs.append(text)
+                    if any(k in text for k in ['Error', 'ERR', 'Exception', 'failed', 'FATAL', 'Cannot']):
+                        print(f"🪵 [render:{task_id}] {text}")
                     
                     # 检查是否被取消
                     if not os.path.exists(running_path):
@@ -213,8 +269,13 @@ def run_worker():
                         update_task_file(task_id, {"progress": progress})
             
             process.wait()
+            print(f"📦 渲染进程退出 task={task_id} returncode={process.returncode}")
+            if render_pipe_error is not None:
+                print(f"📌 渲染阶段出现管道异常 task={task_id}: {render_pipe_error!r}")
 
             mix_returncode = 0
+            mix_pipe_error = None
+            mix_recent_logs = deque(maxlen=80)
             if process.returncode == 0 and os.path.exists(running_path):
                 update_task_file(task_id, {
                     "progress": {"percent": 96, "task": "正在合成音频轨道...", "detail": "FFmpeg audio mixer"}
@@ -238,19 +299,30 @@ def run_worker():
                 )
 
                 while True:
-                    line = mix_process.stdout.readline()
+                    try:
+                        line = mix_process.stdout.readline()
+                    except OSError as pipe_err:
+                        mix_pipe_error = pipe_err
+                        print(f"⚠️ 读取音频合成进程管道异常 task={task_id}: {pipe_err!r}")
+                        if getattr(pipe_err, 'winerror', None) == 233:
+                            print("⚠️ WinError 233: 音频子进程已退出或关闭管道，停止读取并等待进程退出。")
+                        break
                     if not line and mix_process.poll() is not None:
                         break
                     if line:
                         text = line.decode('utf-8', errors='replace').strip()
                         if text:
                             print(text)
+                            mix_recent_logs.append(text)
                             update_task_file(task_id, {
                                 "progress": {"percent": 98, "task": "正在封装最终 MP4...", "detail": text}
                             })
 
                 mix_process.wait()
                 mix_returncode = mix_process.returncode
+                print(f"🔊 音频进程退出 task={task_id} returncode={mix_returncode}")
+                if mix_pipe_error is not None:
+                    print(f"📌 音频阶段出现管道异常 task={task_id}: {mix_pipe_error!r}")
             
             # 5. 处理结果
             # 如果任务还在 running 目录（没被取消）
@@ -268,6 +340,14 @@ def run_worker():
                 else:
                     final_task['status'] = 'error'
                     final_task['message'] = f"渲染失败，错误码: render={process.returncode}, audio={mix_returncode}"
+                    final_task['detail'] = json.dumps({
+                        "renderReturnCode": process.returncode,
+                        "audioReturnCode": mix_returncode,
+                        "renderPipeError": repr(render_pipe_error) if render_pipe_error else None,
+                        "audioPipeError": repr(mix_pipe_error) if mix_pipe_error else None,
+                        "renderRecentLogs": list(render_recent_logs),
+                        "audioRecentLogs": list(mix_recent_logs),
+                    }, ensure_ascii=False)
                     target_dir = 'error'
                 
                 # 移动到最终目录
@@ -284,7 +364,8 @@ def run_worker():
                 os.remove(silent_output_path)
                 
         except Exception as e:
-            print(f"🔥 处理任务 {task_id} 时发生异常: {e}")
+            print(f"🔥 处理任务 {task_id} 时发生异常: {e!r}")
+            print(traceback.format_exc())
             # 尝试移动到错误目录
             if os.path.exists(running_path):
                 try:
@@ -292,6 +373,7 @@ def run_worker():
                         err_task = json.load(f)
                     err_task['status'] = 'error'
                     err_task['message'] = str(e)
+                    err_task['detail'] = traceback.format_exc()
                     err_task['endedAt'] = datetime.now().isoformat()
                     
                     error_path = os.path.join(TASKS_DIR, 'error', filename)

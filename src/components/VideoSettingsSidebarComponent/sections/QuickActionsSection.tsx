@@ -1,6 +1,6 @@
 import React from 'react';
 import { Space, Button, Row, Col, Divider, Typography } from 'antd';
-import { CameraOutlined, HistoryOutlined } from '@ant-design/icons';
+import { CameraOutlined, HistoryOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { CommentSortMode, ReplyOrderMode, VideoScene } from '@/types';
 import { useSnapshotStore } from '@/store';
 import { toast } from '@components/Toast';
@@ -35,6 +35,8 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
 }) => {
   const getId = (suffix: string) => `${idPrefix}-${suffix}`;
   const { saveSnapshot, loadSnapshot, snapshotTime, hasSnapshot } = useSnapshotStore();
+  const [isSavingFile, setIsSavingFile] = React.useState(false);
+  const [isLoadingFile, setIsLoadingFile] = React.useState(false);
 
   const handleSaveSnapshot = () => {
     saveSnapshot(scenes);
@@ -48,6 +50,60 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
       toast.success('已恢复 DSL 快照');
     } else {
       toast.error('未找到可用的快照');
+    }
+  };
+
+  const handleSaveSnapshotToFile = async () => {
+    try {
+      setIsSavingFile(true);
+      const response = await fetch('http://localhost:5000/snapshot/save_file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenes }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        if (result?.cancelled) {
+          return;
+        }
+        throw new Error(result?.message || '保存快照文件失败');
+      }
+      toast.success(`快照已保存到文件 (${result.sceneCount} 个场景)`);
+    } catch (error: any) {
+      toast.error(`保存快照文件失败: ${error?.message || '未知错误'}`);
+    } finally {
+      setIsSavingFile(false);
+    }
+  };
+
+  const handleLoadSnapshotFromFile = async () => {
+    try {
+      setIsLoadingFile(true);
+      const response = await fetch('http://localhost:5000/snapshot/load_file');
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        if (result?.cancelled) {
+          return;
+        }
+        throw new Error(result?.message || '读取快照文件失败');
+      }
+
+      const loadedScenes = Array.isArray(result.scenes) ? (result.scenes as VideoScene[]) : null;
+      if (!loadedScenes || loadedScenes.length === 0) {
+        dialogs.warning({
+          title: '快照为空',
+          content: '该文件中没有可恢复的场景数据。',
+        });
+        return;
+      }
+
+      onLoadScenes(loadedScenes);
+      saveSnapshot(loadedScenes);
+      toast.success(`已从文件恢复快照 (${loadedScenes.length} 个场景)`);
+    } catch (error: any) {
+      toast.error(`读取快照文件失败: ${error?.message || '未知错误'}`);
+    } finally {
+      setIsLoadingFile(false);
     }
   };
 
@@ -126,6 +182,32 @@ export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({
                 style={{ color: '#1890ff', borderColor: '#91d5ff', background: 'transparent' }}
               >
                 读取快照
+              </Button>
+            </Col>
+          </Row>
+          <Row gutter={8}>
+            <Col span={12}>
+              <Button
+                block
+                size="small"
+                icon={<DownloadOutlined />}
+                loading={isSavingFile}
+                onClick={handleSaveSnapshotToFile}
+                style={{ color: '#13c2c2', borderColor: '#87e8de', background: 'transparent' }}
+              >
+                保存到文件
+              </Button>
+            </Col>
+            <Col span={12}>
+              <Button
+                block
+                size="small"
+                icon={<UploadOutlined />}
+                loading={isLoadingFile}
+                onClick={handleLoadSnapshotFromFile}
+                style={{ color: '#722ed1', borderColor: '#d3adf7', background: 'transparent' }}
+              >
+                从文件读取
               </Button>
             </Col>
           </Row>

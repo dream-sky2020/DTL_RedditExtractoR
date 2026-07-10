@@ -105,7 +105,20 @@ async function main() {
   console.log('🎬 正在调用 Remotion 渲染引擎 (多线程模式)...');
   
   const cpus = os.cpus().length;
-  const concurrency = Math.max(1, cpus - 2); // 留出 2 个核心给系统
+  const defaultConcurrency = process.platform === 'win32'
+    ? Math.max(1, Math.min(4, cpus - 2))
+    : Math.max(1, cpus - 2); // Windows 默认保守一些，降低 Chromium 崩溃概率
+  const parsedConcurrency = Number(getArgValue('--concurrency', String(defaultConcurrency)));
+  const concurrency = Number.isFinite(parsedConcurrency) && parsedConcurrency > 0
+    ? Math.floor(parsedConcurrency)
+    : defaultConcurrency;
+
+  const parsedTimeout = Number(
+    getArgValue('--timeout', process.env.REMOTION_FRAME_TIMEOUT_MS || '90000')
+  );
+  const frameTimeoutMs = Number.isFinite(parsedTimeout) && parsedTimeout >= 30000
+    ? Math.floor(parsedTimeout)
+    : 90000;
 
   const renderArgs = [
     'render',
@@ -114,6 +127,7 @@ async function main() {
     outputFileArg,
     `--props=${finalPropsFileArg}`,
     `--concurrency=${concurrency}`, // 启用多线程并发渲染
+    `--timeout=${frameTimeoutMs}`, // 单帧渲染超时时间（毫秒）
     '--gl=angle', // Windows 下使用 ANGLE 硬件加速渲染 CSS
     '--chromium-flags=--disable-dev-shm-usage --no-sandbox', // 提高 Chromium 运行稳定性
   ];
@@ -164,10 +178,22 @@ async function main() {
 
   console.log(`执行命令: ${command} ${args.join(' ')}`);
   console.log(`并发线程: ${concurrency}`);
+  console.log(`帧超时: ${frameTimeoutMs}ms`);
   
   // 必须包装成 Promise 并等待进程结束
   try {
     await new Promise((resolvePromise, reject) => {
+      const recentLogs = [];
+      const pushLog = (chunk) => {
+        const lines = chunk.toString().split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        for (const line of lines) {
+          recentLogs.push(line);
+          if (recentLogs.length > 120) {
+            recentLogs.shift();
+          }
+        }
+      };
+
       const renderProcess = spawn(command, args, {
         stdio: ['inherit', 'pipe', 'pipe'], // 修改为 pipe 模式，以便 server.py 捕获
         shell: !hasLocalRemotion && !canUseNpmCli && process.platform === 'win32'
@@ -175,20 +201,26 @@ async function main() {
 
       // 实时转发子进程输出到当前进程的 stdout
       renderProcess.stdout.on('data', (data) => {
+        pushLog(data);
         process.stdout.write(data);
       });
 
       renderProcess.stderr.on('data', (data) => {
+        pushLog(data);
         process.stderr.write(data);
       });
 
-      renderProcess.on('close', (code) => {
+      renderProcess.on('close', (code, signal) => {
         if (code === 0) {
           const fullPath = outputPath;
           console.log(`\n✅ 渲染完成！视频已生成在: ${fullPath}`);
           resolvePromise(true);
         } else {
-          reject(new Error(`渲染失败，退出码: ${code || 1}`));
+          const tail = recentLogs.slice(-20).join('\n');
+          const error = new Error(
+            `渲染失败，退出码: ${code || 1}${signal ? `, signal: ${signal}` : ''}${tail ? `\n---- 最近输出 ----\n${tail}` : ''}`
+          );
+          reject(error);
         }
       });
 

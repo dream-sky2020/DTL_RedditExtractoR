@@ -373,7 +373,11 @@ export const tokenize = (
             type: 'row',
             style: rowStyle,
             mediaAttrStr: buildRowMediaAttrStr(attrs, isGrid),
-            children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth)
+            // Row container should ignore whitespace-only text nodes.
+            // Otherwise line breaks/indentation become grid/flex items and cause misalignment.
+            children: tokenize(text.substring(startTagEnd, endTagIdx), options, currentDepth).filter(
+              (child) => !(child.type === 'text' && child.content.trim() === '')
+            )
           });
           currentPos = endTagIdx + 6;
         } else {
