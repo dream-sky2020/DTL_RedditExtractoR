@@ -28,6 +28,7 @@ OUTPUT_VIDEO_DIR = os.path.join(PROJECT_ROOT, 'out')
 MANIFEST_FILENAME = 'audio-manifest.json'
 AVATAR_MANIFEST_FILENAME = 'avatar-manifest.json'
 ALLOWED_AUDIO_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.m4a', '.aac')
+ALLOWED_SUBTITLE_EXTENSIONS = ('.srt',)
 ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp')
 ALLOWED_BACKGROUND_VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mov')
 SNAPSHOT_DIR = os.path.join(PROJECT_ROOT, 'snapshots')
@@ -72,6 +73,39 @@ def resolve_local_audio_path(path):
     if not os.path.isfile(candidate):
         return None
     return candidate
+
+def normalize_ad_subtitles(value, enabled):
+    value = value if isinstance(value, dict) else {}
+    raw_cues = value.get('cues') if isinstance(value.get('cues'), list) else []
+    cues = []
+    for cue in raw_cues[:500]:
+        if not isinstance(cue, dict):
+            continue
+        text = str(cue.get('text', '')).replace('\r\n', '\n').strip()[:1000]
+        start = min(36000.0, max(0.0, float(cue.get('start', 0))))
+        end = min(36000.0, max(start + 0.01, float(cue.get('end', start + 1))))
+        if text:
+            cues.append({'start': start, 'end': end, 'text': text})
+    style = value.get('style') if isinstance(value.get('style'), dict) else {}
+    hex_color = lambda raw, fallback: str(raw) if re.fullmatch(r'#[0-9a-fA-F]{6}', str(raw)) else fallback
+    position = str(style.get('position', 'bottom'))
+    if position not in ('top', 'center', 'bottom'):
+        position = 'bottom'
+    return {
+        'enabled': bool(enabled and value.get('enabled', True) and cues),
+        'cues': cues,
+        'style': {
+            'fontFamily': str(style.get('fontFamily', 'Microsoft YaHei'))[:100],
+            'fontSize': min(160.0, max(12.0, float(style.get('fontSize', 42)))),
+            'color': hex_color(style.get('color'), '#ffffff'),
+            'outlineColor': hex_color(style.get('outlineColor'), '#000000'),
+            'outlineWidth': min(12.0, max(0.0, float(style.get('outlineWidth', 3)))),
+            'backgroundColor': hex_color(style.get('backgroundColor'), '#000000'),
+            'backgroundOpacity': min(1.0, max(0.0, float(style.get('backgroundOpacity', 0)))),
+            'position': position,
+            'verticalMargin': min(45.0, max(0.0, float(style.get('verticalMargin', 8)))),
+        },
+    }
 
 def build_video_item(path, base_dir=None):
     absolute_path = os.path.abspath(path)
@@ -273,6 +307,7 @@ def create_ad_render_task():
                 "pauseSource": bool(lead_in.get('pauseSource', False)),
                 "volume": min(2.0, max(0.0, float(lead_in.get('volume', 1.0)))),
                 "playbackRate": min(2.0, max(0.5, float(lead_in.get('playbackRate', 1.0)))),
+                "subtitles": normalize_ad_subtitles(lead_in.get('subtitles'), bool(lead_in_path)),
             },
         }
         task = {
@@ -441,7 +476,13 @@ def list_ad_videos():
         guide_audios = []
         for root, _, files in os.walk(OUTPUT_VIDEO_DIR):
             for filename in files:
-                if filename.lower().endswith(ALLOWED_BACKGROUND_VIDEO_EXTENSIONS) and '.silent.' not in filename.lower():
+                lower_filename = filename.lower()
+                is_ad_composite = re.search(r'-ad-[0-9a-f]{8}', lower_filename) is not None
+                if (
+                    lower_filename.endswith(ALLOWED_BACKGROUND_VIDEO_EXTENSIONS)
+                    and '.silent.' not in lower_filename
+                    and not is_ad_composite
+                ):
                     rendered.append(build_video_item(os.path.join(root, filename), OUTPUT_VIDEO_DIR))
         for root, _, files in os.walk(GREEN_SCREEN_VIDEO_DIR):
             for filename in files:
@@ -651,6 +692,42 @@ def pick_audio_file():
             "success": True,
             "path": normalize_path(resolved) if resolved else "",
             "item": build_audio_item(resolved) if resolved else None,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/pick_srt_file', methods=['GET'])
+def pick_srt_file():
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        file_path = filedialog.askopenfilename(
+            title="选择广告引导字幕",
+            filetypes=[("SRT 字幕", "*.srt"), ("所有文件", "*.*")]
+        )
+        root.destroy()
+        if not file_path:
+            return jsonify({"success": True, "path": "", "content": ""})
+        resolved = os.path.abspath(os.path.normpath(file_path))
+        if not resolved.lower().endswith(ALLOWED_SUBTITLE_EXTENSIONS) or not os.path.isfile(resolved):
+            return jsonify({"success": False, "message": "请选择存在的 .srt 字幕文件"}), 400
+        raw = open(resolved, 'rb').read()
+        content = None
+        for encoding in ('utf-8-sig', 'gb18030', 'utf-16'):
+            try:
+                content = raw.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        if content is None:
+            return jsonify({"success": False, "message": "无法识别字幕编码，请保存为 UTF-8 后重试"}), 400
+        return jsonify({
+            "success": True,
+            "path": normalize_path(resolved),
+            "content": content,
         })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500

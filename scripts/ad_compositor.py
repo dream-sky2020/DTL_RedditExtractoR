@@ -4,6 +4,7 @@ import math
 import os
 import subprocess
 import sys
+import tempfile
 
 
 def probe_media(path):
@@ -65,6 +66,80 @@ def even(value):
 
 def silence(duration):
     return f'anullsrc=r=48000:cl=stereo,atrim=duration={duration:.6f},asetpts=PTS-STARTPTS'
+
+
+def ass_timestamp(seconds):
+    centiseconds = max(0, int(round(seconds * 100)))
+    hours = centiseconds // 360000
+    minutes = (centiseconds % 360000) // 6000
+    secs = (centiseconds % 6000) // 100
+    fraction = centiseconds % 100
+    return f'{hours}:{minutes:02d}:{secs:02d}.{fraction:02d}'
+
+
+def ass_color(value, alpha=0):
+    raw = str(value or '#ffffff').lstrip('#')
+    if len(raw) != 6:
+        raw = 'ffffff'
+    red, green, blue = raw[0:2], raw[2:4], raw[4:6]
+    return f'&H{max(0, min(255, int(alpha))):02X}{blue}{green}{red}'
+
+
+def create_subtitle_ass(config, source_info, start_at, lead_play_duration):
+    lead = config.get('leadInAudio') or {}
+    subtitles = lead.get('subtitles') or {}
+    cues = subtitles.get('cues') if subtitles.get('enabled') else []
+    if not cues:
+        return None
+    style = subtitles.get('style') or {}
+    playback_rate = min(max(float(lead.get('playbackRate', 1)), 0.5), 2.0)
+    position = style.get('position', 'bottom')
+    alignment = {'top': 8, 'center': 5, 'bottom': 2}.get(position, 2)
+    vertical_margin = round(source_info['height'] * min(45, max(0, float(style.get('verticalMargin', 8)))) / 100)
+    background_opacity = min(1, max(0, float(style.get('backgroundOpacity', 0))))
+    background_alpha = 255 - round(background_opacity * 255)
+    border_style = 3 if background_opacity > 0 else 1
+    font_family = str(style.get('fontFamily', 'Microsoft YaHei')).replace(',', ' ').strip() or 'Microsoft YaHei'
+    header = f'''[Script Info]
+ScriptType: v4.00+
+PlayResX: {source_info['width']}
+PlayResY: {source_info['height']}
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,{font_family},{float(style.get('fontSize', 42)):.2f},{ass_color(style.get('color', '#ffffff'))},{ass_color(style.get('color', '#ffffff'))},{ass_color(style.get('outlineColor', '#000000'))},{ass_color(style.get('backgroundColor', '#000000'), background_alpha)},0,0,0,0,100,100,0,0,{border_style},{float(style.get('outlineWidth', 3)):.2f},0,{alignment},40,40,{vertical_margin},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+'''
+    events = []
+    for cue in cues[:500]:
+        cue_start = max(0, float(cue.get('start', 0))) / playback_rate
+        cue_end = max(cue_start + 0.01, float(cue.get('end', cue_start + 1)) / playback_rate)
+        if cue_start >= lead_play_duration:
+            continue
+        cue_end = min(cue_end, lead_play_duration)
+        text = str(cue.get('text', '')).strip()
+        if not text or cue_end <= cue_start:
+            continue
+        text = text.replace('\\', r'\\').replace('{', r'\{').replace('}', r'\}').replace('\r\n', '\n').replace('\r', '\n').replace('\n', r'\N')
+        events.append(
+            f'Dialogue: 0,{ass_timestamp(start_at + cue_start)},{ass_timestamp(start_at + cue_end)},Default,,0,0,0,,{text}'
+        )
+    if not events:
+        return None
+    handle = tempfile.NamedTemporaryFile('w', suffix='.ass', delete=False, encoding='utf-8', newline='\n')
+    try:
+        handle.write(header + '\n'.join(events) + '\n')
+        return handle.name
+    finally:
+        handle.close()
+
+
+def escape_filter_path(path):
+    return os.path.abspath(path).replace('\\', '/').replace(':', r'\:').replace("'", r"\'")
 
 
 def build_video_filter(config, source_info, ad_info, lead_info=None):
@@ -279,9 +354,15 @@ def run(config_path, output_path):
     source_info = probe_media(source_path)
     ad_info = probe_media(ad_path)
     lead_info = probe_audio(lead_path) if lead_path else None
-    video_filters, output_duration, start_at, output_ad_start, ad_duration, _ = build_video_filter(
+    video_filters, output_duration, start_at, output_ad_start, ad_duration, lead_play_duration = build_video_filter(
         config, source_info, ad_info, lead_info
     )
+    subtitle_ass_path = create_subtitle_ass(config, source_info, start_at, lead_play_duration) if lead_info else None
+    if subtitle_ass_path:
+        video_filters[-1] = video_filters[-1].replace('[vout]', '[video_without_subtitles]')
+        video_filters.append(
+            f"[video_without_subtitles]subtitles=filename='{escape_filter_path(subtitle_ass_path)}'[vout]"
+        )
     audio_filters, audio_map = build_audio_filter(
         config, source_info, ad_info, start_at, output_ad_start, ad_duration, lead_info
     )
@@ -325,6 +406,11 @@ def run(config_path, output_path):
         elif text.startswith(('frame=', 'speed=', 'progress=')):
             print(text, flush=True)
     return_code = process.wait()
+    if subtitle_ass_path:
+        try:
+            os.remove(subtitle_ass_path)
+        except OSError:
+            pass
     if return_code != 0:
         raise RuntimeError('FFmpeg 广告合成失败\n' + '\n'.join(recent[-30:]))
 

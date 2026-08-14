@@ -32,6 +32,7 @@ import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
 import { BgmSettingsPage } from '../BgmSettingsPage/index';
 import { AdPlacementPage } from '../AdPlacementPage/index';
+import { ChromaKeyTestPage } from '../ChromaKeyTestPage/index';
 import { IdentityManagementPage } from '../IdentityManagementPage/index';
 import { HistoryManagerPage } from '../HistoryManagerPage/index';
 import { AvatarManagerPage } from '../AvatarManagerPage/index';
@@ -151,6 +152,12 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
         return {
           title: '植入广告',
           desc: '将绿幕广告合成到已渲染的无广告母版，并输出一个新的广告版本。',
+          button: '',
+        };
+      case 'chroma_key_test':
+        return {
+          title: '抠绿参数测试',
+          desc: '使用母片截图和广告截图，独立测试绿幕颜色、颜色容差与边缘融合。',
           button: '',
         };
       case 'background_video':
@@ -337,6 +344,10 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
 
             {activeTool === 'ad_placement' && (
               <AdPlacementPage />
+            )}
+
+            {activeTool === 'chroma_key_test' && (
+              <ChromaKeyTestPage />
             )}
 
             {activeTool === 'background_video' && (

@@ -110,6 +110,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             label: '植入广告',
           },
           {
+            key: 'chroma_key_test',
+            icon: <FileImageOutlined />,
+            label: '抠绿参数测试',
+          },
+          {
             key: 'background_video',
             icon: <PlayCircleOutlined />,
             label: '背景视频轨道',

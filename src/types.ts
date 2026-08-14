@@ -85,7 +85,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   postAuthorSuffix: ' (OP)',
 };
 
-export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'ad_placement' | 'background_video' | 'bgm_settings' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity' | 'history_manager' | 'avatar_manager';
+export type ToolKey = 'extract' | 'projects' | 'raw_data' | 'filtered_data' | 'script_data' | 'editor' | 'preview' | 'render_tasks' | 'ad_placement' | 'chroma_key_test' | 'background_video' | 'bgm_settings' | 'static_preview' | 'studio' | 'studio_scene' | 'frame_test' | 'simulation' | 'audio_preview' | 'component_test' | 'qwen_tts_try' | 'identity' | 'history_manager' | 'avatar_manager';
 
 export interface ReplyInfo {
   author: string;
