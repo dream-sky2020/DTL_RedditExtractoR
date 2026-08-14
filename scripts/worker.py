@@ -144,6 +144,84 @@ def process_config_urls(data):
         for i in range(len(data)):
             process_config_urls(data[i])
 
+def run_ad_composite_task(task, task_id, filename, running_path):
+    config = task.get('config') or {}
+    source_path = os.path.abspath(config.get('sourceVideo', ''))
+    source_stem = os.path.splitext(os.path.basename(source_path))[0] or 'video'
+    safe_stem = re.sub(r'[^a-zA-Z0-9._-]+', '-', source_stem).strip('-') or 'video'
+    output_dir = os.path.join(PROJECT_ROOT, 'out')
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f'{safe_stem}-ad-{task_id}.mp4')
+    temp_config_path = os.path.join(PROJECT_ROOT, f'ad-config-{task_id}.json')
+    recent_logs = deque(maxlen=80)
+    process = None
+
+    try:
+        with open(temp_config_path, 'w', encoding='utf-8') as handle:
+            json.dump(config, handle, ensure_ascii=False, indent=2)
+        update_task_file(task_id, {
+            'progress': {'percent': 8, 'task': '正在准备广告素材...', 'detail': ''},
+            'message': '正在合成绿幕广告',
+        })
+        script_path = os.path.join(PROJECT_ROOT, 'scripts', 'ad_compositor.py')
+        process = subprocess.Popen(
+            [sys.executable, script_path, '--config', temp_config_path, '--output', output_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1,
+            cwd=PROJECT_ROOT,
+        )
+        for line in process.stdout:
+            text = line.strip()
+            if not text:
+                continue
+            recent_logs.append(text)
+            print(f'[ad:{task_id}] {text}')
+            if not os.path.exists(running_path):
+                process.terminate()
+                break
+            progress_match = re.match(r'PROGRESS\s+(\d+)', text)
+            if progress_match:
+                raw_percent = int(progress_match.group(1))
+                percent = min(99, 8 + int(raw_percent * 0.91))
+                update_task_file(task_id, {
+                    'progress': {'percent': percent, 'task': '正在植入广告...', 'detail': f'{raw_percent}%'},
+                })
+        return_code = process.wait()
+
+        if not os.path.exists(running_path):
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            return
+        with open(running_path, 'r', encoding='utf-8') as handle:
+            final_task = json.load(handle)
+        final_task['endedAt'] = datetime.now().isoformat()
+        if return_code == 0 and os.path.isfile(output_path):
+            final_task['status'] = 'success'
+            final_task['message'] = '广告视频合成成功；无广告母版已保留'
+            final_task['progress'] = {'percent': 100, 'task': '广告合成成功', 'detail': ''}
+            final_task['outputPath'] = os.path.abspath(output_path)
+            target_dir = 'success'
+        else:
+            final_task['status'] = 'error'
+            final_task['message'] = f'广告合成失败，错误码: {return_code}'
+            final_task['detail'] = '\n'.join(recent_logs)
+            target_dir = 'error'
+            if os.path.exists(output_path):
+                os.remove(output_path)
+        final_path = os.path.join(TASKS_DIR, target_dir, filename)
+        with open(final_path, 'w', encoding='utf-8') as handle:
+            json.dump(final_task, handle, ensure_ascii=False, indent=2)
+        os.remove(running_path)
+    finally:
+        if process and process.poll() is None:
+            process.terminate()
+        if os.path.exists(temp_config_path):
+            os.remove(temp_config_path)
+
 def run_worker():
     print("--------------------------------------")
     print("RedditExtractor Render Worker 已启动")
@@ -183,6 +261,10 @@ def run_worker():
             })
             
             # 3. 预处理资源
+            if task.get('taskType') == 'ad_composite':
+                run_ad_composite_task(task, task_id, filename, running_path)
+                continue
+
             video_config = task.get('config', {})
             process_config_urls(video_config)
             render_config = dict(video_config)

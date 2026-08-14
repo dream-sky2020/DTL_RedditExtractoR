@@ -121,7 +121,14 @@ export const QwenTtsTryPage: React.FC = () => {
   const refreshStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/qwen_tts/status`);
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        setDepsOk(false);
+        setDepMessage(
+          `Qwen3-TTS 接口返回 HTTP ${res.status}。请确认启动的是当前项目的 scripts/server.py，而不是旧服务。`
+        );
+        return;
+      }
       if (data.success) {
         setDepsOk(Boolean(data.dependencies_ok));
         setDepMessage(data.dependency_error || null);

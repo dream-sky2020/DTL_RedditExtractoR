@@ -17,6 +17,7 @@ import {
   AudioOutlined,
   HistoryOutlined,
   CustomerServiceOutlined,
+  BgColorsOutlined,
 } from '@ant-design/icons';
 import { ToolKey } from '../types';
 
@@ -102,6 +103,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             key: 'render_tasks',
             icon: <VideoCameraOutlined />,
             label: '导出与渲染队列',
+          },
+          {
+            key: 'ad_placement',
+            icon: <BgColorsOutlined />,
+            label: '植入广告',
           },
           {
             key: 'background_video',

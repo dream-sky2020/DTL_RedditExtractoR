@@ -31,6 +31,7 @@ import { ProjectsPage } from '../ProjectsPage/index';
 import { QwenTtsTryPage } from '../QwenTtsTryPage/index';
 import { BackgroundVideoPage } from '../BackgroundVideoPage/index';
 import { BgmSettingsPage } from '../BgmSettingsPage/index';
+import { AdPlacementPage } from '../AdPlacementPage/index';
 import { IdentityManagementPage } from '../IdentityManagementPage/index';
 import { HistoryManagerPage } from '../HistoryManagerPage/index';
 import { AvatarManagerPage } from '../AvatarManagerPage/index';
@@ -144,6 +145,12 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
         return {
           title: '导出与渲染任务',
           desc: '统一管理导出任务、进度与取消/清理。',
+          button: '',
+        };
+      case 'ad_placement':
+        return {
+          title: '植入广告',
+          desc: '将绿幕广告合成到已渲染的无广告母版，并输出一个新的广告版本。',
           button: '',
         };
       case 'background_video':
@@ -326,6 +333,10 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
                 clearFinishedTasks={clearFinishedTasks}
                 downloadVideoConfig={downloadVideoConfig}
               />
+            )}
+
+            {activeTool === 'ad_placement' && (
+              <AdPlacementPage />
             )}
 
             {activeTool === 'background_video' && (

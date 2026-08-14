@@ -165,6 +165,7 @@ export const RenderTasksPage: React.FC<RenderTasksPageProps> = ({
             <div style={{ width: '100%' }}>
               <Space size={8} style={{ marginBottom: 6 }}>
                 <Text strong>{task.title || task.id}</Text>
+                {task.taskType === 'ad_composite' && <Tag color="purple">广告合成</Tag>}
                 {getTaskTag(task.status)}
                 {activeTaskId === task.id && task.status === 'running' && (
                   <Tag color="blue">当前执行</Tag>

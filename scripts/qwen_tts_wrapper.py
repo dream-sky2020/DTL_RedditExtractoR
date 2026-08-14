@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import os
 import threading
 from typing import Any, Optional, Tuple
@@ -21,13 +22,10 @@ _model_lock = threading.Lock()
 
 
 def check_dependencies() -> tuple[bool, str]:
-    """检查依赖是否已安装。"""
-    try:
-        import torch  # noqa: F401
-        import soundfile  # noqa: F401
-        from qwen_tts import Qwen3TTSModel  # noqa: F401
-    except ImportError as e:
-        return False, str(e)
+    """轻量检查依赖是否已安装；不在状态接口中加载 PyTorch 或 Qwen 模型。"""
+    missing = [name for name in ('torch', 'soundfile', 'qwen_tts') if importlib.util.find_spec(name) is None]
+    if missing:
+        return False, f"缺少依赖: {', '.join(missing)}"
     return True, ""
 
 

@@ -6,6 +6,7 @@ type TaskStatus = 'queued' | 'running' | 'success' | 'error' | 'cancelled';
 
 export interface RenderTask {
   id: string;
+  taskType?: 'video_render' | 'ad_composite';
   title: string;
   status: TaskStatus;
   progress?: { percent: number; task: string; detail?: string };
