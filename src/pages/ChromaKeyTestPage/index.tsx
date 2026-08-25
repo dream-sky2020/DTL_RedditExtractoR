@@ -140,8 +140,8 @@ export const ChromaKeyTestPage: React.FC = () => {
       <Alert
         type="info"
         showIcon
-        message="静态截图用于精调抠绿，时间线预览只负责高清视频叠加"
-        description="浏览器使用 RGB 距离近似 FFmpeg 效果；最终边缘仍以实际广告渲染成片为准。"
+        message="测试页与最终渲染现在使用相同的 RGB 抠色语义"
+        description="浏览器 Canvas 和最终 FFmpeg colorkey 都按 RGB 颜色处理，并保持先缩放、再抠色的顺序；视频编码产生的细微边缘差异仍以最终成片为准。"
         style={{ marginBottom: 20 }}
       />
 

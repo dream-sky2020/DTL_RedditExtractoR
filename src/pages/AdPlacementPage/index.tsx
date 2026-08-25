@@ -36,6 +36,7 @@ import {
   saveAdSubtitleSettings,
   serializeSrt,
 } from '@/utils/adSubtitleSettings';
+import { loadAdPlacementDraft, saveAdPlacementDraft } from '@/utils/adPlacementDraft';
 
 const { Paragraph, Text, Title } = Typography;
 const API_BASE = 'http://localhost:5000';
@@ -87,52 +88,53 @@ const formatBytes = (size?: number) => {
 };
 
 export const AdPlacementPage: React.FC = () => {
+  const [initialDraft] = useState(loadAdPlacementDraft);
   const [renderedVideos, setRenderedVideos] = useState<VideoItem[]>([]);
   const [greenScreenVideos, setGreenScreenVideos] = useState<VideoItem[]>([]);
   const [guideAudios, setGuideAudios] = useState<VideoItem[]>([]);
-  const [sourceVideo, setSourceVideo] = useState('');
-  const [greenScreenVideo, setGreenScreenVideo] = useState('');
-  const [guideAudio, setGuideAudio] = useState('');
+  const [sourceVideo, setSourceVideo] = useState(initialDraft.sourceVideo);
+  const [greenScreenVideo, setGreenScreenVideo] = useState(initialDraft.adVideo);
+  const [guideAudio, setGuideAudio] = useState(initialDraft.guideAudio);
   const [guideDuration, setGuideDuration] = useState(0);
-  const [guideMode, setGuideMode] = useState<GuideAudioMode>('prelude');
-  const [adVideoDelay, setAdVideoDelay] = useState(1);
-  const [guidePauseSource, setGuidePauseSource] = useState(false);
-  const [guideVolume, setGuideVolume] = useState(1);
-  const [guidePlaybackRate, setGuidePlaybackRate] = useState(1);
+  const [guideMode, setGuideMode] = useState<GuideAudioMode>(initialDraft.guideMode);
+  const [adVideoDelay, setAdVideoDelay] = useState(initialDraft.adVideoDelay);
+  const [guidePauseSource, setGuidePauseSource] = useState(initialDraft.guidePauseSource);
+  const [guideVolume, setGuideVolume] = useState(initialDraft.guideVolume);
+  const [guidePlaybackRate, setGuidePlaybackRate] = useState(initialDraft.guidePlaybackRate);
   const [subtitleSettings, setSubtitleSettings] = useState<AdSubtitleSettings>(() => loadAdSubtitleSettings());
   const [guideCurrentTime, setGuideCurrentTime] = useState(0);
   const [subtitlePreviewTime, setSubtitlePreviewTime] = useState(0);
   const [subtitlePreviewPlaying, setSubtitlePreviewPlaying] = useState(false);
   const [subtitlePreviewPhase, setSubtitlePreviewPhase] = useState<'idle' | 'lead' | 'ad' | 'done'>('idle');
-  const [subtitlePreviewSourceAudio, setSubtitlePreviewSourceAudio] = useState(false);
-  const [subtitlePreviewGuideAudio, setSubtitlePreviewGuideAudio] = useState(true);
-  const [subtitlePreviewSubtitles, setSubtitlePreviewSubtitles] = useState(true);
-  const [subtitlePreviewAdVideo, setSubtitlePreviewAdVideo] = useState(false);
-  const [subtitlePreviewAdAudio, setSubtitlePreviewAdAudio] = useState(false);
+  const [subtitlePreviewSourceAudio, setSubtitlePreviewSourceAudio] = useState(initialDraft.subtitlePreviewSourceAudio);
+  const [subtitlePreviewGuideAudio, setSubtitlePreviewGuideAudio] = useState(initialDraft.subtitlePreviewGuideAudio);
+  const [subtitlePreviewSubtitles, setSubtitlePreviewSubtitles] = useState(initialDraft.subtitlePreviewSubtitles);
+  const [subtitlePreviewAdVideo, setSubtitlePreviewAdVideo] = useState(initialDraft.subtitlePreviewAdVideo);
+  const [subtitlePreviewAdAudio, setSubtitlePreviewAdAudio] = useState(initialDraft.subtitlePreviewAdAudio);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [sourceDuration, setSourceDuration] = useState(0);
   const [sourceSize, setSourceSize] = useState({ width: 16, height: 9 });
   const [adSize, setAdSize] = useState({ width: 16, height: 9 });
   const [adDuration, setAdDuration] = useState(0);
-  const [adTrimStart, setAdTrimStart] = useState(0);
-  const [adTrimEnd, setAdTrimEnd] = useState(0);
-  const [startAt, setStartAt] = useState(0);
-  const [mode, setMode] = useState<AdMode>('chroma-key');
-  const [pauseSource, setPauseSource] = useState(false);
-  const [x, setX] = useState(0.71);
-  const [y, setY] = useState(0.66);
-  const [width, setWidth] = useState(0.25);
-  const [autoCenterPlacement, setAutoCenterPlacement] = useState(false);
-  const [keyColor, setKeyColor] = useState('#00ff00');
-  const [similarity, setSimilarity] = useState(0.3);
-  const [blend, setBlend] = useState(0.08);
-  const [adAudioEnabled, setAdAudioEnabled] = useState(true);
-  const [adVolume, setAdVolume] = useState(1);
-  const [sourceVolumeDuringAd, setSourceVolumeDuringAd] = useState(0.25);
-  const [lastTaskId, setLastTaskId] = useState('');
+  const [adTrimStart, setAdTrimStart] = useState(initialDraft.adTrimStart);
+  const [adTrimEnd, setAdTrimEnd] = useState(initialDraft.adTrimEnd);
+  const [startAt, setStartAt] = useState(initialDraft.startAt);
+  const [mode, setMode] = useState<AdMode>(initialDraft.mode);
+  const [pauseSource, setPauseSource] = useState(initialDraft.pauseSource);
+  const [x, setX] = useState(initialDraft.x);
+  const [y, setY] = useState(initialDraft.y);
+  const [width, setWidth] = useState(initialDraft.width);
+  const [autoCenterPlacement, setAutoCenterPlacement] = useState(initialDraft.autoCenterPlacement);
+  const [keyColor, setKeyColor] = useState(initialDraft.keyColor);
+  const [similarity, setSimilarity] = useState(initialDraft.similarity);
+  const [blend, setBlend] = useState(initialDraft.blend);
+  const [adAudioEnabled, setAdAudioEnabled] = useState(initialDraft.adAudioEnabled);
+  const [adVolume, setAdVolume] = useState(initialDraft.adVolume);
+  const [sourceVolumeDuringAd, setSourceVolumeDuringAd] = useState(initialDraft.sourceVolumeDuringAd);
+  const [lastTaskId, setLastTaskId] = useState(initialDraft.lastTaskId);
   const [previewPauseActive, setPreviewPauseActive] = useState(false);
-  const [timelinePreviewEnabled, setTimelinePreviewEnabled] = useState(false);
+  const [timelinePreviewEnabled, setTimelinePreviewEnabled] = useState(initialDraft.timelinePreviewEnabled);
   const [sourcePreviewPlaying, setSourcePreviewPlaying] = useState(false);
   const [previewPhase, setPreviewPhase] = useState<'idle' | 'lead' | 'ad' | 'done'>('idle');
   const sourcePreviewRef = useRef<HTMLVideoElement | null>(null);
@@ -150,6 +152,7 @@ export const AdPlacementPage: React.FC = () => {
   const previewPhaseRef = useRef<'idle' | 'lead' | 'ad' | 'done'>('idle');
   const sourceBaseVolumeRef = useRef(1);
   const adStartSourceTimeRef = useRef(0);
+  const adMetadataPathRef = useRef(initialDraft.adVideo);
 
   const sourceUrl = getVideoUrl(sourceVideo);
   const greenScreenUrl = getVideoUrl(greenScreenVideo);
@@ -323,6 +326,48 @@ export const AdPlacementPage: React.FC = () => {
   useEffect(() => {
     saveAdSubtitleSettings(subtitleSettings);
   }, [subtitleSettings]);
+
+  useEffect(() => {
+    saveAdPlacementDraft({
+      sourceVideo,
+      adVideo: greenScreenVideo,
+      guideAudio,
+      guideMode,
+      adVideoDelay,
+      guidePauseSource,
+      guideVolume,
+      guidePlaybackRate,
+      adTrimStart,
+      adTrimEnd,
+      startAt,
+      mode,
+      pauseSource,
+      x,
+      y,
+      width,
+      autoCenterPlacement,
+      keyColor,
+      similarity,
+      blend,
+      adAudioEnabled,
+      adVolume,
+      sourceVolumeDuringAd,
+      timelinePreviewEnabled,
+      subtitlePreviewSourceAudio,
+      subtitlePreviewGuideAudio,
+      subtitlePreviewSubtitles,
+      subtitlePreviewAdVideo,
+      subtitlePreviewAdAudio,
+      lastTaskId,
+    });
+  }, [
+    sourceVideo, greenScreenVideo, guideAudio, guideMode, adVideoDelay,
+    guidePauseSource, guideVolume, guidePlaybackRate, adTrimStart, adTrimEnd,
+    startAt, mode, pauseSource, x, y, width, autoCenterPlacement, keyColor,
+    similarity, blend, adAudioEnabled, adVolume, sourceVolumeDuringAd,
+    timelinePreviewEnabled, subtitlePreviewSourceAudio, subtitlePreviewGuideAudio,
+    subtitlePreviewSubtitles, subtitlePreviewAdVideo, subtitlePreviewAdAudio, lastTaskId,
+  ]);
 
   const updateSubtitleCue = (id: string, patch: Partial<AdSubtitleCue>) => {
     setSubtitleSettings((current) => ({
@@ -1253,8 +1298,17 @@ export const AdPlacementPage: React.FC = () => {
                           const duration = event.currentTarget.duration;
                           if (Number.isFinite(duration)) {
                             setAdDuration(duration);
-                            setAdTrimStart(0);
-                            setAdTrimEnd(duration);
+                            const restoringSameMaterial = adMetadataPathRef.current === greenScreenVideo;
+                            if (restoringSameMaterial) {
+                              setAdTrimStart((current) => Math.min(Math.max(0, current), Math.max(0, duration - 0.01)));
+                              setAdTrimEnd((current) => current > 0
+                                ? Math.min(duration, Math.max(0.01, current))
+                                : duration);
+                            } else {
+                              setAdTrimStart(0);
+                              setAdTrimEnd(duration);
+                            }
+                            adMetadataPathRef.current = greenScreenVideo;
                           }
                           setAdSize({
                             width: event.currentTarget.videoWidth || 16,

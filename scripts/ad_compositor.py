@@ -172,11 +172,15 @@ def build_video_filter(config, source_info, ad_info, lead_info=None):
     output_ad_start = start_at + (ad_video_delay if lead_mode == 'voiceover' else lead_play_duration)
     base_duration = source_duration + (lead_play_duration if lead_pauses_source else 0)
 
-    chroma_filter = f'chromakey={color}:{similarity:.4f}:{blend:.4f},' if mode == 'chroma-key' else ''
     ad_chain = (
         f'[1:v]trim=start={ad_trim_start:.6f}:end={ad_trim_end:.6f},setpts=PTS-STARTPTS,'
-        f'{chroma_filter}scale={target_width}:{target_height}:flags=lanczos,format=rgba'
+        f'scale={target_width}:{target_height}:flags=lanczos,format=rgba'
     )
+    if mode == 'chroma-key':
+        # The parameter test page measures RGB distance. colorkey also operates in RGB,
+        # while chromakey operates in YUV and can make the entire subject translucent
+        # with the same similarity value. Scale first to match the Canvas preview order.
+        ad_chain += f',colorkey={color}:{similarity:.4f}:{blend:.4f}'
 
     filters = []
     if lead_pauses_source:
