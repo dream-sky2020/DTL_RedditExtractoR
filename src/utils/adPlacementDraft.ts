@@ -7,6 +7,8 @@ export interface AdPlacementDraft {
   guidePauseSource: boolean;
   guideVolume: number;
   guidePlaybackRate: number;
+  sourceVolumeDuringGuide: number;
+  guideVolumeTransitionDuration: number;
   adTrimStart: number;
   adTrimEnd: number;
   startAt: number;
@@ -42,6 +44,8 @@ export const DEFAULT_AD_PLACEMENT_DRAFT: AdPlacementDraft = {
   guidePauseSource: false,
   guideVolume: 1,
   guidePlaybackRate: 1,
+  sourceVolumeDuringGuide: 0.25,
+  guideVolumeTransitionDuration: 0.5,
   adTrimStart: 0,
   adTrimEnd: 0,
   startAt: 0,
@@ -83,6 +87,8 @@ export const normalizeAdPlacementDraft = (value?: Partial<AdPlacementDraft> | nu
   guidePauseSource: bool(value?.guidePauseSource, false),
   guideVolume: clamp(value?.guideVolume, 0, 2, 1),
   guidePlaybackRate: clamp(value?.guidePlaybackRate, 0.5, 2, 1),
+  sourceVolumeDuringGuide: clamp(value?.sourceVolumeDuringGuide, 0, 1, 0.25),
+  guideVolumeTransitionDuration: clamp(value?.guideVolumeTransitionDuration, 0, 10, 0.5),
   adTrimStart: clamp(value?.adTrimStart, 0, 36000, 0),
   adTrimEnd: clamp(value?.adTrimEnd, 0, 36000, 0),
   startAt: clamp(value?.startAt, 0, 36000, 0),

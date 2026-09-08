@@ -68,6 +68,25 @@ def silence(duration):
     return f'anullsrc=r=48000:cl=stereo,atrim=duration={duration:.6f},asetpts=PTS-STARTPTS'
 
 
+def duck_volume_expression(start, end, target, transition):
+    """Build a linear duck-and-restore envelope for FFmpeg's volume filter."""
+    duration = max(0.0, end - start)
+    target = min(1.0, max(0.0, target))
+    ramp = min(max(0.0, transition), duration / 2)
+    if duration <= 0:
+        return '1'
+    if ramp <= 0.0001:
+        return f'if(between(t,{start:.6f},{end:.6f}),{target:.6f},1)'
+    ramp_down_end = start + ramp
+    ramp_up_start = end - ramp
+    return (
+        f'if(between(t,{start:.6f},{end:.6f}),'
+        f'if(lt(t,{ramp_down_end:.6f}),1-(1-{target:.6f})*(t-{start:.6f})/{ramp:.6f},'
+        f'if(gt(t,{ramp_up_start:.6f}),{target:.6f}+(1-{target:.6f})*'
+        f'(t-{ramp_up_start:.6f})/{ramp:.6f},{target:.6f})),1)'
+    )
+
+
 def ass_timestamp(seconds):
     centiseconds = max(0, int(round(seconds * 100)))
     hours = centiseconds // 360000
@@ -265,6 +284,8 @@ def build_audio_filter(config, source_info, ad_info, start_at, output_ad_start, 
     ad_enabled = bool(audio.get('enabled', True)) and ad_info['has_audio'] and lead_mode != 'voiceover'
     lead_pauses_source = bool(lead_enabled and lead.get('pauseSource'))
     lead_volume = float(lead.get('volume', 1))
+    source_volume_during_lead = min(1.0, max(0.0, float(lead.get('sourceVolume', 0.25))))
+    lead_volume_transition = min(10.0, max(0.0, float(lead.get('volumeTransitionDuration', 0.5))))
     ad_range = config.get('adRange') or {}
     ad_trim_start = min(max(float(ad_range.get('start', 0)), 0), max(ad_info['duration'] - 0.001, 0))
     ad_trim_end = ad_trim_start + ad_duration
@@ -311,12 +332,22 @@ def build_audio_filter(config, source_info, ad_info, start_at, output_ad_start, 
         current = next_label
         current_duration += insert_duration
 
+    duck_expressions = []
+    if lead_enabled and not lead_pauses_source:
+        duck_expressions.append(duck_volume_expression(
+            start_at,
+            min(current_duration, start_at + lead_play_duration),
+            source_volume_during_lead,
+            lead_volume_transition,
+        ))
     if not pause_source:
         end_at = min(current_duration, output_ad_start + ad_duration)
-        filters.append(
-            f"[{current}]volume='if(between(t,{output_ad_start:.6f},{end_at:.6f}),{source_volume:.4f},1)':"
-            'eval=frame[base_audio]'
-        )
+        duck_expressions.append(duck_volume_expression(output_ad_start, end_at, source_volume, 0))
+    if duck_expressions:
+        volume_expression = duck_expressions[0]
+        for expression in duck_expressions[1:]:
+            volume_expression = f'min({volume_expression},{expression})'
+        filters.append(f"[{current}]volume='{volume_expression}':eval=frame[base_audio]")
     else:
         filters.append(f'[{current}]anull[base_audio]')
 

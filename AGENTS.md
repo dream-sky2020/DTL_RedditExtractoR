@@ -37,7 +37,8 @@ Reddit URL
 ## 3. 应用与页面入口
 
 - `src/main.tsx`：浏览器入口，挂载 React 应用。
-- `src/App.tsx`：顶层 UI 状态；初始化项目系统；监听主要 store 并自动保存当前项目快照；初始化 `useVideoRender`。
+- `src/App.tsx`：顶层 UI 状态；从当前 URL 恢复页面并同步浏览器前进/后退；初始化项目系统；监听主要 store 并自动保存当前项目快照；初始化 `useVideoRender`。
+- `src/routing/toolRoutes.ts`：集中维护 `ToolKey` 与页面路径的双向映射，以及 Studio 场景编号路径。
 - `src/types.ts`：共享领域类型；`ToolKey` 控制可用页面，`VideoConfig`/`VideoScene`/`VideoContentItem` 是视频核心模型。
 - `src/components/AppSidebar.tsx`：左侧菜单定义。
 - `src/pages/MainPages/index.tsx`：页面 import、标题/说明元数据、按 `activeTool` 显示页面。
@@ -66,7 +67,7 @@ Reddit URL
 - `RawJsonPage` / `FilteredJsonPage` / `ScriptJsonPage`：不同处理阶段的数据检查。
 - `DeprecatedPages/*`：兼容或调试用途，不作为新功能首选落点。
 
-本项目没有使用 URL 路由库；“页面跳转”是切换 `App.tsx` 中的 `activeTool`。
+本项目没有使用 URL 路由库；页面导航由 `src/routing/toolRoutes.ts` 与浏览器 History API 驱动。菜单和页面内部跳转必须统一调用 `App.tsx` 提供的导航函数，不得直接修改 `activeTool`，以保证 URL、前进/后退和刷新恢复一致。普通页面使用固定路径，Studio 单场景页面使用 `/studio/scene/<场景编号>`。
 
 ## 4. 状态与持久化
 
@@ -239,7 +240,7 @@ Flask 服务和 worker 是独立进程，入口分别为 `scripts/server.py` 与
 
 任务字段 `adRange: { start, end }` 指定广告素材实际使用的秒数范围，允许裁掉厂商原始广告的片头或片尾。画面和广告原声必须使用同一组 `trim/atrim` 起止点；范围时长而非素材总时长决定广告暂停长度、预计成片长度以及总配音的覆盖窗口。旧任务缺少该字段时默认使用完整广告视频。
 
-可选的 `leadInAudio` 用来在广告视频前播放引导音频，支持 `mode: 'prelude' | 'voiceover'`。`prelude` 是原有前奏模式：引导音频完整结束后才显示广告。`voiceover` 是广告总配音模式：引导音频开始后经过 `adVideoDelay` 秒显示广告画面，引导音频继续播放并强制替代广告视频原声；引导音频超过广告画面结束点的部分会被截断，引导音频较短时剩余广告阶段保持没有广告原声。`leadInAudio.playbackRate` 控制引导音频速度，范围为 `0.5` 到 `2`；浏览器预览使用 `preservesPitch`，最终 FFmpeg 使用 `atempo`，变速后必须按 `素材原时长 / playbackRate` 重新计算引导、暂停、总配音和成片时间线。存在引导音频时，`startAt` 表示引导音频开始时间。`leadInAudio.pauseSource` 独立控制引导音频有效区间是否冻结母片，顶层 `pauseSource` 独立控制广告画面区间；总配音模式下两个暂停区间发生重叠时必须求并集，不能重复增加成片时长。
+可选的 `leadInAudio` 用来在广告视频前播放引导音频，支持 `mode: 'prelude' | 'voiceover'`。`prelude` 是原有前奏模式：引导音频完整结束后才显示广告。`voiceover` 是广告总配音模式：引导音频开始后经过 `adVideoDelay` 秒显示广告画面，引导音频继续播放并强制替代广告视频原声；引导音频超过广告画面结束点的部分会被截断，引导音频较短时剩余广告阶段保持没有广告原声。`leadInAudio.playbackRate` 控制引导音频速度，范围为 `0.5` 到 `2`；浏览器预览使用 `preservesPitch`，最终 FFmpeg 使用 `atempo`，变速后必须按 `素材原时长 / playbackRate` 重新计算引导、暂停、总配音和成片时间线。存在引导音频时，`startAt` 表示引导音频开始时间。`leadInAudio.pauseSource` 独立控制引导音频有效区间是否冻结母片，顶层 `pauseSource` 独立控制广告画面区间；总配音模式下两个暂停区间发生重叠时必须求并集，不能重复增加成片时长。引导不暂停母片时，`leadInAudio.sourceVolume` 控制引导期间的母片音量，`leadInAudio.volumeTransitionDuration` 控制引导开始和结束处的线性压低/恢复时长；页面草稿、浏览器预览和 FFmpeg 成片必须使用相同参数。
 
 `leadInAudio.subtitles` 是引导音频字幕配置，不进入母版 `VideoConfig`。`src/pages/AdPlacementPage/index.tsx` 支持导入 `.srt` 后继续编辑、手动新增字幕段、按试听音频当前位置设置起止时间，以及把编辑结果重新导出为 `.srt`。字幕段和字体样式由 `src/utils/adSubtitleSettings.ts` 保存在 `localStorage`，刷新或切换页面不得丢失。字幕时间统一使用引导音频的原始素材时间：浏览器预览按 `<audio>.currentTime` 匹配，最终合成按 `playbackRate` 换算到输出时间。`scripts/ad_compositor.py` 生成临时 ASS 并通过 FFmpeg 烧录，支持字体、字号、文字颜色、描边、半透明底色、顶部/居中/底部及垂直边距；合成后删除临时 ASS。
 
@@ -306,6 +307,7 @@ Flask 服务和 worker 是独立进程，入口分别为 `scripts/server.py` 与
 | 要修改的能力 | 首要位置 |
 | --- | --- |
 | 新增左侧页面 | `src/types.ts`、`src/components/AppSidebar.tsx`、`src/pages/MainPages/index.tsx` |
+| 新增或修改页面路径 | `src/routing/toolRoutes.ts`、`src/App.tsx` |
 | 修改视频配置 | `src/types.ts`、`src/store/useVideoStore.ts`、`src/rendering/videoCanvas.ts` |
 | 修改项目持久化 | `src/store/useProjectsStore.ts`、各 store 的 `getProjectState/applyProjectState` |
 | 修改完整时间线 | `src/remotion/index.tsx`、`src/remotion/MyVideo.tsx` |

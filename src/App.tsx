@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import './style/colors.css';
 import './style/style.css';
 import './style/tables.css';
@@ -12,13 +12,20 @@ import { useVideoRender } from '@hooks/useVideoRender';
 
 // Stores
 import { useProjectsStore, useRedditStore, useSettingsStore, useVideoStore } from '@/store';
+import {
+  buildToolPath,
+  canonicalToolPath,
+  parseToolPath,
+  ToolNavigationOptions,
+} from '@/routing/toolRoutes';
 
 const App: React.FC = () => {
+  const [initialRoute] = useState(() => parseToolPath(window.location.pathname));
   // UI States
   const [collapsed, setCollapsed] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
-  const [activeTool, setActiveTool] = useState<ToolKey>('extract');
-  const [selectedSceneIdx, setSelectedSceneIdx] = useState<number>(0);
+  const [activeTool, setActiveTool] = useState<ToolKey>(initialRoute.tool);
+  const [selectedSceneIdx, setSelectedSceneIdx] = useState<number>(initialRoute.sceneIdx ?? 0);
 
   // Custom Hooks & Stores
   const { videoConfig } = useVideoStore();
@@ -58,6 +65,22 @@ const App: React.FC = () => {
   }, [initProjectSystem]);
 
   useEffect(() => {
+    const applyLocation = () => {
+      const route = parseToolPath(window.location.pathname);
+      const canonicalPath = canonicalToolPath(route);
+      setActiveTool(route.tool);
+      if (route.sceneIdx !== undefined) setSelectedSceneIdx(route.sceneIdx);
+      if (window.location.pathname !== canonicalPath) {
+        window.history.replaceState(route, '', canonicalPath);
+      }
+    };
+
+    applyLocation();
+    window.addEventListener('popstate', applyLocation);
+    return () => window.removeEventListener('popstate', applyLocation);
+  }, []);
+
+  useEffect(() => {
     if (!currentProjectId) {
       return;
     }
@@ -78,8 +101,19 @@ const App: React.FC = () => {
     saveCurrentProjectSnapshot,
   ]);
 
+  const navigateToTool = useCallback((tool: ToolKey, options: ToolNavigationOptions = {}) => {
+    const nextSceneIdx = options.sceneIdx ?? selectedSceneIdx;
+    const nextPath = buildToolPath(tool, nextSceneIdx);
+    if (options.sceneIdx !== undefined) setSelectedSceneIdx(options.sceneIdx);
+    setActiveTool(tool);
+    if (window.location.pathname !== nextPath) {
+      const historyMethod = options.replace ? 'replaceState' : 'pushState';
+      window.history[historyMethod]({ tool, sceneIdx: nextSceneIdx }, '', nextPath);
+    }
+  }, [selectedSceneIdx]);
+
   const onMenuSelect = (info: { key: string }) => {
-    setActiveTool(info.key as ToolKey);
+    navigateToTool(info.key as ToolKey);
   };
 
   return (
@@ -89,7 +123,7 @@ const App: React.FC = () => {
       headerHidden={headerHidden}
       setHeaderHidden={setHeaderHidden}
       activeTool={activeTool}
-      setActiveTool={setActiveTool}
+      setActiveTool={navigateToTool}
       currentProjectId={currentProjectId}
       onMenuSelect={onMenuSelect}
       isAutoRendering={render.isAutoRendering}
@@ -104,7 +138,6 @@ const App: React.FC = () => {
       clearFinishedTasks={render.clearFinishedTasks}
       downloadVideoConfig={render.downloadVideoConfig}
       selectedSceneIdx={selectedSceneIdx}
-      setSelectedSceneIdx={setSelectedSceneIdx}
     />
   );
 };

@@ -39,9 +39,14 @@ import { DslEditor } from '@components/DslEditor';
 
 const { Text } = Typography;
 
-export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () => void }> = ({
+export const StudioScenePage: React.FC<{
+  initialSceneIdx?: number;
+  onBack: () => void;
+  onSceneChange?: (sceneIdx: number) => void;
+}> = ({
   initialSceneIdx = 0,
   onBack,
+  onSceneChange,
 }) => {
   const {
     videoConfig,
@@ -79,6 +84,10 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
       return clampPreviewHeight(PREVIEW_DEFAULT_HEIGHT);
     }
   });
+
+  useEffect(() => {
+    setCurrentSceneIdx(initialSceneIdx);
+  }, [initialSceneIdx]);
   const [isPreviewResizing, setIsPreviewResizing] = useState(false);
   const previewResizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -399,7 +408,10 @@ export const StudioScenePage: React.FC<{ initialSceneIdx?: number; onBack: () =>
 
   const handleSceneSelect = (idx: number) => {
     if (idx === currentSceneIdx) return;
-    checkUnsavedAndContinue(() => setCurrentSceneIdx(idx));
+    checkUnsavedAndContinue(() => {
+      setCurrentSceneIdx(idx);
+      onSceneChange?.(idx);
+    });
   };
 
   const getSeekFrame = (idx: number) => {

@@ -307,6 +307,8 @@ def create_ad_render_task():
                 "pauseSource": bool(lead_in.get('pauseSource', False)),
                 "volume": min(2.0, max(0.0, float(lead_in.get('volume', 1.0)))),
                 "playbackRate": min(2.0, max(0.5, float(lead_in.get('playbackRate', 1.0)))),
+                "sourceVolume": min(1.0, max(0.0, float(lead_in.get('sourceVolume', 0.25)))),
+                "volumeTransitionDuration": min(10.0, max(0.0, float(lead_in.get('volumeTransitionDuration', 0.5)))),
                 "subtitles": normalize_ad_subtitles(lead_in.get('subtitles'), bool(lead_in_path)),
             },
         }

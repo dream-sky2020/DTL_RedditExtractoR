@@ -101,6 +101,8 @@ export const AdPlacementPage: React.FC = () => {
   const [guidePauseSource, setGuidePauseSource] = useState(initialDraft.guidePauseSource);
   const [guideVolume, setGuideVolume] = useState(initialDraft.guideVolume);
   const [guidePlaybackRate, setGuidePlaybackRate] = useState(initialDraft.guidePlaybackRate);
+  const [sourceVolumeDuringGuide, setSourceVolumeDuringGuide] = useState(initialDraft.sourceVolumeDuringGuide);
+  const [guideVolumeTransitionDuration, setGuideVolumeTransitionDuration] = useState(initialDraft.guideVolumeTransitionDuration);
   const [subtitleSettings, setSubtitleSettings] = useState<AdSubtitleSettings>(() => loadAdSubtitleSettings());
   const [guideCurrentTime, setGuideCurrentTime] = useState(0);
   const [subtitlePreviewTime, setSubtitlePreviewTime] = useState(0);
@@ -192,6 +194,16 @@ export const AdPlacementPage: React.FC = () => {
   const dedicatedSubtitleCue = subtitleSettings.enabled && subtitlePreviewSubtitles
     ? subtitleSettings.cues.find((cue) => subtitlePreviewTime >= cue.start && subtitlePreviewTime < cue.end)
     : undefined;
+
+  const getGuideDuckMultiplier = (elapsed: number) => {
+    if (guidePauseSource || guidePlaybackDuration <= 0) return 1;
+    const duration = guideMode === 'voiceover' ? voiceoverLeadDuration : guidePlaybackDuration;
+    if (elapsed < 0 || elapsed > duration) return 1;
+    const ramp = Math.min(guideVolumeTransitionDuration, duration / 2);
+    if (ramp <= 0.0001) return sourceVolumeDuringGuide;
+    const duckAmount = Math.min(1, elapsed / ramp, (duration - elapsed) / ramp);
+    return 1 - (1 - sourceVolumeDuringGuide) * Math.max(0, duckAmount);
+  };
 
   const ensureAudioPreviewGain = (
     audio: HTMLAudioElement,
@@ -292,7 +304,9 @@ export const AdPlacementPage: React.FC = () => {
         applyGuidePlaybackRate(audio, guidePlaybackRate);
       }
     }
-    setAdVideoDelay((current) => Math.min(current, Math.max(0, guidePlaybackDuration - 0.01)));
+    if (guideDuration > 0) {
+      setAdVideoDelay((current) => Math.min(current, Math.max(0, guidePlaybackDuration - 0.01)));
+    }
   }, [guideVolume, guidePlaybackRate, guideAudioUrl, guidePlaybackDuration]);
 
   useEffect(() => () => {
@@ -337,6 +351,8 @@ export const AdPlacementPage: React.FC = () => {
       guidePauseSource,
       guideVolume,
       guidePlaybackRate,
+      sourceVolumeDuringGuide,
+      guideVolumeTransitionDuration,
       adTrimStart,
       adTrimEnd,
       startAt,
@@ -362,7 +378,8 @@ export const AdPlacementPage: React.FC = () => {
     });
   }, [
     sourceVideo, greenScreenVideo, guideAudio, guideMode, adVideoDelay,
-    guidePauseSource, guideVolume, guidePlaybackRate, adTrimStart, adTrimEnd,
+    guidePauseSource, guideVolume, guidePlaybackRate, sourceVolumeDuringGuide,
+    guideVolumeTransitionDuration, adTrimStart, adTrimEnd,
     startAt, mode, pauseSource, x, y, width, autoCenterPlacement, keyColor,
     similarity, blend, adAudioEnabled, adVolume, sourceVolumeDuringAd,
     timelinePreviewEnabled, subtitlePreviewSourceAudio, subtitlePreviewGuideAudio,
@@ -453,6 +470,10 @@ export const AdPlacementPage: React.FC = () => {
     const shouldPauseSource = pauseSource || (guidePauseSource && guideStillPlaying);
     if (source) {
       source.muted = !subtitlePreviewSourceAudio;
+      const guideMultiplier = guideStillPlaying && audio
+        ? getGuideDuckMultiplier(audio.currentTime / guidePlaybackRate)
+        : 1;
+      source.volume = shouldPauseSource ? 1 : Math.min(sourceVolumeDuringAd, guideMultiplier);
       if (shouldPauseSource) source.pause();
       else void source.play().catch(() => undefined);
     }
@@ -472,6 +493,7 @@ export const AdPlacementPage: React.FC = () => {
     const sourceEnd = Number.isFinite(source.duration) ? Math.max(0, source.duration - 0.01) : startAt;
     source.currentTime = Math.min(startAt, sourceEnd);
     source.muted = !subtitlePreviewSourceAudio;
+    source.volume = 1;
     audio.currentTime = 0;
     audio.muted = !subtitlePreviewGuideAudio;
     applyGuidePlaybackRate(audio, guidePlaybackRate);
@@ -515,6 +537,16 @@ export const AdPlacementPage: React.FC = () => {
 
   const updateDedicatedSubtitleTime = (audio: HTMLAudioElement) => {
     setSubtitlePreviewTime(audio.currentTime);
+    const source = subtitleVideoPreviewRef.current;
+    if (source && subtitlePreviewSourceAudio && !guidePauseSource) {
+      const adMultiplier = subtitlePreviewPhaseRef.current === 'ad' && !pauseSource
+        ? sourceVolumeDuringAd
+        : 1;
+      source.volume = Math.min(
+        adMultiplier,
+        getGuideDuckMultiplier(audio.currentTime / guidePlaybackRate),
+      );
+    }
     if (
       guideMode === 'voiceover'
       && subtitlePreviewPhaseRef.current === 'lead'
@@ -526,6 +558,12 @@ export const AdPlacementPage: React.FC = () => {
 
   const finishDedicatedGuidePreview = () => {
     setSubtitlePreviewTime(guideDuration);
+    const source = subtitleVideoPreviewRef.current;
+    if (source) {
+      source.volume = subtitlePreviewPhaseRef.current === 'ad' && !pauseSource
+        ? sourceVolumeDuringAd
+        : 1;
+    }
     if (subtitlePreviewPhaseRef.current === 'lead') {
       beginDedicatedAdPreview();
       return;
@@ -548,11 +586,18 @@ export const AdPlacementPage: React.FC = () => {
   useEffect(() => {
     const source = sourcePreviewRef.current;
     if (!source) return;
-    const targetVolume = previewPhase === 'ad' && !pauseSource
-      ? sourceBaseVolumeRef.current * sourceVolumeDuringAd
-      : sourceBaseVolumeRef.current;
+    const guide = guidePreviewRef.current;
+    const guideIsActive = Boolean(guide && !guide.ended)
+      && (previewPhase === 'lead' || (previewPhase === 'ad' && voiceoverEnabled));
+    const guideMultiplier = guideIsActive
+      ? getGuideDuckMultiplier(guideCurrentTime / guidePlaybackRate)
+      : 1;
+    const adMultiplier = previewPhase === 'ad' && !pauseSource ? sourceVolumeDuringAd : 1;
+    const targetVolume = sourceBaseVolumeRef.current * Math.min(guideMultiplier, adMultiplier);
     if (Math.abs(source.volume - targetVolume) > 0.01) source.volume = targetVolume;
-  }, [previewPhase, pauseSource, sourceVolumeDuringAd, sourceVideo]);
+  }, [previewPhase, pauseSource, sourceVolumeDuringAd, sourceVolumeDuringGuide,
+    guideVolumeTransitionDuration, guideCurrentTime, guidePlaybackRate,
+    guidePlaybackDuration, voiceoverLeadDuration, voiceoverEnabled, sourceVideo]);
 
   useEffect(() => {
     if (!autoCenterPlacement) return;
@@ -611,7 +656,13 @@ export const AdPlacementPage: React.FC = () => {
     setPreviewPauseActive(shouldPause);
     if (shouldPause) source.pause();
     else if (source.paused) void source.play().catch(() => undefined);
-    source.volume = pauseSource ? sourceBaseVolumeRef.current : sourceBaseVolumeRef.current * sourceVolumeDuringAd;
+    const guide = guidePreviewRef.current;
+    const guideMultiplier = voiceoverEnabled && guide && !guide.ended
+      ? getGuideDuckMultiplier(guide.currentTime / guidePlaybackRate)
+      : 1;
+    source.volume = shouldPause
+      ? sourceBaseVolumeRef.current
+      : sourceBaseVolumeRef.current * Math.min(sourceVolumeDuringAd, guideMultiplier);
     ad.currentTime = adTrimStart;
     void ad.play().catch(() => undefined);
   };
@@ -797,7 +848,10 @@ export const AdPlacementPage: React.FC = () => {
       if (!payload.path) return;
       const item = payload.item as VideoItem;
       setGuideAudios((items) => [item, ...items.filter((entry) => entry.path !== item.path)]);
-      setGuideAudio(payload.path);
+      setGuideAudio((current) => {
+        if (current !== payload.path) setGuideDuration(0);
+        return payload.path;
+      });
     } catch (error: any) {
       toast.error(error.message || '选择引导音频失败');
     }
@@ -890,6 +944,8 @@ export const AdPlacementPage: React.FC = () => {
             pauseSource: guidePauseSource,
             volume: guideVolume,
             playbackRate: guidePlaybackRate,
+            sourceVolume: sourceVolumeDuringGuide,
+            volumeTransitionDuration: guideVolumeTransitionDuration,
             subtitles: {
               ...subtitleSettings,
               enabled: Boolean(guideAudio) && subtitleSettings.enabled,
@@ -1013,8 +1069,11 @@ export const AdPlacementPage: React.FC = () => {
                       style={{ flex: 1 }}
                       optionFilterProp="label"
                       onChange={(value) => {
-                        setGuideAudio(value || '');
-                        if (!value) setGuideDuration(0);
+                        const nextValue = value || '';
+                        setGuideAudio((current) => {
+                          if (current !== nextValue) setGuideDuration(0);
+                          return nextValue;
+                        });
                       }}
                       options={guideAudios.map((item) => ({
                         value: item.path,
@@ -1038,7 +1097,10 @@ export const AdPlacementPage: React.FC = () => {
                         const duration = event.currentTarget.duration;
                         if (Number.isFinite(duration)) {
                           setGuideDuration(duration);
-                          setAdVideoDelay((current) => Math.min(current, Math.max(0, duration - 0.01)));
+                          setAdVideoDelay((current) => Math.min(
+                            current,
+                            Math.max(0, duration / guidePlaybackRate - 0.01),
+                          ));
                         }
                       }}
                       onPlay={(event) => {
@@ -1086,6 +1148,31 @@ export const AdPlacementPage: React.FC = () => {
                       <Text>播放引导音频时暂停母片</Text>
                       <Switch checked={guidePauseSource} onChange={setGuidePauseSource} />
                     </Space>
+                    <div style={{ width: '100%' }}>
+                      <Text>引导音频期间母片音量：{Math.round(sourceVolumeDuringGuide * 100)}%</Text>
+                      <Slider
+                        disabled={guidePauseSource}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={sourceVolumeDuringGuide}
+                        onChange={setSourceVolumeDuringGuide}
+                      />
+                      {guidePauseSource && <Text type="secondary">母片暂停时声音也会暂停，无需压低音量。</Text>}
+                    </div>
+                    <Form.Item label="母片音量渐变时长（秒）" style={{ width: '100%', marginBottom: 0 }}>
+                      <InputNumber
+                        disabled={guidePauseSource}
+                        min={0}
+                        max={10}
+                        step={0.1}
+                        precision={2}
+                        value={guideVolumeTransitionDuration}
+                        onChange={(value) => setGuideVolumeTransitionDuration(value ?? 0)}
+                        style={{ width: '100%' }}
+                      />
+                      <Text type="secondary">引导开始时逐渐压低、结束前逐渐恢复；设为 0 时立即切换。</Text>
+                    </Form.Item>
                     <div>
                       <Text>引导音频音量：{Math.round(guideVolume * 100)}%</Text>
                       <Slider min={0} max={2} step={0.05} value={guideVolume} onChange={setGuideVolume} />

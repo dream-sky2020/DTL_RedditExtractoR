@@ -50,6 +50,7 @@ import {
 import { useRedditStore, useSettingsStore, useVideoStore } from '@/store';
 import { normalizeVideoConfig } from '@/rendering/videoCanvas';
 import { RenderTask } from '@/hooks/useVideoRender';
+import type { NavigateToTool } from '@/routing/toolRoutes';
 
 const { Header, Content } = Layout;
 
@@ -60,7 +61,7 @@ interface MainLayoutProps {
   headerHidden: boolean;
   setHeaderHidden: React.Dispatch<React.SetStateAction<boolean>>;
   activeTool: ToolKey;
-  setActiveTool: React.Dispatch<React.SetStateAction<ToolKey>>;
+  setActiveTool: NavigateToTool;
   currentProjectId: string | null;
   
   // Actions
@@ -81,7 +82,6 @@ interface MainLayoutProps {
   
   // Studio
   selectedSceneIdx: number;
-  setSelectedSceneIdx: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
@@ -89,7 +89,7 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
     collapsed, setCollapsed, headerHidden, setHeaderHidden, activeTool, setActiveTool, currentProjectId,
     onMenuSelect,
     isAutoRendering, isSubmittingTask, autoRenderStatus, renderProgress,
-    renderTasks, activeTaskId, startAutoRender, cancelRenderTask, removeRenderTask, clearFinishedTasks, downloadVideoConfig, selectedSceneIdx, setSelectedSceneIdx
+    renderTasks, activeTaskId, startAutoRender, cancelRenderTask, removeRenderTask, clearFinishedTasks, downloadVideoConfig, selectedSceneIdx
   } = props;
 
   const {
@@ -368,8 +368,7 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
             {activeTool === 'studio' && (
               <StudioPage 
                 onViewScene={(idx) => {
-                  setSelectedSceneIdx(idx);
-                  setActiveTool('studio_scene');
+                  setActiveTool('studio_scene', { sceneIdx: idx });
                 }}
               />
             )}
@@ -378,6 +377,7 @@ export const MainLayoutPage: React.FC<MainLayoutProps> = (props) => {
               <StudioScenePage
                 initialSceneIdx={selectedSceneIdx}
                 onBack={() => setActiveTool('studio')}
+                onSceneChange={(sceneIdx) => setActiveTool('studio_scene', { sceneIdx, replace: true })}
               />
             )}
 
