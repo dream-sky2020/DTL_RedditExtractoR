@@ -1,0 +1,21 @@
+{
+  "defaults": {
+    "sourceDuration": 10, "adDuration": 6, "adTrimStart": 1, "adTrimEnd": 5,
+    "startAt": 2, "pauseSource": false, "leadEnabled": false, "leadDuration": 6,
+    "leadPlaybackRate": 1.5, "leadMode": "prelude", "adVideoDelay": 1, "leadPauseSource": false
+  },
+  "cases": [
+    { "name": "overlay preserves source duration", "input": {}, "expected": { "adDuration": 4, "outputAdStart": 2, "outputDuration": 10 } },
+    { "name": "ad pause inserts trimmed duration", "input": { "pauseSource": true }, "expected": { "adPauseDuration": 4, "outputDuration": 14 } },
+    { "name": "prelude uses sped-up duration", "input": { "leadEnabled": true }, "expected": { "leadPlayDuration": 4, "outputAdStart": 6, "outputDuration": 10 } },
+    { "name": "prelude pauses are sequential", "input": { "leadEnabled": true, "leadPauseSource": true, "pauseSource": true }, "expected": { "adPauseStart": 6, "adPauseDuration": 4, "outputDuration": 18 } },
+    { "name": "voiceover overlapping pauses count once", "input": { "leadEnabled": true, "leadMode": "voiceover", "leadPauseSource": true, "pauseSource": true }, "expected": { "outputAdStart": 3, "adPauseStart": 6, "adPauseDuration": 1, "outputDuration": 15 } },
+    { "name": "long voiceover is truncated at ad end", "input": { "leadEnabled": true, "leadDuration": 12, "leadMode": "voiceover", "leadPauseSource": true, "pauseSource": true }, "expected": { "leadPlayDuration": 5, "adPauseDuration": 0, "outputDuration": 15 } },
+    { "name": "short voiceover leaves silent ad tail", "input": { "leadEnabled": true, "leadDuration": 1.5, "adVideoDelay": 0.5, "leadMode": "voiceover", "leadPauseSource": true, "pauseSource": true }, "expected": { "leadPlayDuration": 1, "outputAdStart": 2.5, "adPauseDuration": 3.5, "outputDuration": 14.5 } },
+    { "name": "voiceover lead-only pause", "input": { "leadEnabled": true, "leadMode": "voiceover", "leadPauseSource": true }, "expected": { "adPauseDuration": 0, "outputDuration": 14 } },
+    { "name": "voiceover ad-only pause", "input": { "leadEnabled": true, "leadMode": "voiceover", "pauseSource": true }, "expected": { "adPauseDuration": 4, "outputDuration": 14 } },
+    { "name": "legacy full advertisement", "input": { "adTrimStart": 0, "adTrimEnd": null }, "expected": { "adTrimEnd": 6, "adDuration": 6 } },
+    { "name": "rate and delay boundaries", "input": { "leadEnabled": true, "leadPlaybackRate": 9, "adVideoDelay": 99, "leadMode": "voiceover" }, "expected": { "leadPlaybackRate": 2, "adVideoDelay": 2.999, "outputAdStart": 4.999 } },
+    { "name": "metadata not loaded", "input": { "sourceDuration": 0, "adDuration": 0, "leadDuration": 0, "leadEnabled": true, "pauseSource": true, "leadPauseSource": true }, "expected": { "adDuration": 0, "startAt": 0, "outputDuration": 0 } }
+  ]
+}

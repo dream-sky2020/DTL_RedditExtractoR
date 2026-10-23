@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Storybook: 准备预览",
+      "type": "process",
+      "command": "node",
+      "args": ["scripts/storybook_preview.cjs"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "storybook",
+        "pattern": { "regexp": "^(.+):(\\d+): (.+)$", "file": 1, "line": 2, "message": 3 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^STORYBOOK_STARTING$",
+          "endsPattern": "^STORYBOOK_READY$"
+        }
+      },
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "runOptions": { "instanceLimit": 1 }
+    },
+    {
+      "type": "shell",
+      "label": "ESLint: Check all files",
+      "command": "npx eslint .",
+      "problemMatcher": "$eslint-stylish",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

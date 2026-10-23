@@ -1,8 +1,11 @@
 node_modules
 dist
+storybook-static/
 .env
 *.log
-.vscode
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 .cursor
 .git
 video-config.json

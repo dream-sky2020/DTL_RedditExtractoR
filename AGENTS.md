@@ -198,9 +198,15 @@ npm run build     TypeScript 检查并构建前端
 npm run preview   预览构建产物
 npm run remotion  打开 Remotion 预览
 npm run render    直接渲染 MyVideo 到 out/video.mp4
+npm run storybook 启动页面/组件显示预览（127.0.0.1:6006）
+npm run build-storybook 构建独立显示预览到 storybook-static/
 ```
 
 Flask 服务和 worker 是独立进程，入口分别为 `scripts/server.py` 与 `scripts/worker.py`。Python 依赖和本地 TTS 环境可能因机器而异，运行前先检查现有环境，不要擅自重装或升级依赖。
+
+VS Code 中按 F5，选择 `.vscode/launch.json` 的“广告 UI 预览（Storybook）”即可准备 Storybook 并打开外部 Edge 浏览器；使用本机 VS Code 1.95.3 已内置的 `msedge` 调试类型，该版本不支持 `editor-browser`。后台任务调用 `scripts/storybook_preview.cjs`，先检查并复用已就绪的广告 Storybook，否则启动本项目的 Storybook。使用“终端 → 终止任务”停止该任务启动的服务。
+
+`vite.config.ts` 在 `command === 'serve'` 时接入 `code-inspector-plugin`，Storybook 共用该 Vite 配置。开发预览可通过 Alt+Shift 或中文定位开关选择元素，打开 VS Code 对应 JSX 源码行；调整插件配置后重启开发服务。插件不加入应用与 Storybook 静态构建。
 
 ## 10. “植入广告”功能架构（已实现）
 
@@ -223,7 +229,19 @@ Flask 服务和 worker 是独立进程，入口分别为 `scripts/server.py` 与
 - `src/types.ts`：包含页面 `ToolKey`；广告配置不属于 `VideoConfig`。
 - `src/components/AppSidebar.tsx`：包含“植入广告”菜单入口。
 - `src/pages/MainPages/index.tsx`：注册广告页面及页面元数据。
-- `src/pages/AdPlacementPage/index.tsx`：选择母版、广告视频和可选引导音频，预览时间线与位置并提交合成参数。
+- `src/pages/AdPlacementPage/index.tsx`：薄入口，只连接 `useAdPlacement()` 和 `AdPlacementView`。
+- `src/pages/AdPlacementPage/AdPlacementView.tsx`：显示层及其 props 类型，定义并导出显示状态、用户操作和媒体 ref 类型；View 直接使用 `state.xxx/actions.xxx/media.xxx`，不逐个解构全部字段。组织布局、控件和媒体元素，不直接请求接口、保存草稿或控制媒体时间线。逻辑 Hook 和 Storybook 仅通过 `import type` 引用 View 的类型，不依赖其运行时代码；不再另设 `viewModel.ts` 类型文件。
+- `src/pages/AdPlacementPage/hooks/useAdPlacement.ts`：页面逻辑入口，组合素材、字幕和两套预览 hook，管理配置、持久化、媒体事件和合成任务提交。
+- `src/pages/AdPlacementPage/**/*.stories.tsx`：页面和私有组件的 Storybook 示例；使用内存状态和 `.storybook/public/` 中的合成素材，不读写正式草稿、不访问 Flask、不创建真实任务。使用说明见 `src/pages/AdPlacementPage/README.md`。
+- `src/pages/AdPlacementPage/types.ts`：广告素材与独立二次合成请求协议；广告模式类型复用草稿协议，不进入母版 `VideoConfig`。
+- `src/pages/AdPlacementPage/api.ts`：广告素材列表、文件选择、字幕读取、任务提交与素材代理 URL；集中处理接口错误并过滤已有广告成片。
+- `src/pages/AdPlacementPage/components/PlacementControls.tsx`：位置与大小控件，计算和状态更新由页面传入。
+- `src/pages/AdPlacementPage/components/SubtitleEditor.tsx`：字幕段编辑与字体样式面板，通过回调读取试听时间和跳转试听，不持有媒体元素或独立播放状态。
+- `src/pages/AdPlacementPage/components/MediaFileSelect.tsx`：Page 私有的素材选择控件，复用母版、广告和引导音频的列表选择/文件选择 UI，不持有媒体播放状态。
+- `src/pages/AdPlacementPage/hooks/useAdMediaLibrary.ts`：素材列表、刷新、本地文件选择和引导音频选择；保留草稿中的选中路径，拒绝广告成片作为母版，切换引导素材时重置元数据时长。
+- `src/pages/AdPlacementPage/hooks/useAdSubtitleDraft.ts`：字幕草稿恢复/保存、字幕段操作和 SRT 导入导出；通过回调读取原始音频时间，不控制播放器。
+- `src/pages/AdPlacementPage/calculations/`：广告 Page 私有的纯计算模块，只接收参数并返回结果，不访问 React 状态、接口、存储或媒体元素。`calculations/timeline.ts` 与 `scripts/ad_timeline.py` 实现前后端广告时间线纯计算，统一裁剪时长、引导变速、广告进入延迟和重叠暂停区间。Python 合成入口只计算一份计划，画面和音频滤镜共用；页面预计时长与两套预览的广告进入延迟消费同一规则。
+- `src/pages/AdPlacementPage/hooks/useTimelinePreview.ts` 与 `hooks/useSubtitlePreview.ts`：分别管理最终时间线预览和字幕组合预览的临时播放阶段、暂停/恢复及媒体联动，由 `useAdPlacement` 组合；View 挂载媒体元素并绑定传入事件。功能私有组件放在各自 Page 的 `components/`，私有 hook 放在 Page 的 `hooks/`，广告专用接口、类型和纯逻辑放在广告 Page 内，不使用 `src/features/` 目录。
 - `src/pages/ChromaKeyTestPage/index.tsx`：选择母片截图和广告截图，以静态 Canvas 合成独立调试抠绿参数；不创建渲染任务。图片路径和参数通过 `src/utils/adChromaSettings.ts` 自动持久化，切换页面或刷新后恢复。
 - `scripts/server.py`：`GET /ad/videos` 提供视频和引导音频列表，`POST /ad/render` 创建任务，`GET /proxy_local_video` / `GET /proxy_local_audio` 提供素材预览，`GET /pick_video_file` / `GET /pick_audio_file` 选择任意本地素材，`GET /pick_srt_file` 选择并读取 UTF-8/GB18030/UTF-16 的 `.srt` 字幕。
 - `scripts/worker.py`：识别 `taskType: 'ad_composite'`，执行独立广告合成任务并汇报进度。
@@ -300,7 +318,9 @@ Flask 服务和 worker 是独立进程，入口分别为 `scripts/server.py` 与
 - 时间线或视觉改动应同时检查普通预览、Studio 预览和最终渲染。
 - 音频改动应验证最终导出文件，而不只是在浏览器中试听。
 - 当前部分旧源码注释或字符串在某些终端中可能显示乱码；不要因终端显示问题进行大范围编码重写。
-- 当前没有发现正式自动化测试套件；高风险渲染改动应补充最小可重复验证步骤。
+- 当前只有广告模块的最小回归验证，尚未建立覆盖全项目的自动化测试套件；高风险渲染改动应补充最小可重复验证步骤。
+- 广告时间线回归：`python -m unittest discover -s tests -p test_ad_timeline.py -v`，读取 `tests/ad_timeline_cases.json` 并调用 Node 验证 TypeScript/Python 结果一致；需现有 Node、TypeScript 和 Python。成片验证：`python tests/ad_compositor_smoke.py`，用临时短素材检查时长、分辨率、母版保留、总配音的冻结/恢复和音轨，不依赖用户素材；需现有 FFmpeg/ffprobe。
+- 预览控制回归：`node tests/ad_preview_controls.cjs`，以模拟媒体检查播放控制回调的暂停/恢复、裁剪结束、关闭声音图层后的时间推进、总配音静音及独立阶段；不覆盖 React effect 生命周期或浏览器真实解码播放，涉及这些行为时仍需页面实测。
 
 ## 12. 快速定位索引
 

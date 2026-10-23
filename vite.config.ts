@@ -1,11 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import { codeInspectorPlugin } from 'code-inspector-plugin'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
+    ...(command === 'serve' ? [codeInspectorPlugin({
+      bundler: 'vite',
+      editor: 'code',
+      showSwitch: true,
+      lang: 'zh',
+    })] : []),
     react(),
     tsconfigPaths(),
   ],
@@ -20,4 +27,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     }
   }
-})
+}))

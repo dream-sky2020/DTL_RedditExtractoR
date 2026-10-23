@@ -6,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 
+from ad_timeline import build_ad_timeline
+
 
 def probe_media(path):
     result = subprocess.run(
@@ -161,15 +163,13 @@ def escape_filter_path(path):
     return os.path.abspath(path).replace('\\', '/').replace(':', r'\:').replace("'", r"\'")
 
 
-def build_video_filter(config, source_info, ad_info, lead_info=None):
+def build_video_filter(config, source_info, ad_info, lead_info=None, timeline=None):
+    timeline = timeline if timeline is not None else build_ad_timeline(config, source_info, ad_info, lead_info)
     source_duration = source_info['duration']
-    ad_range = config.get('adRange') or {}
-    ad_trim_start = min(max(float(ad_range.get('start', 0)), 0), max(ad_info['duration'] - 0.001, 0))
-    ad_trim_end_value = ad_range.get('end')
-    ad_trim_end = ad_info['duration'] if ad_trim_end_value in (None, '') else float(ad_trim_end_value)
-    ad_trim_end = min(max(ad_trim_end, ad_trim_start + 0.001), ad_info['duration'])
-    ad_duration = ad_trim_end - ad_trim_start
-    start_at = min(max(float(config.get('startAt', 0)), 0), max(source_duration - 0.001, 0))
+    ad_trim_start = timeline['adTrimStart']
+    ad_trim_end = timeline['adTrimEnd']
+    ad_duration = timeline['adDuration']
+    start_at = timeline['startAt']
     placement = config.get('placement') or {}
     chroma = config.get('chromaKey') or {}
     target_width = even(source_info['width'] * float(placement.get('width', 0.25)))
@@ -180,16 +180,10 @@ def build_video_filter(config, source_info, ad_info, lead_info=None):
     similarity = float(chroma.get('similarity', 0.3))
     blend = float(chroma.get('blend', 0.08))
     mode = config.get('mode', 'chroma-key')
-    lead = config.get('leadInAudio') or {}
-    lead_source_duration = lead_info['duration'] if lead_info else 0
-    lead_playback_rate = min(max(float(lead.get('playbackRate', 1)), 0.5), 2.0)
-    lead_duration = lead_source_duration / lead_playback_rate if lead_info else 0
-    lead_mode = lead.get('mode', 'prelude')
-    ad_video_delay = min(max(float(lead.get('adVideoDelay', 0)), 0), max(lead_duration - 0.001, 0))
-    lead_play_duration = lead_duration if lead_mode != 'voiceover' else min(lead_duration, ad_video_delay + ad_duration)
-    lead_pauses_source = bool(lead_info and lead.get('pauseSource'))
-    output_ad_start = start_at + (ad_video_delay if lead_mode == 'voiceover' else lead_play_duration)
-    base_duration = source_duration + (lead_play_duration if lead_pauses_source else 0)
+    lead_play_duration = timeline['leadPlayDuration']
+    lead_pauses_source = timeline['leadPausesSource']
+    output_ad_start = timeline['outputAdStart']
+    base_duration = timeline['baseDuration']
 
     ad_chain = (
         f'[1:v]trim=start={ad_trim_start:.6f}:end={ad_trim_end:.6f},setpts=PTS-STARTPTS,'
@@ -227,12 +221,8 @@ def build_video_filter(config, source_info, ad_info, lead_info=None):
     else:
         filters.append('[0:v]setpts=PTS-STARTPTS[base_video]')
 
-    ad_pause_start = output_ad_start
-    ad_pause_duration = ad_duration if config.get('pauseSource') else 0
-    if ad_pause_duration > 0 and lead_pauses_source and lead_mode == 'voiceover':
-        lead_pause_end = start_at + lead_play_duration
-        ad_pause_start = max(output_ad_start, lead_pause_end)
-        ad_pause_duration = max(0, output_ad_start + ad_duration - ad_pause_start)
+    ad_pause_start = timeline['adPauseStart']
+    ad_pause_duration = timeline['adPauseDuration']
 
     if ad_pause_duration > 0.001:
         frame_duration = 1 / max(source_info['fps'], 1)
@@ -267,7 +257,11 @@ def build_video_filter(config, source_info, ad_info, lead_info=None):
     return filters, base_duration + ad_pause_duration, start_at, output_ad_start, ad_duration, lead_play_duration
 
 
-def build_audio_filter(config, source_info, ad_info, start_at, output_ad_start, ad_duration, lead_info=None):
+def build_audio_filter(config, source_info, ad_info, lead_info=None, timeline=None):
+    timeline = timeline if timeline is not None else build_ad_timeline(config, source_info, ad_info, lead_info)
+    start_at = timeline['startAt']
+    output_ad_start = timeline['outputAdStart']
+    ad_duration = timeline['adDuration']
     audio = config.get('audio') or {}
     ad_volume = float(audio.get('volume', 1))
     source_volume = float(audio.get('sourceVolumeDuringAd', 0.25))
@@ -276,19 +270,16 @@ def build_audio_filter(config, source_info, ad_info, start_at, output_ad_start, 
     lead = config.get('leadInAudio') or {}
     lead_enabled = lead_info is not None
     lead_source_duration = lead_info['duration'] if lead_info else 0
-    lead_playback_rate = min(max(float(lead.get('playbackRate', 1)), 0.5), 2.0)
-    lead_duration = lead_source_duration / lead_playback_rate if lead_info else 0
+    lead_playback_rate = timeline['leadPlaybackRate']
     lead_mode = lead.get('mode', 'prelude')
-    ad_video_delay = min(max(float(lead.get('adVideoDelay', 0)), 0), max(lead_duration - 0.001, 0))
-    lead_play_duration = lead_duration if lead_mode != 'voiceover' else min(lead_duration, ad_video_delay + ad_duration)
+    lead_play_duration = timeline['leadPlayDuration']
     ad_enabled = bool(audio.get('enabled', True)) and ad_info['has_audio'] and lead_mode != 'voiceover'
-    lead_pauses_source = bool(lead_enabled and lead.get('pauseSource'))
+    lead_pauses_source = timeline['leadPausesSource']
     lead_volume = float(lead.get('volume', 1))
     source_volume_during_lead = min(1.0, max(0.0, float(lead.get('sourceVolume', 0.25))))
     lead_volume_transition = min(10.0, max(0.0, float(lead.get('volumeTransitionDuration', 0.5))))
-    ad_range = config.get('adRange') or {}
-    ad_trim_start = min(max(float(ad_range.get('start', 0)), 0), max(ad_info['duration'] - 0.001, 0))
-    ad_trim_end = ad_trim_start + ad_duration
+    ad_trim_start = timeline['adTrimStart']
+    ad_trim_end = timeline['adTrimEnd']
 
     if not source_info['has_audio'] and not ad_enabled and not lead_enabled:
         return [], None
@@ -300,12 +291,8 @@ def build_audio_filter(config, source_info, ad_info, start_at, output_ad_start, 
 
     current = 'source_audio'
     current_duration = source_duration
-    ad_pause_start = output_ad_start
-    ad_pause_duration = ad_duration if pause_source else 0
-    if ad_pause_duration > 0 and lead_pauses_source and lead_mode == 'voiceover':
-        lead_pause_end = start_at + lead_play_duration
-        ad_pause_start = max(output_ad_start, lead_pause_end)
-        ad_pause_duration = max(0, output_ad_start + ad_duration - ad_pause_start)
+    ad_pause_start = timeline['adPauseStart']
+    ad_pause_duration = timeline['adPauseDuration']
 
     for prefix, insert_at, insert_duration, should_insert in (
         ('lead', start_at, lead_play_duration, lead_pauses_source),
@@ -389,8 +376,9 @@ def run(config_path, output_path):
     source_info = probe_media(source_path)
     ad_info = probe_media(ad_path)
     lead_info = probe_audio(lead_path) if lead_path else None
+    timeline = build_ad_timeline(config, source_info, ad_info, lead_info)
     video_filters, output_duration, start_at, output_ad_start, ad_duration, lead_play_duration = build_video_filter(
-        config, source_info, ad_info, lead_info
+        config, source_info, ad_info, lead_info, timeline
     )
     subtitle_ass_path = create_subtitle_ass(config, source_info, start_at, lead_play_duration) if lead_info else None
     if subtitle_ass_path:
@@ -399,7 +387,7 @@ def run(config_path, output_path):
             f"[video_without_subtitles]subtitles=filename='{escape_filter_path(subtitle_ass_path)}'[vout]"
         )
     audio_filters, audio_map = build_audio_filter(
-        config, source_info, ad_info, start_at, output_ad_start, ad_duration, lead_info
+        config, source_info, ad_info, lead_info, timeline
     )
     filters = video_filters + audio_filters
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)

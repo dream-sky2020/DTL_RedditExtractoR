@@ -1,0 +1,4 @@
+/* The app shell provides its own scroll area; isolated stories use the viewport. */
+body.sb-show-main {
+  overflow: auto;
+}

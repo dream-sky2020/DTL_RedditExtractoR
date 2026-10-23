@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "广告 UI 预览（Storybook）",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:6006/?path=/story/pages-adplacement-page--chroma-key",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Storybook: 准备预览"
+    }
+  ]
+}
